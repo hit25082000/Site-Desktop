@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KYMA® — Design System & Pattern Library</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ============================================================
+   KYMA DESIGN SYSTEM — EXTRACTED TOKENS & SHOWCASE STYLES
+   ============================================================ */
+
+/* --- TASA Orbiter Font (same @font-face as original) --- */
+@font-face {
+  font-family: 'TASA Orbiter';
+  src: url('main-assets/fonts.gstatic.com/s/tasaorbiterdisplay/v1/4gtObSCL9LmFji3xXMkWq0iOXV3NVXlnaGhV.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* --- Root Design Tokens (extracted 1:1 from index.html body CSS vars) --- */
+:root {
+  /* Color Tokens */
+  --token-border:          #9c9c9c26;
+  --token-accent:          #d1ff00;
+  --token-red:             #ff4444; 
+  --token-bg-dark:         #050505;
+  --token-bg-light:        #f4f4e8;
+  --token-text-muted:      #686868;
+  --token-text-light-muted:#bcbcbc;
+  --token-surface-dark:    #3d3d3d;
+  --token-surface-card:    #1c1e19;
+  --token-white:           #fff;
+  --token-cream:           #ffffed;
+
+  /* Semantic aliases */
+  --color-bg-primary:   var(--token-bg-dark);
+  --color-bg-secondary: var(--token-bg-light);
+  --color-accent:       var(--token-accent);
+  --color-text-primary: var(--token-white);
+  --color-text-dark:    var(--token-bg-dark);
+
+  /* Typography Tokens */
+  --font-display: 'TASA Orbiter', 'Inter', sans-serif;
+  --font-body:    'Inter', sans-serif;
+
+  /* Spacing */
+  --space-xs:  5px;
+  --space-sm:  10px;
+  --space-md:  15px;
+  --space-lg:  20px;
+  --space-xl:  30px;
+  --space-2xl: 40px;
+  --space-3xl: 50px;
+  --space-4xl: 80px;
+  --space-5xl: 120px;
+}
+
+/* --- Global Reset --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--token-bg-dark);
+  color: var(--token-white);
+  line-height: 1.5;
+  font-size: 15px;
+}
+
+/* --- DS Navigation --- */
+.ds-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(5,5,5,.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--token-border);
+  padding: 0 var(--space-2xl);
+}
+.ds-nav-inner {
+  max-width: 1920px; margin: 0 auto;
+  display: flex; align-items: center;
+  height: 56px; gap: var(--space-lg);
+  overflow-x: auto;
+}
+.ds-nav-brand {
+  font-family: var(--font-display);
+  font-weight: 800; font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: -.03em;
+  color: var(--token-accent);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.ds-nav a {
+  color: var(--token-text-light-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color .2s;
+}
+.ds-nav a:hover { color: var(--token-white); }
+
+/* --- Section Containers --- */
+.ds-section {
+  padding: var(--space-4xl) var(--space-2xl);
+  max-width: 1920px; margin: 0 auto;
+  border-bottom: 1px solid var(--token-border);
+}
+.ds-section--light {
+  background: var(--token-bg-light);
+  color: var(--token-bg-dark);
+}
+.ds-section--accent {
+  background: var(--token-accent);
+  color: var(--token-bg-dark);
+}
+.ds-section-label {
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: -.02em;
+  color: var(--token-text-muted);
+  margin-bottom: var(--space-xs);
+}
+.ds-section-title {
+  font-family: var(--font-display);
+  font-size: 40px; font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -.03em;
+  line-height: 100%;
+  margin-bottom: var(--space-2xl);
+}
+
+/* --- Color Swatches --- */
+.ds-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: var(--space-lg); }
+.ds-swatch {
+  border: 1px solid var(--token-border);
+  border-radius: 8px; overflow: hidden;
+}
+.ds-swatch-block { height: 100px; }
+.ds-swatch-info {
+  padding: 12px;
+  background: var(--token-surface-card);
+  font-size: 13px;
+}
+.ds-swatch-name { font-weight: 700; margin-bottom: 4px; }
+.ds-swatch-hex { color: var(--token-text-muted); font-family: monospace; font-size: 12px; }
+
+/* --- Typography Specimens --- */
+.ds-type-row {
+  display: flex; align-items: baseline;
+  gap: var(--space-2xl);
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--token-border);
+  flex-wrap: wrap;
+}
+.ds-type-meta {
+  width: 200px; flex-shrink: 0;
+  font-size: 12px; color: var(--token-text-muted);
+  font-family: monospace;
+}
+.ds-type-specimen { flex: 1; min-width: 300px; }
+
+/* --- Component Grid --- */
+.ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px,1fr)); gap: var(--space-lg); }
+.ds-card {
+  border: 1px solid var(--token-border);
+  border-radius: 0;
+  overflow: hidden;
+}
+.ds-card-body { padding: var(--space-lg); }
+.ds-card-label {
+  font-size: 11px; text-transform: uppercase;
+  font-weight: 700; letter-spacing: .05em;
+  color: var(--token-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+/* --- Buttons --- */
+.ds-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-display);
+  font-size: 14px; font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -.02em;
+  padding: 10px 20px;
+  border: none; cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  text-decoration: none;
+}
+.ds-btn:hover { transform: translateY(-2px); }
+.ds-btn--primary { background: var(--token-bg-dark); color: var(--token-white); }
+.ds-btn--accent  { background: var(--token-accent); color: var(--token-bg-dark); }
+.ds-btn--outline {
+  background: transparent; color: var(--token-white);
+  border: 1px solid var(--token-border);
+}
+.ds-btn--pill { border-radius: 999px; }
+
+/* --- Badge --- */
+.ds-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-display);
+  font-size: 12px; font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: -.02em;
+  padding: 5px 12px;
+  border: 1px solid var(--token-border);
+}
+.ds-badge-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--token-accent);
+}
+
+/* --- Marquee --- */
+.ds-marquee-track {
+  display: flex;
+  animation: ds-marquee 20s linear infinite;
+  white-space: nowrap;
+}
+.ds-marquee-item {
+  display: inline-flex; align-items: center; gap: 16px;
+  padding: 0 24px;
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: -.02em;
+  color: var(--token-text-light-muted);
+}
+.ds-marquee-item::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--token-accent);
+  flex-shrink: 0;
+}
+@keyframes ds-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* --- Spacing Vis --- */
+.ds-spacing-row {
+  display: flex; align-items: center; gap: var(--space-lg);
+  padding: 8px 0;
+}
+.ds-spacing-bar {
+  height: 28px;
+  background: var(--token-accent);
+  border-radius: 2px;
+  transition: width .3s;
+}
+.ds-spacing-label {
+  width: 100px; flex-shrink: 0;
+  font-size: 12px; font-family: monospace;
+  color: var(--token-text-muted);
+}
+.ds-spacing-value {
+  font-size: 12px; font-family: monospace;
+  color: var(--token-text-light-muted);
+  width: 50px;
+}
+
+/* --- Status Dot Animation --- */
+@keyframes ds-pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+.ds-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--token-accent);
+  animation: ds-pulse 2s ease-in-out infinite;
+}
+
+/* --- Scroll Entrance Animation --- */
+.anim-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger delays for children */
+.anim-stagger > .anim-reveal:nth-child(1) { transition-delay: 0s; }
+.anim-stagger > .anim-reveal:nth-child(2) { transition-delay: 0.08s; }
+.anim-stagger > .anim-reveal:nth-child(3) { transition-delay: 0.16s; }
+.anim-stagger > .anim-reveal:nth-child(4) { transition-delay: 0.24s; }
+.anim-stagger > .anim-reveal:nth-child(5) { transition-delay: 0.32s; }
+.anim-stagger > .anim-reveal:nth-child(6) { transition-delay: 0.40s; }
+.anim-stagger > .anim-reveal:nth-child(7) { transition-delay: 0.48s; }
+.anim-stagger > .anim-reveal:nth-child(8) { transition-delay: 0.56s; }
+.anim-stagger > .anim-reveal:nth-child(9) { transition-delay: 0.64s; }
+.anim-stagger > .anim-reveal:nth-child(10) { transition-delay: 0.72s; }
+
+/* --- Character Reveal Animation --- */
+.char-reveal {
+  overflow: hidden;
+}
+.char-reveal .char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.char-reveal.is-visible .char {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- Word Reveal (scroll-opacity like original site) --- */
+.word-reveal .word {
+  display: inline-block;
+  opacity: 0.15;
+  transition: opacity 0.6s ease;
+}
+.word-reveal.is-visible .word {
+  opacity: 1;
+}
+
+/* --- Progressive Scroll-Color Text Reveal (gray→lime→black) --- */
+.scroll-color-reveal {
+  line-height: 120%;
+}
+.scroll-color-reveal .scr-char {
+  display: inline-block;
+  color: var(--token-bg-dark);
+  opacity: 0.15;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+.scroll-color-reveal .scr-char.state-active {
+  color: var(--token-accent);
+  opacity: 1;
+}
+.scroll-color-reveal .scr-char.state-done {
+  color: var(--token-bg-dark);
+  opacity: 1;
+}
+
+/* --- Animated Counter --- */
+.counter-value {
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+  min-width: 2ch;
+}
+
+/* --- Card Hover Glow --- */
+.ds-card-glow {
+  border: 1px solid var(--token-border);
+  background: var(--token-surface-card);
+  padding: var(--space-xl);
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1),
+              box-shadow 0.4s ease,
+              border-color 0.3s ease;
+  cursor: pointer;
+}
+.ds-card-glow:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 0 30px rgba(209,255,0,.12), 0 12px 40px rgba(0,0,0,.3);
+  border-color: rgba(209,255,0,.3);
+}
+
+/* --- Footer Link Highlight --- */
+.ds-footer-link {
+  position: relative;
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -.02em;
+  color: var(--token-white);
+  text-decoration: none;
+  padding: 4px 8px;
+  transition: color 0.3s ease;
+  overflow: hidden;
+}
+.ds-footer-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--token-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+  z-index: -1;
+}
+.ds-footer-link:hover {
+  color: var(--token-bg-dark);
+}
+.ds-footer-link:hover::before {
+  transform: scaleX(1);
+}
+
+/* --- Split-Text Hover (char-by-char wave) --- */
+.ds-split-hover {
+  display: inline-flex;
+  cursor: pointer;
+}
+.ds-split-hover .sh-char {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1),
+              color 0.2s ease;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -.03em;
+  color: var(--token-white);
+}
+.ds-split-hover:hover .sh-char {
+  color: var(--token-accent);
+}
+
+/* --- CTA Button Glow Pulse --- */
+.ds-btn-glow {
+  position: relative;
+  overflow: visible;
+}
+.ds-btn-glow::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: var(--token-accent);
+  opacity: 0;
+  filter: blur(12px);
+  z-index: -1;
+  transition: opacity 0.4s ease;
+}
+.ds-btn-glow:hover::after {
+  opacity: 0.35;
+}
+
+/* --- Interactive Deployment Timeline (§12) --- */
+.ds-timeline-wrapper {
+  background: var(--token-bg-light);
+  padding: var(--space-4xl) var(--space-2xl);
+  border-bottom: 1px solid var(--token-border);
+  color: var(--token-bg-dark);
+}
+.ds-timeline-container {
+  max-width: 1920px;
+  margin: 0 auto;
+  position: relative;
+}
+.ds-timeline-bar-bg {
+  position: relative;
+  height: 2px;
+  background: rgba(0,0,0,0.1);
+  margin-bottom: 60px;
+}
+.ds-timeline-bar-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--token-accent);
+  width: 25%; /* Default Week 1 */
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ds-timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+.ds-timeline-col {
+  position: relative;
+  padding: 0 20px;
+  transition: opacity 0.4s ease;
+  cursor: pointer;
+}
+.ds-timeline-grid:hover .ds-timeline-col:not(:hover) {
+  opacity: 0.3;
+}
+.ds-timeline-week-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--token-text-muted);
+  margin-bottom: 30px;
+  transition: color 0.3s ease;
+}
+.ds-timeline-col:hover .ds-timeline-week-label,
+.ds-timeline-col.is-active .ds-timeline-week-label {
+  color: var(--token-bg-dark);
+}
+.ds-timeline-dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 50%;
+  transition: background 0.3s ease;
+}
+.ds-timeline-col:hover .ds-timeline-dot,
+.ds-timeline-col.is-active .ds-timeline-dot {
+  background: var(--token-accent);
+}
+.ds-timeline-content {
+  transition: transform 0.4s ease;
+}
+.ds-timeline-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  margin-bottom: 12px;
+  color: var(--token-text-muted);
+  transition: color 0.3s ease;
+}
+.ds-timeline-col:hover .ds-timeline-title,
+.ds-timeline-col.is-active .ds-timeline-title {
+  color: var(--token-bg-dark);
+}
+.ds-timeline-desc {
+  font-size: 14px;
+  color: var(--token-text-muted);
+  line-height: 1.4;
+  max-width: 280px;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+.ds-timeline-col:hover .ds-timeline-desc,
+.ds-timeline-col.is-active .ds-timeline-desc {
+  opacity: 1;
+}
+.ds-timeline-indicator {
+  height: 2px;
+  background: var(--token-accent);
+  width: 0;
+  margin-top: 20px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ds-timeline-col:hover .ds-timeline-indicator,
+.ds-timeline-col.is-active .ds-timeline-indicator {
+  width: 60px;
+}
+
+/* Staircase Offsets */
+.ds-timeline-col:nth-child(2) .ds-timeline-content { transform: translateY(80px); }
+.ds-timeline-col:nth-child(3) .ds-timeline-content { transform: translateY(160px); }
+.ds-timeline-col:nth-child(4) .ds-timeline-content { transform: translateY(240px); }
+
+@media (max-width: 1024px) {
+  .ds-timeline-grid { grid-template-columns: 1fr; gap: 60px; }
+  .ds-timeline-col:nth-child(n) .ds-timeline-content { transform: none; }
+  .ds-timeline-bar-bg { display: none; }
+}
+
+/* --- Marquee V2 (JS-driven seamless) --- */
+.ds-marquee-v2 {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ds-marquee-v2-track {
+  display: inline-flex;
+  will-change: transform;
+}
+.ds-marquee-v2-track.running {
+  animation: ds-marquee-v2 25s linear infinite;
+}
+.ds-marquee-v2-track.reverse.running {
+  animation-direction: reverse;
+}
+.ds-marquee-v2-track.fast.running {
+  animation-duration: 15s;
+}
+@keyframes ds-marquee-v2 {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* --- Sticky Parallax Demo --- */
+.parallax-container {
+  position: relative;
+}
+.parallax-panel {
+  position: sticky;
+  top: 56px; /* below nav */
+  height: calc(100vh - 56px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+  transition: opacity .3s ease;
+}
+
+/* --- Scale-in variant --- */
+.anim-scale {
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-scale.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* --- Responsive --- */
+@media (max-width: 810px) {
+  .ds-section { padding: var(--space-3xl) var(--space-sm); }
+  .ds-section-title { font-size: 30px; }
+  .ds-type-row { flex-direction: column; gap: var(--space-sm); }
+  .ds-type-meta { width: 100%; }
+  .ds-grid { grid-template-columns: 1fr; }
+  .parallax-panel { height: auto; min-height: 60vh; position: relative; top: 0; }
+  .ds-split-hover .sh-char { font-size: 24px; }
+}
+
+/* --- Film Grain Overlay (§13) --- */
+.ds-grain-overlay {
+  position: fixed;
+  inset: -100%;
+  width: 300%;
+  height: 300%;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: hard-light;
+  opacity: 0.05;
+  display: block; /* Default ON matching original site */
+  overflow: hidden;
+}
+.ds-grain-inner {
+  position: absolute;
+  inset: 0;
+  background-image: url('main-assets/framerusercontent.com/images/kelEr6s1qyt801dQcO45jKcaNkk.gif');
+  background-size: 240px;
+  width: 100%;
+  height: 100%;
+}
+.ds-grain--off { display: none; }
+
+/* --- Avatars (§14) --- */
+.ds-avatar-group {
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+}
+.ds-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--token-surface-dark);
+  border: 2px solid var(--token-bg-light); /* Standard border matching LIGHT BG context mostly used */
+  margin-left: -12px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), z-index 0s;
+}
+.ds-avatar:hover {
+  transform: translateY(-4px) scale(1.1);
+  z-index: 10;
+}
+.ds-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ds-avatar-more {
+  background: #1c1e19;
+  color: var(--token-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.ds-avatar-labeled {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ds-avatar-labeled .ds-avatar {
+  margin-left: 0;
+  width: 40px;
+  height: 40px;
+}
+.ds-avatar-info {
+  display: flex;
+  flex-direction: column;
+}
+.ds-avatar-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--token-bg-dark);
+}
+.ds-avatar-role {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--token-text-muted);
+}
+
+/* --- Advanced Parallax Timeline (§10) --- */
+.parallax-timeline-wrapper {
+  position: relative;
+  height: 1000vh; /* Maximized for long phrase depth */
+  background: var(--token-bg-light);
+  overflow: visible;
+}
+.parallax-timeline-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.parallax-timeline-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--token-bg-dark);
+  opacity: 0;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+}
+.parallax-timeline-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.timeline-text-main {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 6vw, 85px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -.04em;
+  line-height: .9;
+  text-align: center;
+  max-width: 1200px;
+  padding: 0 40px;
+  pointer-events: none;
+  white-space: normal; /* Allow <br/> to work */
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+}
+.timeline-ticker-row {
+  position: absolute;
+  width: 120%;
+  left: -10%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(100px); /* start offset */
+  transition: opacity 0.4s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.timeline-ticker-row.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.row-top-2    { top: 5%; }
+.row-top-1    { top: 20%; }
+.row-middle   { top: 50%; transform: translateY(-50%) translateY(100px); }
+.row-bottom-1 { bottom: 20%; }
+.row-bottom-2 { bottom: 5%; }
+
+.row-middle.is-visible { transform: translateY(-50%); }
+
+.scroll-color-char {
+  color: var(--token-bg-dark);
+  opacity: 0.15;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+.scroll-color-char.state-active {
+  color: var(--token-red); /* Red for chaos phase */
+  opacity: 1;
+}
+.scroll-color-char.state-done {
+  color: var(--token-red); /* Hold red in chaos phase */
+  opacity: 1;
+}
+/* In dark mode we want the 'done' text to be white */
+.is-dark-mode .scroll-color-char.state-done {
+  color: var(--token-white);
+}
+
+.timeline-ticker-row {
+  position: absolute;
+  width: 150%;
+  left: -25%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(40px); /* Subtle entry */
+  transition: opacity 0.5s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+}
+
+/* Individual Ticker Styles matching high-fidelity "tags" */
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 10, 10, 0.85); /* Dark background for chaos */
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  padding: 6px 16px;
+  margin: 0 12px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--token-white);
+  white-space: nowrap;
+}
+
+.ticker-item.accent { background: rgba(255, 68, 68, 0.2); color: var(--token-red); border-color: rgba(255, 68, 68, 0.4); }
+.ticker-item.red { background: rgba(255, 68, 68, 0.15); color: var(--token-red); border: 1px solid rgba(255, 68, 68, 0.3); }
+
+/* Spaced positioning for top/bottom carousels: no overlap */
+.row-pos-1  { top: 5%; }
+.row-pos-2  { top: 15%; }
+.row-pos-11 { bottom: 15%; }
+.row-pos-12 { bottom: 5%; }
+
+.timeline-ticker-row.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.panel-phrase-2 {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  background: transparent; /* allow bgOverlay to show through */
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1.03);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+}
+.panel-phrase-2.is-active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+.is-hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     NAVIGATION
+     ============================================================ -->
+<nav class="ds-nav">
+  <div class="ds-nav-inner">
+    <a href="#top" class="ds-nav-brand">KYMA® DS</a>
+    <a href="#colors">Colors</a>
+    <a href="#typography">Typography</a>
+    <a href="#components">Components</a>
+    <a href="#layout">Layout</a>
+    <a href="#motion">Motion</a>
+    <a href="#animations">Animations</a>
+    <a href="#advanced">Advanced</a>
+    <a href="#timeline">Timeline</a>
+    <a href="#grain">Grain</a>
+    <a href="#avatars">Avatars</a>
+    <a href="#spacing">Spacing</a>
+    <a href="#icons">Icons</a>
+  </div>
+</nav>
+
+<!-- ============================================================
+     §0 — HERO / COVER
+     ============================================================ -->
+<section id="top" style="
+  background: var(--token-bg-dark);
+  padding: var(--space-5xl) var(--space-2xl) var(--space-4xl);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+">
+  <div style="position:relative;z-index:1;max-width:1200px;margin:0 auto;">
+    <div style="
+      font-family: var(--font-display);
+      font-size: clamp(80px,12vw,180px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -.04em;
+      line-height: .85;
+      color: var(--token-surface-dark);
+      opacity: .25;
+      margin-bottom: -40px;
+    ">KYMA</div>
+    <div class="ds-section-label anim-reveal" style="color:var(--token-accent);margin-bottom:12px;">Living Design System</div>
+    <h1 class="anim-reveal" style="
+      font-family:var(--font-display);
+      font-size:clamp(28px,4vw,50px);
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:-.03em;
+      line-height:1;
+      color:var(--token-white);
+      margin-bottom:20px;
+    ">Pattern Library &<br/>Component Reference</h1>
+    <p class="anim-reveal" style="color:var(--token-text-muted);max-width:500px;margin:0 auto;font-size:15px;line-height:1.6;">
+      Canonical design tokens, typography, components, and layout patterns extracted 1:1 from the KYMA Framer website.
+    </p>
+    <div style="margin-top:30px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <a href="#colors" class="ds-btn ds-btn--accent ds-btn--pill">Explore System ↓</a>
+    </div>
+  </div>
+  <!-- accent bar like original nav -->
+  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--token-accent);"></div>
+</section>
+
+<!-- ============================================================
+     §1 — COLOR PALETTE
+     ============================================================ -->
+<section id="colors" class="ds-section">
+  <div class="ds-section-label anim-reveal">[01] Design Tokens</div>
+  <div class="ds-section-title anim-reveal">Color Palette</div>
+
+  <div class="ds-colors anim-stagger">
+    <div class="ds-swatch anim-reveal">
+      <div class="ds-swatch-block" style="background:#d1ff00;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">Accent / Lime</div>
+        <div class="ds-swatch-hex">--token-accent · #D1FF00</div>
+      </div>
+    </div>
+    <div class="ds-swatch">
+      <div class="ds-swatch-block" style="background:#050505;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">Background Dark</div>
+        <div class="ds-swatch-hex">--token-bg-dark · #050505</div>
+      </div>
+    </div>
+    <div class="ds-swatch">
+      <div class="ds-swatch-block" style="background:#f4f4e8;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">Background Light</div>
+        <div class="ds-swatch-hex">--token-bg-light · #F4F4E8</div>
+      </div>
+    </div>
+    <div class="ds-swatch">
+      <div class="ds-swatch-block" style="background:#ffffed;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">Cream</div>
+        <div class="ds-swatch-hex">--token-cream · #FFFFED</div>
+      </div>
+    </div>
+    <div class="ds-swatch">
+      <div class="ds-swatch-block" style="background:#1c1e19;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">Surface Card</div>
+        <div class="ds-swatch-hex">--token-surface-card · #1C1E19</div>
+      </div>
+    </div>
+    <div class="ds-swatch">
+      <div class="ds-swatch-block" style="background:#3d3d3d;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">Surface Dark</div>
+        <div class="ds-swatch-hex">--token-surface-dark · #3D3D3D</div>
+      </div>
+    </div>
+    <div class="ds-swatch">
+      <div class="ds-swatch-block" style="background:#686868;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">Text Muted</div>
+        <div class="ds-swatch-hex">--token-text-muted · #686868</div>
+      </div>
+    </div>
+    <div class="ds-swatch">
+      <div class="ds-swatch-block" style="background:#bcbcbc;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">Text Light Muted</div>
+        <div class="ds-swatch-hex">--token-text-light-muted · #BCBCBC</div>
+      </div>
+    </div>
+    <div class="ds-swatch">
+      <div class="ds-swatch-block" style="background:#fff;border:1px solid #333;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">White</div>
+        <div class="ds-swatch-hex">--token-white · #FFFFFF</div>
+      </div>
+    </div>
+    <div class="ds-swatch">
+      <div class="ds-swatch-block" style="background:#9c9c9c26;border:1px solid #333;"></div>
+      <div class="ds-swatch-info">
+        <div class="ds-swatch-name">Border</div>
+        <div class="ds-swatch-hex">--token-border · #9C9C9C26</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     §2 — TYPOGRAPHY
+     ============================================================ -->
+<section id="typography" class="ds-section">
+  <div class="ds-section-label anim-reveal">[02] Typography</div>
+  <div class="ds-section-title anim-reveal">Type Scale</div>
+
+  <!-- H1 -->
+  <div class="ds-type-row anim-reveal">
+    <div class="ds-type-meta">
+      <strong>H1 — Display</strong><br/>
+      TASA Orbiter 800<br/>
+      70px / 95% lh<br/>
+      ls: -.03em<br/>
+      uppercase
+    </div>
+    <div class="ds-type-specimen" style="
+      font-family:var(--font-display);font-size:70px;font-weight:800;
+      text-transform:uppercase;letter-spacing:-.03em;line-height:95%;
+    ">Scale Your Operations</div>
+  </div>
+
+  <!-- H2 -->
+  <div class="ds-type-row">
+    <div class="ds-type-meta">
+      <strong>H2 — Section</strong><br/>
+      TASA Orbiter 800<br/>
+      55px / 100% lh<br/>
+      ls: -.03em<br/>
+      uppercase
+    </div>
+    <div class="ds-type-specimen" style="
+      font-family:var(--font-display);font-size:55px;font-weight:800;
+      text-transform:uppercase;letter-spacing:-.03em;line-height:100%;
+    ">Who We Are</div>
+  </div>
+
+  <!-- H3 -->
+  <div class="ds-type-row">
+    <div class="ds-type-meta">
+      <strong>H3 — Subsection</strong><br/>
+      TASA Orbiter 800<br/>
+      40px / 100% lh<br/>
+      ls: -.03em<br/>
+      uppercase
+    </div>
+    <div class="ds-type-specimen" style="
+      font-family:var(--font-display);font-size:40px;font-weight:800;
+      text-transform:uppercase;letter-spacing:-.03em;line-height:100%;
+    ">Core Automations</div>
+  </div>
+
+  <!-- Display Body -->
+  <div class="ds-type-row">
+    <div class="ds-type-meta">
+      <strong>Display Body</strong><br/>
+      TASA Orbiter 800<br/>
+      30px / 110% lh<br/>
+      ls: -.03em<br/>
+      uppercase
+    </div>
+    <div class="ds-type-specimen" style="
+      font-family:var(--font-display);font-size:30px;font-weight:800;
+      text-transform:uppercase;letter-spacing:-.03em;line-height:110%;
+    ">Humans Should Do Human Work</div>
+  </div>
+
+  <!-- Body Large -->
+  <div class="ds-type-row">
+    <div class="ds-type-meta">
+      <strong>Body Large</strong><br/>
+      TASA Orbiter 600<br/>
+      20px / 130% lh<br/>
+      ls: -.03em
+    </div>
+    <div class="ds-type-specimen" style="
+      font-family:var(--font-display);font-size:20px;font-weight:600;
+      letter-spacing:-.03em;line-height:130%;
+    ">We build AI-powered automation systems that handle repetitive tasks, so your team can focus on what actually matters.</div>
+  </div>
+
+  <!-- Body -->
+  <div class="ds-type-row">
+    <div class="ds-type-meta">
+      <strong>Body</strong><br/>
+      TASA Orbiter 600<br/>
+      15px / 140% lh<br/>
+      ls: -.02em
+    </div>
+    <div class="ds-type-specimen" style="
+      font-family:var(--font-display);font-size:15px;font-weight:600;
+      letter-spacing:-.02em;line-height:140%;
+    ">Kyma specializes in building custom AI automation systems for forward-thinking companies. Our systems reduce manual work by up to 83%, saving teams thousands of hours annually.</div>
+  </div>
+
+  <!-- Label -->
+  <div class="ds-type-row">
+    <div class="ds-type-meta">
+      <strong>Label / Nav</strong><br/>
+      TASA Orbiter 600<br/>
+      13px / 140% lh<br/>
+      ls: -.02em<br/>
+      uppercase
+    </div>
+    <div class="ds-type-specimen" style="
+      font-family:var(--font-display);font-size:13px;font-weight:600;
+      letter-spacing:-.02em;line-height:140%;text-transform:uppercase;
+    ">AI Automation Specialists · San Francisco, CA</div>
+  </div>
+
+  <!-- On Light BG -->
+  <div style="background:var(--token-bg-light);padding:var(--space-2xl);margin-top:var(--space-2xl);border:1px solid var(--token-border);">
+    <div class="ds-section-label" style="color:var(--token-text-muted);">Light Surface Variant</div>
+    <div style="
+      font-family:var(--font-display);font-size:40px;font-weight:800;
+      text-transform:uppercase;letter-spacing:-.03em;line-height:100%;
+      color:var(--token-bg-dark);margin-bottom:15px;
+    ">Heading on Light</div>
+    <p style="
+      font-family:var(--font-display);font-size:15px;font-weight:600;
+      letter-spacing:-.02em;line-height:140%;color:var(--token-bg-dark);
+    ">Body text on the light beige surface, matching the original site's content sections.</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     §3 — UI COMPONENTS
+     ============================================================ -->
+<section id="components" class="ds-section">
+  <div class="ds-section-label anim-reveal">[03] Components</div>
+  <div class="ds-section-title anim-reveal">UI Components</div>
+
+  <div class="ds-grid anim-stagger">
+
+    <!-- Buttons -->
+    <div class="ds-card anim-reveal">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Buttons</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+          <button class="ds-btn ds-btn--primary">Get Template ↗</button>
+          <button class="ds-btn ds-btn--accent">Start Now</button>
+          <button class="ds-btn ds-btn--outline">Learn More</button>
+          <button class="ds-btn ds-btn--primary ds-btn--pill">Pill Button</button>
+          <button class="ds-btn ds-btn--accent ds-btn--pill">● Live</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badges -->
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Badges & Status</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+          <span class="ds-badge"><span class="ds-badge-dot"></span> Available Now</span>
+          <span class="ds-badge" style="background:var(--token-accent);color:var(--token-bg-dark);border-color:var(--token-accent);">
+            <span class="ds-status-dot" style="background:var(--token-bg-dark);"></span> Live Automation
+          </span>
+          <span class="ds-badge">★★★★★ Trusted by 50+</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav Bar -->
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Navigation Bar</div>
+        <div style="
+          display:flex;align-items:center;justify-content:space-between;
+          padding:12px 20px;
+          background:rgba(5,5,5,.9);backdrop-filter:blur(10px);
+          border:1px solid var(--token-border);
+          mix-blend-mode:normal;
+        ">
+          <span style="font-family:var(--font-display);font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:-.03em;">KYMA®</span>
+          <span style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-text-light-muted);">AI Automation Specialists</span>
+          <span style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-text-light-muted);">San Francisco, CA</span>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--token-bg-dark);padding:6px 14px;">
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <div style="width:16px;height:2px;background:var(--token-white);"></div>
+              <div style="width:16px;height:2px;background:var(--token-white);"></div>
+              <div style="width:16px;height:2px;background:var(--token-white);"></div>
+            </div>
+            <span style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;">Menu</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Bar / Ticker -->
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Status Bar</div>
+        <div style="
+          display:flex;align-items:center;justify-content:space-between;
+          padding:7px 12px;
+          background:var(--token-bg-dark);
+          border:1px solid var(--token-border);
+        ">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="ds-status-dot"></div>
+            <span style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;">Live Automation</span>
+          </div>
+          <span style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-text-muted);">2026</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card — Dark -->
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Content Card (Dark)</div>
+        <div style="
+          background:var(--token-bg-dark);padding:20px;
+          border:1px solid var(--token-border);
+        ">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1.5" stroke="#d1ff00" stroke-width="2"/></svg>
+            <span style="font-family:var(--font-display);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-accent);">Verified</span>
+          </div>
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">83% Reduction</div>
+          <p style="font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:-.02em;color:var(--token-text-muted);line-height:140%;">In manual processing time across all automated workflows</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card — Light -->
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Content Card (Light)</div>
+        <div style="
+          background:var(--token-bg-light);padding:20px;
+          border:1px solid var(--token-border);
+          color:var(--token-bg-dark);
+        ">
+          <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">Custom AI Systems</div>
+          <p style="font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:-.02em;line-height:140%;color:var(--token-text-muted);">Tailored automation solutions designed to integrate seamlessly with your existing stack.</p>
+          <div style="margin-top:15px;height:2px;background:var(--token-accent);width:40px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accent Panel -->
+    <div class="ds-card">
+      <div class="ds-card-body" style="padding:0;">
+        <div style="background:var(--token-accent);color:var(--token-bg-dark);padding:24px;">
+          <div class="ds-card-label" style="color:rgba(5,5,5,.5);">Accent Surface</div>
+          <div style="font-family:var(--font-display);font-size:28px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;line-height:100%;margin-bottom:12px;">Let's Build Something</div>
+          <p style="font-size:13px;font-weight:600;font-family:var(--font-display);letter-spacing:-.02em;opacity:.7;">Contact us to discuss your automation needs.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider / Border -->
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Borders & Dividers</div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div style="border-top:1px solid var(--token-border);padding-top:8px;font-size:12px;color:var(--token-text-muted);">1px solid #9C9C9C26 (default border)</div>
+          <div style="border-left:2px solid var(--token-accent);padding-left:12px;">
+            <span style="font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:-.02em;">Accent left border highlight</span>
+          </div>
+          <div style="height:1px;background:var(--token-border);"></div>
+          <div style="font-size:12px;color:var(--token-text-muted);">Full-width section divider</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     §4 — MARQUEE / TICKER
+     ============================================================ -->
+<section style="background:var(--token-bg-dark);padding:var(--space-lg) 0;overflow:hidden;border-bottom:1px solid var(--token-border);">
+  <div class="ds-section-label" style="padding-left:var(--space-2xl);margin-bottom:var(--space-sm);">[04] Motion — Marquee Ticker</div>
+  <div style="overflow:hidden;">
+    <div class="ds-marquee-track">
+      <span class="ds-marquee-item">Customer Support Backlog Growing Daily</span>
+      <span class="ds-marquee-item">Repetitive Tasks Blocking Strategic Work</span>
+      <span class="ds-marquee-item">Data Entry Consuming 20+ Hours Weekly</span>
+      <span class="ds-marquee-item">Scaling Requires Expensive Headcount</span>
+      <span class="ds-marquee-item">Errors From Manual Processes Costing Thousands</span>
+      <!-- duplicate for seamless loop -->
+      <span class="ds-marquee-item">Customer Support Backlog Growing Daily</span>
+      <span class="ds-marquee-item">Repetitive Tasks Blocking Strategic Work</span>
+      <span class="ds-marquee-item">Data Entry Consuming 20+ Hours Weekly</span>
+      <span class="ds-marquee-item">Scaling Requires Expensive Headcount</span>
+      <span class="ds-marquee-item">Errors From Manual Processes Costing Thousands</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     §5 — LAYOUT & SPACING
+     ============================================================ -->
+<section id="layout" class="ds-section">
+  <div class="ds-section-label anim-reveal">[05] Layout</div>
+  <div class="ds-section-title anim-reveal">Layout Patterns</div>
+
+  <!-- 4-col grid demo -->
+  <div class="ds-card-label" style="margin-bottom:12px;">4-Column Grid (max-width: 1920px, padding: 0 40px)</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:var(--space-2xl);">
+    <div style="border:1px solid var(--token-border);padding:20px;text-align:center;font-size:12px;color:var(--token-text-muted);">Col 1</div>
+    <div style="border:1px solid var(--token-border);padding:20px;text-align:center;font-size:12px;color:var(--token-text-muted);">Col 2</div>
+    <div style="border:1px solid var(--token-border);padding:20px;text-align:center;font-size:12px;color:var(--token-text-muted);">Col 3</div>
+    <div style="border:1px solid var(--token-border);padding:20px;text-align:center;font-size:12px;color:var(--token-text-muted);">Col 4</div>
+  </div>
+
+  <!-- span-2 demo -->
+  <div class="ds-card-label" style="margin-bottom:12px;">Span-2 + Span-2 (common hero & content layout)</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:var(--space-2xl);">
+    <div style="grid-column:span 2;border:1px solid var(--token-accent);padding:30px;">
+      <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">Primary Content</div>
+      <p style="font-size:13px;color:var(--token-text-muted);">Spans 2 columns — used for headings, key stats, and featured content.</p>
+    </div>
+    <div style="grid-column:span 2;border:1px solid var(--token-border);padding:30px;">
+      <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">Secondary Content</div>
+      <p style="font-size:13px;color:var(--token-text-muted);">Spans 2 columns — used for supporting text, images, or media.</p>
+    </div>
+  </div>
+
+  <!-- span-3 + span-1 -->
+  <div class="ds-card-label" style="margin-bottom:12px;">Span-3 + Span-1 (section header pattern)</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
+    <div style="grid-column:span 3;border:1px solid var(--token-border);padding:30px;">
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;">Wide content area</div>
+    </div>
+    <div style="grid-column:span 1;border:1px solid var(--token-border);padding:30px;display:flex;align-items:flex-end;justify-content:flex-end;">
+      <span style="font-size:12px;color:var(--token-text-muted);text-align:right;">Aligned<br/>right</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     §6 — SPACING
+     ============================================================ -->
+<section id="spacing" class="ds-section">
+  <div class="ds-section-label">[06] Tokens</div>
+  <div class="ds-section-title">Spacing Scale</div>
+
+  <div class="ds-spacing-row"><span class="ds-spacing-label">--space-xs</span><div class="ds-spacing-bar" style="width:5px;"></div><span class="ds-spacing-value">5px</span></div>
+  <div class="ds-spacing-row"><span class="ds-spacing-label">--space-sm</span><div class="ds-spacing-bar" style="width:10px;"></div><span class="ds-spacing-value">10px</span></div>
+  <div class="ds-spacing-row"><span class="ds-spacing-label">--space-md</span><div class="ds-spacing-bar" style="width:15px;"></div><span class="ds-spacing-value">15px</span></div>
+  <div class="ds-spacing-row"><span class="ds-spacing-label">--space-lg</span><div class="ds-spacing-bar" style="width:20px;"></div><span class="ds-spacing-value">20px</span></div>
+  <div class="ds-spacing-row"><span class="ds-spacing-label">--space-xl</span><div class="ds-spacing-bar" style="width:30px;"></div><span class="ds-spacing-value">30px</span></div>
+  <div class="ds-spacing-row"><span class="ds-spacing-label">--space-2xl</span><div class="ds-spacing-bar" style="width:40px;"></div><span class="ds-spacing-value">40px</span></div>
+  <div class="ds-spacing-row"><span class="ds-spacing-label">--space-3xl</span><div class="ds-spacing-bar" style="width:50px;"></div><span class="ds-spacing-value">50px</span></div>
+  <div class="ds-spacing-row"><span class="ds-spacing-label">--space-4xl</span><div class="ds-spacing-bar" style="width:80px;"></div><span class="ds-spacing-value">80px</span></div>
+  <div class="ds-spacing-row"><span class="ds-spacing-label">--space-5xl</span><div class="ds-spacing-bar" style="width:120px;"></div><span class="ds-spacing-value">120px</span></div>
+</section>
+
+<!-- ============================================================
+     §7 — MOTION & INTERACTION
+     ============================================================ -->
+<section id="motion" class="ds-section">
+  <div class="ds-section-label anim-reveal">[07] Interaction</div>
+  <div class="ds-section-title anim-reveal">Motion & Effects</div>
+
+  <div class="ds-grid">
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Backdrop Blur (Nav)</div>
+        <div style="position:relative;height:120px;background:linear-gradient(135deg,var(--token-accent),var(--token-bg-dark));border-radius:4px;overflow:hidden;">
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 16px;backdrop-filter:blur(12px);background:rgba(5,5,5,.5);font-family:var(--font-display);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;">
+            backdrop-filter: blur(12px)
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Mix-Blend-Mode: Difference</div>
+        <div style="position:relative;height:120px;overflow:hidden;border-radius:4px;">
+          <div style="position:absolute;inset:0;background:linear-gradient(to right,var(--token-bg-light),var(--token-bg-dark));"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;mix-blend-mode:difference;font-family:var(--font-display);font-size:28px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;color:white;">
+            KYMA®
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Hover Transform</div>
+        <div style="display:flex;gap:12px;">
+          <div style="
+            width:80px;height:80px;background:var(--token-surface-card);
+            border:1px solid var(--token-border);
+            display:flex;align-items:center;justify-content:center;
+            font-size:11px;color:var(--token-text-muted);text-align:center;
+            transition:transform .3s ease,box-shadow .3s ease;cursor:pointer;
+          " onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.4)';"
+             onmouseout="this.style.transform='none';this.style.boxShadow='none';">
+            Hover me
+          </div>
+          <div style="
+            width:80px;height:80px;background:var(--token-accent);
+            display:flex;align-items:center;justify-content:center;
+            font-size:11px;color:var(--token-bg-dark);text-align:center;font-weight:700;
+            transition:transform .3s ease;cursor:pointer;
+          " onmouseover="this.style.transform='scale(1.08)';"
+             onmouseout="this.style.transform='none';">
+            Scale
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Pulse Animation</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="ds-status-dot"></div>
+          <span style="font-size:13px;color:var(--token-text-muted);">animation: pulse 2s ease-in-out infinite</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     §8 — ICONS
+     ============================================================ -->
+<section id="icons" class="ds-section">
+  <div class="ds-section-label anim-reveal">[08] Iconography</div>
+  <div class="ds-section-title anim-reveal">Icons & Symbols</div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:24px;">
+    <!-- Checkmark -->
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;border:1px solid var(--token-border);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+        <svg width="18" height="15" viewBox="0 0 18 15" fill="none"><path d="M2 7.5L7 12.5L16 2.5" stroke="#d1ff00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span style="font-size:11px;color:var(--token-text-muted);">Check</span>
+    </div>
+    <!-- Arrow -->
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;border:1px solid var(--token-border);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M12 4H5M12 4V11" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span style="font-size:11px;color:var(--token-text-muted);">Arrow ↗</span>
+    </div>
+    <!-- Hamburger -->
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;border:1px solid var(--token-border);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="width:18px;height:2px;background:white;"></div>
+          <div style="width:18px;height:2px;background:white;"></div>
+          <div style="width:18px;height:2px;background:white;"></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:var(--token-text-muted);">Menu</span>
+    </div>
+    <!-- Star -->
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;border:1px solid var(--token-border);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+        <span style="color:#d1ff00;font-size:20px;">★</span>
+      </div>
+      <span style="font-size:11px;color:var(--token-text-muted);">Star</span>
+    </div>
+    <!-- Dot -->
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;border:1px solid var(--token-border);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--token-accent);"></div>
+      </div>
+      <span style="font-size:11px;color:var(--token-text-muted);">Status</span>
+    </div>
+    <!-- Play -->
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;border:1px solid var(--token-border);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+        <svg width="16" height="18" viewBox="0 0 16 18" fill="none"><path d="M2 1.5L14 9L2 16.5V1.5Z" fill="#d1ff00"/></svg>
+      </div>
+      <span style="font-size:11px;color:var(--token-text-muted);">Play</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     §9 — ANIMATION SHOWCASE
+     ============================================================ -->
+<section id="animations" class="ds-section">
+  <div class="ds-section-label anim-reveal">[09] Live Showcase</div>
+  <div class="ds-section-title anim-reveal">Animation Patterns</div>
+
+  <!-- A. Scroll Entrance Demo -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Scroll Entrance — Fade Up (scroll down to trigger)</div>
+    <div class="anim-stagger" style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-lg);">
+      <div class="anim-reveal" style="background:var(--token-surface-card);border:1px solid var(--token-border);padding:var(--space-xl);">
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">83% Faster</div>
+        <p style="font-size:13px;color:var(--token-text-muted);line-height:140%;">Reduction in manual processing time</p>
+        <div style="margin-top:15px;height:2px;background:var(--token-accent);width:40px;"></div>
+      </div>
+      <div class="anim-reveal" style="background:var(--token-surface-card);border:1px solid var(--token-border);padding:var(--space-xl);">
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">$12.4M Saved</div>
+        <p style="font-size:13px;color:var(--token-text-muted);line-height:140%;">Average annual savings per enterprise client</p>
+        <div style="margin-top:15px;height:2px;background:var(--token-accent);width:40px;"></div>
+      </div>
+      <div class="anim-reveal" style="background:var(--token-surface-card);border:1px solid var(--token-border);padding:var(--space-xl);">
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">50+ Clients</div>
+        <p style="font-size:13px;color:var(--token-text-muted);line-height:140%;">Trusted by forward-thinking companies</p>
+        <div style="margin-top:15px;height:2px;background:var(--token-accent);width:40px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B. Character Reveal Demo -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Character Reveal — Per-letter slide-up (scroll to trigger)</div>
+    <div class="char-reveal" style="
+      font-family:var(--font-display);font-size:clamp(30px,5vw,60px);font-weight:800;
+      text-transform:uppercase;letter-spacing:-.03em;line-height:110%;
+    ">Scale Your Operations [10X]</div>
+  </div>
+
+  <!-- C. PROGRESSIVE SCROLL-COLOR TEXT REVEAL (★ signature animation) -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-sm);">Progressive Scroll-Color Reveal — The signature KYMA animation</div>
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);color:var(--token-accent);font-size:10px;">GRAY → LIME GREEN → BLACK · Color follows scroll position character-by-character</div>
+    <div style="background:var(--token-bg-light);padding:var(--space-3xl) var(--space-2xl);border:1px solid var(--token-border);">
+      <div class="scroll-color-reveal" data-scroll-color style="
+        font-family:var(--font-display);font-size:clamp(28px,4.5vw,55px);font-weight:800;
+        text-transform:uppercase;letter-spacing:-.03em;line-height:115%;
+        max-width:1000px;
+      ">Humans should do human work. AI should do everything else. We build the systems that make this happen.</div>
+    </div>
+    <div style="margin-top:var(--space-sm);display:flex;gap:var(--space-lg);align-items:center;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:16px;height:16px;background:var(--token-bg-dark);opacity:.15;border:1px solid var(--token-border);"></div>
+        <span style="font-size:11px;color:var(--token-text-muted);font-family:monospace;">Inactive: opacity 0.15</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:16px;height:16px;background:var(--token-accent);"></div>
+        <span style="font-size:11px;color:var(--token-text-muted);font-family:monospace;">Active: #D1FF00</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:16px;height:16px;background:var(--token-bg-dark);"></div>
+        <span style="font-size:11px;color:var(--token-text-muted);font-family:monospace;">Done: #050505 opacity 1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- D. Dual Marquee Tickers -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Marquee Ticker — Infinite horizontal scroll (2 speeds, 2 directions)</div>
+    <div class="ds-marquee-v2" style="background:var(--token-bg-dark);border:1px solid var(--token-border);padding:12px 0;margin-bottom:4px;">
+      <div class="ds-marquee-v2-track" data-marquee>
+        <span class="ds-marquee-item">Customer Support Backlog Growing Daily</span>
+        <span class="ds-marquee-item">Repetitive Tasks Blocking Strategic Work</span>
+        <span class="ds-marquee-item">Data Entry Consuming 20+ Hours Weekly</span>
+        <span class="ds-marquee-item">Scaling Requires Expensive Headcount</span>
+        <span class="ds-marquee-item">Errors From Manual Processes Costing Thousands</span>
+      </div>
+    </div>
+    <div class="ds-marquee-v2" style="background:var(--token-accent);padding:12px 0;">
+      <div class="ds-marquee-v2-track fast reverse" data-marquee>
+        <span class="ds-marquee-item" style="color:var(--token-bg-dark);">Best People Stuck Doing Work A Script Could Handle</span>
+        <span class="ds-marquee-item" style="color:var(--token-bg-dark);">Customer Onboarding Delayed By Manual Handoffs</span>
+        <span class="ds-marquee-item" style="color:var(--token-bg-dark);">Reports Built Manually Every Month From Scratch</span>
+        <span class="ds-marquee-item" style="color:var(--token-bg-dark);">Critical Data Siloed Across Dozens Of Tools</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- E. Scale Entrance Demo -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Scale Entrance — Zoom-in on scroll</div>
+    <div class="anim-scale" style="
+      background:var(--token-surface-card);border:1px solid var(--token-border);padding:var(--space-2xl);
+      text-align:center;
+    ">
+      <div style="font-family:var(--font-display);font-size:clamp(40px,6vw,80px);font-weight:900;text-transform:uppercase;letter-spacing:-.04em;line-height:.9;color:var(--token-accent);margin-bottom:12px;">KYMA®</div>
+      <p style="font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:-.02em;color:var(--token-text-muted);">Scale entrance: opacity 0→1, scale 0.92→1</p>
+    </div>
+  </div>
+
+  <!-- F. Hover Playground -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Hover Playground — Micro-interactions (hover each element)</div>
+    <div style="display:flex;gap:var(--space-lg);flex-wrap:wrap;align-items:center;">
+      <button class="ds-btn ds-btn--primary" style="transition:transform .3s cubic-bezier(0.16,1,0.3,1),box-shadow .3s ease;"
+        onmouseover="this.style.transform='translateY(-3px) scale(1.03)';this.style.boxShadow='0 12px 30px rgba(209,255,0,.15)';"
+        onmouseout="this.style.transform='none';this.style.boxShadow='none';">Lift + Glow ↗</button>
+      <button class="ds-btn ds-btn--accent" style="transition:transform .2s cubic-bezier(0.16,1,0.3,1);"
+        onmouseover="this.style.transform='scale(1.06)';"
+        onmouseout="this.style.transform='none';">Scale 1.06x</button>
+      <button class="ds-btn ds-btn--outline" style="transition:all .3s ease;"
+        onmouseover="this.style.background='var(--token-accent)';this.style.color='var(--token-bg-dark)';this.style.borderColor='var(--token-accent)';"
+        onmouseout="this.style.background='transparent';this.style.color='var(--token-white)';this.style.borderColor='';">Color Fill</button>
+      <div style="
+        width:100px;height:100px;background:var(--token-surface-card);
+        border:1px solid var(--token-border);
+        display:flex;align-items:center;justify-content:center;
+        font-size:11px;color:var(--token-text-muted);text-align:center;
+        transition:all .4s cubic-bezier(0.16,1,0.3,1);cursor:pointer;
+      " onmouseover="this.style.transform='translateY(-6px) rotate(2deg)';this.style.boxShadow='0 16px 40px rgba(0,0,0,.3)';this.style.borderColor='var(--token-accent)';"
+         onmouseout="this.style.transform='none';this.style.boxShadow='none';this.style.borderColor='';">Lift +<br/>Rotate</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     §11 — ADVANCED INTERACTIONS (NEW)
+     ============================================================ -->
+<section id="advanced" class="ds-section">
+  <div class="ds-section-label anim-reveal">[11] Advanced Interactions</div>
+  <div class="ds-section-title anim-reveal">Scroll & Hover Deep-Dive</div>
+
+  <!-- G. Animated Counters -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Animated Counters — Numbers count up from 0 when scrolled into view</div>
+    <div class="anim-stagger" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-lg);">
+      <div class="anim-reveal" style="background:var(--token-surface-card);border:1px solid var(--token-border);padding:var(--space-xl);text-align:center;">
+        <div style="font-family:var(--font-display);font-size:48px;font-weight:900;letter-spacing:-.04em;color:var(--token-accent);margin-bottom:4px;">
+          <span class="counter-value" data-counter data-target="83" data-suffix="%">0%</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-text-muted);">Time Saved</div>
+      </div>
+      <div class="anim-reveal" style="background:var(--token-surface-card);border:1px solid var(--token-border);padding:var(--space-xl);text-align:center;">
+        <div style="font-family:var(--font-display);font-size:48px;font-weight:900;letter-spacing:-.04em;color:var(--token-accent);margin-bottom:4px;">
+          <span class="counter-value" data-counter data-target="245" data-suffix="K">0K</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-text-muted);">Tasks Automated</div>
+      </div>
+      <div class="anim-reveal" style="background:var(--token-surface-card);border:1px solid var(--token-border);padding:var(--space-xl);text-align:center;">
+        <div style="font-family:var(--font-display);font-size:48px;font-weight:900;letter-spacing:-.04em;color:var(--token-accent);margin-bottom:4px;">
+          <span class="counter-value" data-counter data-target="12.4" data-prefix="$" data-suffix="M" data-decimals="1">$0M</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-text-muted);">Revenue Impact</div>
+      </div>
+      <div class="anim-reveal" style="background:var(--token-surface-card);border:1px solid var(--token-border);padding:var(--space-xl);text-align:center;">
+        <div style="font-family:var(--font-display);font-size:48px;font-weight:900;letter-spacing:-.04em;color:var(--token-accent);margin-bottom:4px;">
+          <span class="counter-value" data-counter data-target="3" data-suffix="x">0x</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-text-muted);">Faster Delivery</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- H. Card Hover Glow -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Card Hover Glow — Border & shadow shift on hover (used on service/case-study cards)</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-lg);">
+      <div class="ds-card-glow anim-reveal">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+          <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1.5" stroke="#d1ff00" stroke-width="2"/></svg>
+          <span style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-accent);">AI Workflow</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">Smart Triage</div>
+        <p style="font-size:13px;color:var(--token-text-muted);line-height:140%;">Auto-classify and route incoming tasks with zero manual effort.</p>
+      </div>
+      <div class="ds-card-glow anim-reveal">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+          <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1.5" stroke="#d1ff00" stroke-width="2"/></svg>
+          <span style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-accent);">AI Workflow</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">Data Pipeline</div>
+        <p style="font-size:13px;color:var(--token-text-muted);line-height:140%;">Extract, transform, and load data across systems in real-time.</p>
+      </div>
+      <div class="ds-card-glow anim-reveal">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+          <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1.5" stroke="#d1ff00" stroke-width="2"/></svg>
+          <span style="font-family:var(--font-display);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-accent);">AI Workflow</span>
+        </div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;margin-bottom:8px;">Report Gen</div>
+        <p style="font-size:13px;color:var(--token-text-muted);line-height:140%;">Auto-generate monthly reports from raw operational data.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- I. CTA Button Glow -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">CTA Button Glow — Outer glow pulse on hover (used on primary CTAs)</div>
+    <div style="display:flex;gap:var(--space-lg);flex-wrap:wrap;align-items:center;">
+      <button class="ds-btn ds-btn--accent ds-btn-glow" style="position:relative;">Get Template ↗</button>
+      <button class="ds-btn ds-btn--accent ds-btn--pill ds-btn-glow" style="position:relative;">Start Now →</button>
+      <button class="ds-btn ds-btn--primary ds-btn-glow" style="position:relative;">See How It Works</button>
+    </div>
+  </div>
+
+  <!-- J. Footer Link Highlight -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Footer Link Highlight — Expanding background fill on hover</div>
+    <div style="background:var(--token-bg-dark);padding:var(--space-xl);border:1px solid var(--token-border);display:flex;gap:var(--space-lg);flex-wrap:wrap;">
+      <a href="#" class="ds-footer-link">Home</a>
+      <a href="#" class="ds-footer-link">About</a>
+      <a href="#" class="ds-footer-link">Services</a>
+      <a href="#" class="ds-footer-link">Case Studies</a>
+      <a href="#" class="ds-footer-link">sales@kyma.ai</a>
+    </div>
+  </div>
+
+  <!-- K. Split-Text Hover -->
+  <div style="margin-bottom:var(--space-4xl);">
+    <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Split-Text Hover — Characters wave up on hover (footer nav pattern)</div>
+    <div style="display:flex;gap:var(--space-2xl);flex-wrap:wrap;">
+      <span class="ds-split-hover" data-split-hover>HOME</span>
+      <span class="ds-split-hover" data-split-hover>ABOUT</span>
+      <span class="ds-split-hover" data-split-hover>SERVICES</span>
+      <span class="ds-split-hover" data-split-hover>CONTACT</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     §12 — DEPLOYMENT TIMELINE (NEW)
+     ============================================================ -->
+<section id="timeline" class="ds-timeline-wrapper">
+  <div class="ds-section-label anim-reveal" style="margin-left:auto;margin-right:auto;text-align:center;margin-bottom:40px;">[12] Interaction Patterns</div>
+  
+  <div class="ds-timeline-container">
+    <div style="text-align:center;margin-bottom:80px;">
+      <h2 style="font-family:var(--font-display);font-size:clamp(30px,5vw,60px);font-weight:800;text-transform:uppercase;letter-spacing:-.03em;line-height:1;margin-bottom:20px;">Lightning-quick deployment.</h2>
+      <p style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--token-text-muted);">From first call to live automation in just 6 weeks.</p>
+    </div>
+
+    <!-- The Progress Bar -->
+    <div class="ds-timeline-bar-bg">
+      <div id="timelineProgress" class="ds-timeline-bar-progress"></div>
+      <!-- Week Ticks -->
+      <div style="display:flex;justify-content:space-between;position:absolute;top:-4px;left:0;right:0;pointer-events:none;">
+        <div style="width:1px;height:10px;background:rgba(0,0,0,0.1);"></div>
+        <div style="width:1px;height:10px;background:rgba(0,0,0,0.1);"></div>
+        <div style="width:1px;height:10px;background:rgba(0,0,0,0.1);"></div>
+        <div style="width:1px;height:10px;background:rgba(0,0,0,0.1);"></div>
+        <div style="width:1px;height:10px;background:rgba(0,0,0,0.1);"></div>
+      </div>
+    </div>
+
+    <!-- The Grid -->
+    <div class="ds-timeline-grid">
+      <!-- Week 1 -->
+      <div class="ds-timeline-col is-active" data-week="1">
+        <div class="ds-timeline-week-label">
+          <div class="ds-timeline-dot"></div>
+          Week 1
+        </div>
+        <div class="ds-timeline-content">
+          <div class="ds-timeline-title">Process Audit</div>
+          <div class="ds-timeline-desc">We map your workflows, identify automation opportunities, and calculate potential ROI.</div>
+          <div class="ds-timeline-indicator"></div>
+        </div>
+      </div>
+      <!-- Week 2-3 -->
+      <div class="ds-timeline-col" data-week="2">
+        <div class="ds-timeline-week-label">
+          <div class="ds-timeline-dot"></div>
+          Week 2-3
+        </div>
+        <div class="ds-timeline-content">
+          <div class="ds-timeline-title">Solution Design</div>
+          <div class="ds-timeline-desc">Custom AI architecture tailored to your systems and requirements.</div>
+          <div class="ds-timeline-indicator"></div>
+        </div>
+      </div>
+      <!-- Week 4-5 -->
+      <div class="ds-timeline-col" data-week="3">
+        <div class="ds-timeline-week-label">
+          <div class="ds-timeline-dot"></div>
+          Week 4-5
+        </div>
+        <div class="ds-timeline-content">
+          <div class="ds-timeline-title">Build & Test</div>
+          <div class="ds-timeline-desc">Development, integration, and rigorous testing with your team.</div>
+          <div class="ds-timeline-indicator"></div>
+        </div>
+      </div>
+      <!-- Week 6 -->
+      <div class="ds-timeline-col" data-week="4">
+        <div class="ds-timeline-week-label">
+          <div class="ds-timeline-dot"></div>
+          Week 6
+        </div>
+        <div class="ds-timeline-content">
+          <div class="ds-timeline-title">Deploy and Train</div>
+          <div class="ds-timeline-desc">Launch with full team training and monitoring for seamless handoff.</div>
+          <div class="ds-timeline-indicator"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Vertical spacing for staircase -->
+    <div style="height:300px;" class="hide-mobile"></div>
+  </div>
+</section>
+<!-- ============================================================
+     §13 — CINEMATIC EFFECTS (NEW)
+     ============================================================ -->
+<section id="grain" class="ds-section">
+  <div class="ds-section-label anim-reveal">[13] Cinematic Effects</div>
+  <div class="ds-section-title anim-reveal">Film Grain & Noise</div>
+
+  <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:var(--space-3xl);align-items:start;">
+    <div>
+      <div class="ds-card-label anim-reveal" style="margin-bottom:var(--space-lg);">Global Texture Overlay</div>
+      <p style="color:var(--token-text-muted);margin-bottom:var(--space-xl);font-size:15px;line-height:1.6;">
+        Kyma uses a very subtle animated grain overlay (<code style="color:var(--token-accent);">mix-blend-mode: hard-light</code>, <code style="color:var(--token-accent);">opacity: 0.05</code>) to give the digital interface a tactile, cinematic feel. This eliminates harsh flat gradients and provides a constant sense of motion.
+      </p>
+      <button id="toggleGrainBtn" class="ds-btn ds-btn--accent ds-btn--pill" style="min-width:240px;">
+        Toggle Grain Effect: ON
+      </button>
+      <p style="font-family:monospace;font-size:11px;color:var(--token-text-muted);margin-top:12px;">
+        Pattern: main-assets/framerusercontent.com/images/kelEr6s1qyt801dQcO45jKcaNkk.gif
+      </p>
+    </div>
+
+    <!-- Comparison Boxes -->
+    <div style="display:grid;grid-template-rows:repeat(2, 1fr);gap:var(--space-md);">
+      <div style="background:var(--token-bg-dark);height:140px;display:flex;align-items:center;justify-content:center;border:1px solid var(--token-border);">
+        <span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">Over Black</span>
+      </div>
+      <div style="background:var(--token-bg-light);height:140px;display:flex;align-items:center;justify-content:center;border:1px solid var(--token-border);">
+        <span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--token-bg-dark);">Over Gray</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE GRAIN OVERLAY -->
+<div id="grainOverlay" class="ds-grain-overlay">
+  <div class="ds-grain-inner"></div>
+</div>
+
+<!-- ============================================================
+     §14 — AVATARS & SOCIAL PROOF (NEW)
+     ============================================================ -->
+<section id="avatars" class="ds-section ds-section--light">
+  <div class="ds-section-label anim-reveal">[14] UI Components</div>
+  <div class="ds-section-title anim-reveal">Avatars</div>
+
+  <div class="ds-grid">
+    <!-- Stacked Group -->
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Stacked Group</div>
+        <div class="ds-avatar-group anim-reveal" style="margin-top:20px;">
+          <div class="ds-avatar"><img src="main-assets/framerusercontent.com/images/zm8sCpFFGaO3ulGbtgBC31GhdT0.jpg" alt="Avatar 1"></div>
+          <div class="ds-avatar"><img src="main-assets/framerusercontent.com/images/rCLuWl36o96YoyYVr4wu5b5WAqI.jpg" alt="Avatar 2"></div>
+          <div class="ds-avatar"><img src="main-assets/framerusercontent.com/images/5vmJV71rPoKcBEjfsGNXDPcHTKU.jpg" alt="Avatar 3"></div>
+          <div class="ds-avatar"><img src="main-assets/framerusercontent.com/images/pze9o7MeLoMisC9Uea3h3Ks9Fw.jpg" alt="Avatar 4"></div>
+          <div class="ds-avatar ds-avatar-more">+6</div>
+        </div>
+        <p style="font-size:12px;color:var(--token-text-muted);margin-top:20px;">Overlapping "Squircle" avatars with border-light (2px) and negative margin.</p>
+      </div>
+    </div>
+
+    <!-- Labeled Avatar -->
+    <div class="ds-card">
+      <div class="ds-card-body">
+        <div class="ds-card-label">Labeled (Testimonial)</div>
+        <div class="ds-avatar-labeled anim-reveal" style="margin-top:20px;">
+          <div class="ds-avatar"><img src="main-assets/framerusercontent.com/images/zm8sCpFFGaO3ulGbtgBC31GhdT0.jpg" alt="Anders Eriksson"></div>
+          <div class="ds-avatar-info">
+            <div class="ds-avatar-name">Anders Eriksson</div>
+            <div class="ds-avatar-role">Founder & CEO</div>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--token-text-muted);margin-top:20px;">Standard testimonial pattern combining avatar with role metadata.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     §10 — STICKY PARALLAX (RECONSTRUCTED v8.0)
+     ============================================================ -->
+<section id="parallax-v2" class="parallax-timeline-wrapper">
+  <div id="stickyPanel" class="parallax-timeline-sticky">
+    <div id="timelineBg" class="parallax-timeline-bg"></div>
+    
+    <!-- Content 1: YOUR TEAM IS DROWNING -->
+    <div id="panelDrowning" class="parallax-timeline-content">
+      <div class="ds-section-label" style="position:absolute; top:40px; left:40px; color:var(--token-accent);">[10] Motion Timeline — Chaos to Clarity</div>
+      
+      <h2 id="drowningText" class="timeline-text-main">YOUR TEAM IS DROWNING IN<br/>WORK THAT SHOULDN'T EXIST.</h2>
+      
+      <!-- Ticker Matrix (Top & Bottom only) -->
+      <div id="row1" class="timeline-ticker-row row-pos-1">
+        <div class="ds-marquee-v2"><div class="ds-marquee-v2-track" data-marquee data-speed="fast">
+          <div class="ticker-item red">CUSTOMER SUPPORT BACKLOG</div><div class="ticker-item accent">ROI LEAKAGE</div>
+          <div class="ticker-item red">MANUAL DATA ENTRY</div><div class="ticker-item red">SYSTEM FRAGMENTATION</div>
+          <div class="ticker-item red">SCALING HEADCOUNT</div><div class="ticker-item accent">TIME LOSS</div>
+        </div></div>
+      </div>
+      <div id="row2" class="timeline-ticker-row row-pos-2">
+        <div class="ds-marquee-v2"><div class="ds-marquee-v2-track reverse" data-marquee>
+          <div class="ticker-item accent">REPETITIVE TASKS</div><div class="ticker-item red">BOTTLENECKS</div>
+          <div class="ticker-item red">20+ HOURS LOST</div><div class="ticker-item accent">ERROR COST</div>
+          <div class="ticker-item red">DATA SILOS</div><div class="ticker-item red">HUMAN ERROR</div>
+        </div></div>
+      </div>
+      
+      <div id="row11" class="timeline-ticker-row row-pos-11">
+        <div class="ds-marquee-v2"><div class="ds-marquee-v2-track" data-marquee data-speed="fast">
+          <div class="ticker-item red">REDUNDANT APPROVALS</div><div class="ticker-item accent">TIME LOSS</div>
+          <div class="ticker-item red">MANUAL HANDOFFS</div><div class="ticker-item red">SYNC ERRORS</div>
+          <div class="ticker-item accent">BOTTLENECKS</div><div class="ticker-item red">PROCESS DRAG</div>
+        </div></div>
+      </div>
+      <div id="row12" class="timeline-ticker-row row-pos-12">
+        <div class="ds-marquee-v2"><div class="ds-marquee-v2-track reverse" data-marquee>
+          <div class="ticker-item red">MANUAL DATA TRANSFER</div><div class="ticker-item red">LEGACY FRICTION</div>
+          <div class="ticker-item accent">SCALING BARRIER</div><div class="ticker-item red">WORKLOAD SPIKE</div>
+          <div class="ticker-item red">INEFFICIENT DEV</div><div class="ticker-item accent">TIME LOSS</div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- Content 2: AI ELIMINATES THEM ALL -->
+    <div id="panelEliminates" class="panel-phrase-2">
+      <div class="ds-section-label" style="position:absolute; top:40px; left:40px; color:rgba(255,255,255,0.4);">[10] Motion Timeline — Solution Found</div>
+      <h2 id="eliminatesText" class="timeline-text-main" style="color:var(--token-white);">AI Automation<br/>Eliminates Them All.</h2>
+      
+      <div style="position:absolute; bottom:40px; left:40px; max-width:240px; text-align:left;">
+        <div style="font-family:var(--font-display); font-size:12px; font-weight:800; text-transform:uppercase; color:var(--token-white); border-top:1px solid rgba(255,255,255,0.2); padding-top:12px;">
+          Transforming Chaos<br/>into Efficient workflows.
+        </div>
+      </div>
+      <button class="ds-btn ds-btn--accent ds-btn--pill" style="position:absolute; bottom:40px; right:40px;">Analyze ROI ↓</button>
+    </div>
+
+    <!-- Content 3: HUMANS SHOULD DO HUMAN WORK -->
+    <div id="panelHumans" class="panel-phrase-2">
+      <h2 class="timeline-text-main" style="color:var(--token-bg-dark);">Humans should do<br/>human work.</h2>
+    </div>
+
+    <!-- Content 4: AI SHOULD DO EVERYTHING ELSE -->
+    <div id="panelAI" class="panel-phrase-2">
+      <h2 class="timeline-text-main" style="color:var(--token-bg-dark);">AI should do<br/>everything else.</h2>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer style="padding:var(--space-2xl) var(--space-2xl);text-align:center;border-top:1px solid var(--token-border);">
+  <div style="font-family:var(--font-display);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:-.02em;color:var(--token-text-muted);">
+    KYMA® Design System · Extracted from kyma.framer.ai · <span style="color:var(--token-accent);">v3.0 — Progressive Scroll Animations</span>
+  </div>
+</footer>
+
+<!-- ============================================================
+     SCRIPTS — Intersection Observer, Character Split, Marquee, Lenis
+     ============================================================ -->
+<script>
+// 1. Intersection Observer — Scroll entrance for .anim-reveal and .anim-scale
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('is-visible');
+    }
+  });
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.anim-reveal, .anim-scale').forEach(el => revealObserver.observe(el));
+
+// 2. Character-Split Text Reveal
+document.querySelectorAll('.char-reveal').forEach(el => {
+  const text = el.textContent;
+  el.textContent = '';
+  [...text].forEach((char, i) => {
+    const span = document.createElement('span');
+    span.className = 'char';
+    span.textContent = char === ' ' ? '\u00A0' : char;
+    span.style.transitionDelay = `${i * 0.025}s`;
+    el.appendChild(span);
+  });
+  revealObserver.observe(el);
+});
+
+// 3. Word-Split Opacity Reveal
+document.querySelectorAll('.word-reveal').forEach(el => {
+  const words = el.textContent.trim().split(/\s+/);
+  el.textContent = '';
+  words.forEach((word, i) => {
+    const span = document.createElement('span');
+    span.className = 'word';
+    span.textContent = word;
+    span.style.transitionDelay = `${i * 0.04}s`;
+    el.appendChild(span);
+    el.appendChild(document.createTextNode(' '));
+  });
+  revealObserver.observe(el);
+});
+
+// 4. Seamless Marquee — Clone content multiple times for full coverage
+document.querySelectorAll('[data-marquee]').forEach(track => {
+  const content = track.innerHTML;
+  track.innerHTML = content + content + content + content; // 4x for safety
+  requestAnimationFrame(() => track.classList.add('running'));
+});
+
+// 5. ★ Progressive Scroll-Color Text Reveal (gray → lime → black)
+document.querySelectorAll('[data-scroll-color]').forEach(container => {
+  const text = container.textContent;
+  container.textContent = '';
+  const chars = [];
+  [...text].forEach(char => {
+    const span = document.createElement('span');
+    span.className = 'scr-char';
+    span.textContent = char === ' ' ? '\u00A0' : char;
+    container.appendChild(span);
+    chars.push(span);
+  });
+
+  function updateColors() {
+    const rect = container.getBoundingClientRect();
+    const viewH = window.innerHeight;
+    // Progress: 0 when container top hits bottom of viewport, 1 when container bottom hits top
+    const totalTravel = rect.height + viewH;
+    const scrolled = viewH - rect.top;
+    const progress = Math.max(0, Math.min(1, scrolled / totalTravel));
+
+    // Map progress to character index with a "green band" window
+    const totalChars = chars.length;
+    const bandWidth = 8; // how many chars are "active" (green) at once
+    const revealPos = progress * (totalChars + bandWidth);
+
+    chars.forEach((span, i) => {
+      span.classList.remove('state-active', 'state-done');
+      if (i < revealPos - bandWidth) {
+        span.classList.add('state-done');  // past → black
+      } else if (i < revealPos) {
+        span.classList.add('state-active'); // current → lime green
+      }
+      // else: default gray (opacity 0.15)
+    });
+    requestAnimationFrame(updateColors);
+  }
+  requestAnimationFrame(updateColors);
+});
+
+// 6. Animated Counters (count-up on scroll)
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      if (el.dataset.counted) return;
+      el.dataset.counted = 'true';
+      const target = parseFloat(el.dataset.target);
+      const prefix = el.dataset.prefix || '';
+      const suffix = el.dataset.suffix || '';
+      const decimals = parseInt(el.dataset.decimals || '0');
+      const duration = 1800;
+      const start = performance.now();
+
+      function tick(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = (target * eased).toFixed(decimals);
+        el.textContent = prefix + current + suffix;
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+  });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('[data-counter]').forEach(el => counterObserver.observe(el));
+
+// 7. Split-Text Hover (character wave)
+document.querySelectorAll('[data-split-hover]').forEach(el => {
+  const text = el.textContent;
+  el.textContent = '';
+  [...text].forEach((char, i) => {
+    const span = document.createElement('span');
+    span.className = 'sh-char';
+    span.textContent = char === ' ' ? '\u00A0' : char;
+    el.appendChild(span);
+  });
+
+  el.addEventListener('mouseenter', () => {
+    el.querySelectorAll('.sh-char').forEach((span, i) => {
+      span.style.transitionDelay = `${i * 0.03}s`;
+      span.style.transform = 'translateY(-4px)';
+    });
+  });
+  el.addEventListener('mouseleave', () => {
+    el.querySelectorAll('.sh-char').forEach((span, i) => {
+      span.style.transitionDelay = `${i * 0.02}s`;
+      span.style.transform = 'translateY(0)';
+    });
+  });
+});
+
+// 8. Deployment Timeline Progress Bar
+const timelineCols = document.querySelectorAll('.ds-timeline-col');
+const progressBar = document.getElementById('timelineProgress');
+
+timelineCols.forEach(col => {
+  col.addEventListener('mouseenter', () => {
+    // Remove active state from others
+    timelineCols.forEach(c => c.classList.remove('is-active'));
+    col.classList.add('is-active');
+    
+    // Update progress bar
+    const week = parseInt(col.dataset.week);
+    const percentage = week * 25;
+    progressBar.style.width = `${percentage}%`;
+  });
+});
+
+// 9. Film Grain Toggle
+const grainOverlay = document.getElementById('grainOverlay');
+const toggleGrainBtn = document.getElementById('toggleGrainBtn');
+let grainOn = true;
+
+if (toggleGrainBtn) {
+  toggleGrainBtn.addEventListener('click', () => {
+    grainOn = !grainOn;
+    grainOverlay.classList.toggle('ds-grain--off');
+    toggleGrainBtn.textContent = `Toggle Grain Effect: ${grainOn ? 'ON' : 'OFF'}`;
+  });
+}
+
+// 10. §10 — ADVANCED PARALLAX TIMELINE (v9.0)
+(function() {
+  const wrapper = document.getElementById('parallax-v2');
+  const drowningText = document.getElementById('drowningText');
+  const panelDrowning = document.getElementById('panelDrowning');
+  const panelEliminates = document.getElementById('panelEliminates');
+  const panelHumans = document.getElementById('panelHumans');
+  const panelAI = document.getElementById('panelAI');
+  const bgOverlay = document.getElementById('timelineBg');
+  
+  const tickerRows = Array.from(wrapper.querySelectorAll('.timeline-ticker-row'));
+
+  if (!wrapper || !drowningText) return;
+
+  // Character Splitting for Scroll Color Reveal
+  // Note: Drowning text now has a <br/>, we need to handle it.
+  const content = drowningText.innerHTML;
+  drowningText.innerHTML = '';
+  const characters = [];
+  
+  // Regex to split by chars but keep <br>
+  const parts = content.split(/(<br.*?>)/i);
+  parts.forEach(part => {
+    if (part.toLowerCase().includes('<br')) {
+      drowningText.appendChild(document.createElement('br'));
+    } else {
+      [...part].forEach(char => {
+        const span = document.createElement('span');
+        span.className = 'scroll-color-char';
+        span.textContent = char === ' ' ? '\u00A0' : char;
+        drowningText.appendChild(span);
+        characters.push(span);
+      });
+    }
+  });
+
+  function updateTimeline() {
+    const rect = wrapper.getBoundingClientRect();
+    const sectionHeight = wrapper.offsetHeight;
+    const viewHeight = window.innerHeight;
+    
+    // Progress calculation (0 to 1)
+    let p = -rect.top / (sectionHeight - viewHeight);
+    p = Math.max(0, Math.min(1, p));
+
+    // Phase Intervals (Maximized for unpolluted reading time)
+    const p1End = 0.25; // Extended Intro
+    const p2End = 0.45; // Extended Chaos Phase (Tickers)
+    const p3Start = 0.45;
+    const p3End = 0.75; // Extended AI Automation focus
+    const p4Start = 0.75;
+    const p4End = 0.92; // Humans transition
+    const p5Start = 0.92;
+
+    // --- Phase 1: Headline Reveal ---
+    const p1 = Math.min(1, p / p1End);
+    if (p < p3Start) {
+      panelDrowning.style.visibility = 'visible';
+      panelDrowning.style.opacity = 1;
+      characters.forEach((span, i) => {
+        const threshold = i / characters.length;
+        const bandWidth = 0.1; 
+        span.classList.remove('state-active', 'state-done');
+        if (p1 > threshold + bandWidth) {
+          span.classList.add('state-done');
+        } else if (p1 > threshold) {
+          span.classList.add('state-active');
+        }
+      });
+    } else {
+      panelDrowning.style.visibility = 'hidden';
+      panelDrowning.style.opacity = 0;
+    }
+
+    // --- Phase 2 (0.25 - 0.50): Tickers & Dark Transition ---
+    const p2 = Math.max(0, Math.min(1, (p - p1End) / (p2End - p1End)));
+    
+    if (p2 > 0.5) panelDrowning.classList.add('is-dark-mode');
+    else panelDrowning.classList.remove('is-dark-mode');
+
+    // Tickers delay (Aligned with Phase 2)
+    const tickerStart = 0.25;
+    const tickerEnd = 0.45;
+    const tickerStep = (tickerEnd - tickerStart) / 4;
+
+    tickerRows.forEach((row, rIdx) => {
+      const rowStart = tickerStart + (rIdx * tickerStep);
+      if (p > rowStart && p < p3End) row.classList.add('is-visible');
+      else row.classList.remove('is-visible');
+    });
+
+    // --- Phase 3 (0.45 - 0.75): AI AUTOMATION (White on Black) ---
+    if (p > p3Start && p < p4Start) {
+      const p3 = Math.min(1, (p - p3Start) / (p3End - p3Start));
+      panelEliminates.style.visibility = 'visible';
+      panelEliminates.classList.add('is-active');
+      
+      let op3 = p3;
+      if (p > p3End - 0.05) op3 = Math.max(0, 1 - (p - (p3End - 0.05)) / 0.05);
+      
+      panelEliminates.style.opacity = op3;
+      panelEliminates.style.transform = `scale(${1.03 - op3 * 0.03})`;
+    } else {
+      panelEliminates.style.visibility = 'hidden';
+      panelEliminates.classList.remove('is-active');
+      panelEliminates.style.opacity = 0;
+    }
+
+    // --- Phase 4 (0.75 - 0.92): HUMANS (Dark on Light) ---
+    if (p > p4Start && p < p5Start) {
+      const p4 = Math.min(1, (p - p4Start) / (p4End - p4Start));
+      panelHumans.style.visibility = 'visible';
+      panelHumans.classList.add('is-active');
+      let op4 = p4;
+      if (p > p4End - 0.05) op4 = Math.max(0, 1 - (p - (p4End - 0.05)) / 0.05);
+      
+      panelHumans.style.opacity = op4;
+      panelHumans.style.transform = `scale(${1.03 - op4 * 0.03})`;
+    } else {
+      panelHumans.style.visibility = 'hidden';
+      panelHumans.classList.remove('is-active');
+      panelHumans.style.opacity = 0;
+    }
+
+    // --- Phase 5 (0.92 - 1.0): AI (Dark on Light) ---
+    if (p > p5Start) {
+      const p5 = Math.min(1, (p - p5Start) / 0.08);
+      panelAI.style.visibility = 'visible';
+      panelAI.classList.add('is-active');
+      panelAI.style.opacity = p5;
+      panelAI.style.transform = `scale(${1.03 - p5 * 0.03})`;
+    } else {
+      panelAI.style.visibility = 'hidden';
+      panelAI.classList.remove('is-active');
+      panelAI.style.opacity = 0;
+    }
+
+    // --- GLOBAL BG OVERLAY CONTROLLER (Final Authority) ---
+    let finalBgOpacity = 0;
+    if (p < p1End) {
+      finalBgOpacity = 0;
+    } else if (p < p2End) {
+      finalBgOpacity = (p - p1End) / (p2End - p1End);
+    } else if (p < p3End - 0.08) {
+      finalBgOpacity = 1; // Stay black while AI Automation is visible
+    } else if (p < p3End) {
+      finalBgOpacity = 1 - (p - (p3End - 0.08)) / 0.08; // Fade to light at end of Phase 3
+    } else {
+      finalBgOpacity = 0; // Light for Phase 4 & 5
+    }
+    bgOverlay.style.opacity = finalBgOpacity;
+  }
+
+  window.addEventListener('scroll', updateTimeline);
+  window.addEventListener('resize', updateTimeline);
+  updateTimeline();
+})();
+</script>
+
+<!-- 5. Lenis Smooth Scroll (CDN — matches original site) -->
+<link rel="stylesheet" href="https://unpkg.com/lenis@1.3.19/dist/lenis.css"/>
+<script src="https://unpkg.com/lenis@1.3.19/dist/lenis.min.js"></script>
+<script>
+  const lenis = new Lenis({
+    duration: 1.2,
+    easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    touchMultiplier: 2
+  });
+  function raf(time) {
+    lenis.raf(time);
+    requestAnimationFrame(raf);
+  }
+  requestAnimationFrame(raf);
+</script>
+
+</body>
+</html>
