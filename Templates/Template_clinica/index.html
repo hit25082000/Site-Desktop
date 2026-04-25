@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html class="scroll-smooth" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    
+    <!-- SEO Meta Tags -->
+    <title>Dra. Giordana Oliveira | Odontologia Estética em Campo Grande - MS</title>
+    <meta name="description" content="Especialista em odontologia estética, lentes de contato dental e harmonização facial em Campo Grande, MS. Agende sua avaliação com a Dra. Giordana Oliveira e transforme seu sorriso.">
+    <meta name="keywords" content="Dentista Campo Grande, Odontologia Estética, Lentes de Contato Dental, Clareamento, Facetas, Harmonização Facial MS">
+    <meta name="author" content="Dra. Giordana Oliveira">
+    
+    <!-- Open Graph / Meta -->
+    <meta property="og:title" content="Dra. Giordana Oliveira | Odontologia Estética de Alta Performance">
+    <meta property="og:description" content="Transforme seu sorriso e autoestima com tratamentos personalizados em Campo Grande/MS. Lentes de contato, clareamento e muito mais.">
+    <meta property="og:type" content="website">
+    
+    <!-- Scripts & Fonts (from design system) -->
+    <script src="assets/resource_3fa48481346f.js"></script>
+    <script src="assets/iconify_654a1ef798a3.js"></script>
+    <script src="assets/lucide_latest_2eebd0ebe8c2.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-mono { font-family: 'Space Mono', monospace; }
+        
+        :root {
+            --gx-1: 6%;
+            --gx-2: 28%;
+            --gx-3: 62%;
+            --gx-4: 94%;
+            --grid-color: rgba(0, 0, 0, 0.04);
+            --beam-color: #0d9488; /* Teal 600 */
+        }
+        .grid-line-v { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--grid-color); z-index: 0; }
+        .grid-line-h { position: absolute; left: 0; right: 0; height: 1px; background: var(--grid-color); z-index: 0; }
+        
+        .marker {
+            position: absolute; width: 5px; height: 5px; background-color: #0d9488; z-index: 30;
+            opacity: 0; animation: fade-in 0.5s ease-out 1s forwards;
+        }
+
+        @keyframes reveal-up {
+            0% { clip-path: inset(100% 0 0 0); transform: translateY(20px); opacity: 0; }
+            100% { clip-path: inset(0 0 0 0); transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+        
+        .animate-reveal {
+            opacity: 0;
+            animation: reveal-up 1.0s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .scroll-reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .delay-100 { animation-delay: 0.1s; transition-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; transition-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; transition-delay: 0.3s; }
+        .delay-500 { animation-delay: 0.5s; transition-delay: 0.5s; }
+
+        @keyframes beam-h {
+            0% { left: -200px; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { left: 100%; opacity: 0; }
+        }
+        @keyframes beam-v {
+            0% { top: -200px; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .beam-h { position: absolute; height: 1px; width: 200px; background: linear-gradient(90deg, transparent, var(--beam-color), transparent); z-index: 10; opacity: 0; }
+        .beam-v { position: absolute; width: 1px; height: 200px; background: linear-gradient(180deg, transparent, var(--beam-color), transparent); z-index: 10; opacity: 0; }
+        
+        /* Floating WhatsApp */
+        .float-wa {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            bottom: 40px;
+            right: 40px;
+            background-color: #25d366;
+            color: #FFF;
+            border-radius: 50px;
+            text-align: center;
+            font-size: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+        .float-wa:hover { transform: scale(1.1); }
+        .float-wa-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: #25d366;
+            border-radius: 50px;
+            z-index: -1;
+            animation: pulse-wa 2s infinite;
+        }
+        @keyframes pulse-wa {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Parallax Work Section - Card Version */
+        .work-card {
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+            pointer-events: none;
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .work-card-inner {
+            width: 100%;
+            max-width: 440px;
+            aspect-ratio: 4/5;
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .work-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 2px;
+        }
+
+        .img-quality-boost {
+            filter: contrast(1.02) brightness(1.02);
+        }
+
+        /* Before/After Section */
+        .ba-label {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            padding: 4px 12px;
+            background: rgba(255,255,255,0.9);
+            backdrop-blur: 4px;
+            border-radius: 2px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            color: #0f172a;
+            z-index: 30;
+            text-transform: uppercase;
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        teal: { 50: '#f0fdfa', 100: '#ccfbf1', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e' },
+                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 900: '#0f172a' },
+                        emerald: { 500: '#10b981' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-white text-slate-900 min-h-screen w-full selection:bg-teal-100 selection:text-teal-900 relative overflow-x-hidden antialiased">
+
+<a href="https://wa.me/5567993446458?text=Olá,%20gostaria%20de%20agendar%20uma%20avaliação%20com%20a%20Dra.%20Giordana." target="_blank" rel="noopener noreferrer" class="float-wa">
+    <div class="float-wa-pulse"></div>
+    <span class="iconify" data-icon="mdi:whatsapp"></span>
+</a>
+
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 right-0 z-[100] bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 lg:px-[6%] h-20 flex items-center justify-between">
+    <div class="font-bold text-slate-900 tracking-tight text-xl flex items-center gap-2">
+        <span class="iconify w-6 h-6 text-teal-600" data-icon="solar:star-fall-bold-duotone"></span> 
+        Dra. Giordana Oliveira
+    </div>
+    <div class="hidden md:flex gap-8 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <a href="#sobre" class="hover:text-teal-600 transition-colors">Sobre</a>
+        <a href="#especialidades" class="hover:text-teal-600 transition-colors">Especialidades</a>
+        <a href="#portfolio" class="hover:text-teal-600 transition-colors">Resultados</a>
+        <a href="#depoimentos" class="hover:text-teal-600 transition-colors">Avaliações</a>
+    </div>
+    <a href="https://wa.me/5567993446458?text=Olá,%20gostaria%20de%20agendar%20uma%20avaliação%20com%20a%20Dra.%20Giordana." target="_blank" class="hidden md:flex items-center gap-2 text-xs font-semibold uppercase tracking-wider bg-slate-900 text-white py-2.5 px-6 rounded hover:bg-slate-800 transition-all shadow-md hover:shadow-lg">
+        Agendar Avaliação
+    </a>
+</nav>
+
+<!-- Hero Section -->
+<section class="flex flex-col lg:block lg:h-screen w-full relative pt-20">
+    <!-- Grid System -->
+    <div class="absolute inset-0 z-0 pointer-events-none hidden lg:block h-screen">
+        <div class="grid-line-v" style="left: var(--gx-1)"></div>
+        <div class="grid-line-v" style="left: var(--gx-2)">
+            <div class="beam-v" style="animation: beam-v 6s infinite 1s;"></div>
+        </div>
+        <div class="grid-line-v" style="left: var(--gx-3)">
+            <div class="beam-v" style="animation: beam-v 7s infinite 3s;"></div>
+        </div>
+        <div class="grid-line-v" style="left: var(--gx-4)"></div>
+        <div class="grid-line-h" style="top: 100px"></div>
+        <div class="grid-line-h" style="top: 40%"></div>
+        <div class="grid-line-h" style="top: 80%"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="order-1 flex flex-col lg:absolute lg:top-[15%] lg:right-[38%] lg:bottom-[10%] lg:left-[6%] lg:pr-16 z-20 pt-20 px-6 pb-12 relative justify-center lg:bg-transparent">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-100 text-teal-700 text-[10px] font-bold uppercase tracking-widest mb-6 w-fit animate-reveal">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+            </span>
+            Atendimento Exclusivo no Centro - CG/MS
+        </div>
+        
+        <h1 class="text-5xl lg:text-[4.5rem] font-semibold text-slate-900 tracking-tight leading-[1.05] lg:text-left text-left">
+            <span class="block animate-reveal delay-100">Redescubra sua</span>
+            <span class="block text-slate-400 lg:ml-[0.5em] animate-reveal delay-200">
+                autoestima
+            </span>
+            <span class="block text-teal-600 animate-reveal delay-300">
+                através do sorriso.
+            </span>
+        </h1>
+        
+        <p class="text-lg text-slate-500 font-normal leading-relaxed mt-8 max-w-lg animate-reveal delay-300">
+            Odontologia estética de alta performance em Campo Grande. Transformamos sorrisos com precisão, tecnologia e arte, devolvendo a você o prazer de sorrir.
+        </p>
+
+        <div class="flex flex-col sm:flex-row animate-reveal delay-500 mt-10 gap-x-6 gap-y-4 items-start sm:items-center">
+            <a href="https://wa.me/5567993446458?text=Olá,%20gostaria%20de%20agendar%20uma%20avaliação." target="_blank" class="bg-slate-900 text-white pl-8 pr-6 py-4 rounded font-semibold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center gap-4 group/btn shadow-lg w-full sm:w-auto justify-center">
+                Agendar Minha Avaliação
+                <div class="w-6 h-6 bg-white text-slate-900 rounded-full flex items-center justify-center group-hover/btn:scale-110 transition-transform">
+                    <span class="iconify w-3.5 h-3.5" data-icon="solar:arrow-right-linear"></span>
+                </div>
+            </a>
+            
+            <a href="#portfolio" class="group flex items-center gap-3 pl-6 pr-2 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-full transition-all shadow-sm w-full sm:w-auto justify-center">
+                <span class="text-sm font-medium text-slate-700">Ver Portfólio</span>
+                <div class="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-900 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
+                    <span class="iconify w-4 h-4" data-icon="solar:gallery-bold-duotone"></span>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Image Area Right -->
+    <div class="relative order-3 w-full lg:w-auto min-h-[60vh] lg:min-h-0 lg:absolute lg:left-[62%] lg:right-[6%] lg:top-[12vh] lg:bottom-[10%] lg:border-l lg:border-slate-100 overflow-hidden flex items-center justify-center animate-reveal delay-200 bg-slate-50/30">
+        <div class="absolute top-0 bottom-0 left-[-1px] w-[1px] overflow-hidden z-20 hidden lg:block">
+            <div class="beam-v" style="animation: beam-v 4s infinite;"></div>
+        </div>
+        <div class="hidden lg:block marker -top-[2.5px] -left-[2.5px]"></div>
+        <div class="hidden lg:block marker -bottom-[2.5px] -left-[2.5px]"></div>
+        
+        <!-- Framed Image Component to avoid low-res stretching -->
+        <div class="relative w-[90%] max-w-[480px] aspect-[3/4] rounded-sm overflow-hidden shadow-2xl border border-slate-200 group my-8 lg:my-0">
+            <img alt="Dra. Giordana Oliveira" class="group-hover:scale-105 transition-transform duration-1000 ease-out w-full h-full object-cover object-center" src="./assets/Gemini_Generated_Image_7huw1s7huw1s7huw.png"/>
+            
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent pointer-events-none"></div>
+            
+            <div class="absolute bottom-4 left-4 right-4 z-20 bg-white/95 backdrop-blur border border-slate-200 p-3 rounded-sm shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="flex -space-x-2 shrink-0">
+                        <div class="w-6 h-6 rounded-full border border-white bg-slate-200"><img src="https://i.pravatar.cc/100?img=1" class="w-full h-full rounded-full object-cover"></div>
+                        <div class="w-6 h-6 rounded-full border border-white bg-slate-200"><img src="https://i.pravatar.cc/100?img=2" class="w-full h-full rounded-full object-cover"></div>
+                        <div class="w-6 h-6 rounded-full border border-white bg-slate-200"><img src="https://i.pravatar.cc/100?img=3" class="w-full h-full rounded-full object-cover"></div>
+                    </div>
+                    <div>
+                         <div class="flex text-yellow-400">
+                            <span class="iconify w-2.5 h-2.5" data-icon="solar:star-bold"></span>
+                            <span class="iconify w-2.5 h-2.5" data-icon="solar:star-bold"></span>
+                            <span class="iconify w-2.5 h-2.5" data-icon="solar:star-bold"></span>
+                            <span class="iconify w-2.5 h-2.5" data-icon="solar:star-bold"></span>
+                            <span class="iconify w-2.5 h-2.5" data-icon="solar:star-bold"></span>
+                         </div>
+                         <p class="text-[9px] font-bold text-slate-800 uppercase tracking-widest mt-0.5">5.0 no Google</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Sobre Section -->
+<section id="sobre" class="py-24 bg-slate-50 relative border-t border-slate-100 overflow-hidden">
+    <div class="max-w-[1600px] mx-auto px-6 lg:px-[6%]">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div class="relative scroll-reveal flex justify-center lg:justify-start">
+                <!-- Size constrained inner box mapped to a gallery look -->
+                <div class="w-full max-w-[420px] aspect-[4/5] rounded-sm overflow-hidden bg-slate-200 shadow-xl border-4 border-white ring-1 ring-slate-100">
+                    <img src="./assets/Gemini_Generated_Image_k1dirgk1dirgk1di.png" alt="Dra. Giordana Oliveira" class="w-full h-full object-cover object-top grayscale-[10%] hover:grayscale-0 transition-all duration-700">
+                </div>
+                <!-- Beam Deco -->
+                <div class="absolute right-0 lg:right-6 bottom-4 lg:bottom-12 bg-white px-6 py-4 lg:p-6 shadow-xl border border-slate-100 rounded-sm scale-90 lg:scale-100 origin-bottom-right">
+                    <div class="text-4xl font-semibold text-slate-900 tracking-tight text-teal-600 mb-2">+1000</div>
+                    <p class="text-sm text-slate-500 uppercase tracking-wider font-semibold">Sorrisos <br>Transformados</p>
+                </div>
+            </div>
+            
+            <div class="scroll-reveal delay-200">
+                <p class="text-[10px] font-semibold tracking-widest text-teal-600 uppercase mb-4 font-mono">
+                    CRO/MS 00000 • Sobre a Especialista
+                </p>
+                <h2 class="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.1] mb-6">
+                    A arte e a ciência por trás do seu novo sorriso.
+                </h2>
+                <div class="w-12 h-1 bg-teal-500 mb-8"></div>
+                <p class="text-lg text-slate-500 leading-relaxed mb-6">
+                    Olá, sou a <strong>Dra. Giordana Oliveira</strong>. Minha missão é proporcionar tratamentos estéticos de altíssima qualidade que não apenas embelezam o sorriso, mas também restauram a função e a confiança de cada paciente.
+                </p>
+                <p class="text-base text-slate-500 leading-relaxed mb-8 border-l-2 border-teal-100 pl-4">
+                    Com anos de dedicação exclusiva em Odontologia Estética avançada, foco em procedimentos minimamente invasivos como lentes de contato dental, clareamento e harmonização orofacial, entregando resultados naturais e sofisticados.
+                </p>
+                
+                <a href="https://instagram.com/dentistagiordanaoliveira" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-900 hover:text-teal-600 transition-colors">
+                    <span class="iconify w-5 h-5" data-icon="mdi:instagram"></span>
+                    Siga no Instagram
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Especialidades -->
+<section id="especialidades" class="py-24 bg-white relative">
+    <div class="max-w-[1600px] mx-auto px-6 lg:px-[6%]">
+        <div class="text-center max-w-3xl mx-auto mb-16 scroll-reveal">
+            <span class="font-mono text-xs text-slate-400 uppercase tracking-widest block mb-4">Serviços Premium</span>
+            <h2 class="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight">Tratamentos de <span class="text-teal-600">Excelência</span></h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- Card 1 -->
+            <div class="group hover:bg-slate-50 transition-all duration-300 flex flex-col hover:border-teal-200 h-full border-slate-100 border rounded-sm p-10 relative bg-white overflow-hidden shadow-sm hover:shadow-md scroll-reveal delay-100">
+                <div class="h-12 w-12 bg-teal-50 rounded-lg flex items-center justify-center text-teal-600 mb-8 relative z-10 transition-transform group-hover:scale-110 group-hover:bg-teal-100">
+                    <span class="iconify w-6 h-6" data-icon="solar:star-shine-bold-duotone"></span>
+                </div>
+                <div class="relative z-10">
+                    <h3 class="text-xl font-semibold text-slate-900 mb-3 tracking-tight group-hover:text-teal-700">Lentes de Contato Dental</h3>
+                    <p class="text-sm text-slate-500 font-normal leading-relaxed">
+                        Lâminas ultrafinas de porcelana que corrigem cor, formato e alinhamento dos dentes com extrema naturalidade e durabilidade.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="group hover:bg-slate-50 transition-all duration-300 flex flex-col hover:border-teal-200 h-full border-slate-100 border rounded-sm p-10 relative bg-white overflow-hidden shadow-sm hover:shadow-md scroll-reveal delay-200">
+                <div class="h-12 w-12 bg-teal-50 rounded-lg flex items-center justify-center text-teal-600 mb-8 relative z-10 transition-transform group-hover:scale-110 group-hover:bg-teal-100">
+                    <span class="iconify w-6 h-6" data-icon="solar:magic-stick-3-bold-duotone"></span>
+                </div>
+                <div class="relative z-10">
+                    <h3 class="text-xl font-semibold text-slate-900 mb-3 tracking-tight group-hover:text-teal-700">Clareamento a Laser</h3>
+                    <p class="text-sm text-slate-500 font-normal leading-relaxed">
+                        Técnica segura e moderna para remoção de pigmentos, proporcionando dentes visivelmente mais brancos e um sorriso vibrante.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="group hover:bg-slate-50 transition-all duration-300 flex flex-col hover:border-teal-200 h-full border-slate-100 border rounded-sm p-10 relative bg-white overflow-hidden shadow-sm hover:shadow-md scroll-reveal delay-300">
+                <div class="h-12 w-12 bg-teal-50 rounded-lg flex items-center justify-center text-teal-600 mb-8 relative z-10 transition-transform group-hover:scale-110 group-hover:bg-teal-100">
+                    <span class="iconify w-6 h-6" data-icon="solar:face-scan-square-bold-duotone"></span>
+                </div>
+                <div class="relative z-10">
+                    <h3 class="text-xl font-semibold text-slate-900 mb-3 tracking-tight group-hover:text-teal-700">Harmonização Facial</h3>
+                    <p class="text-sm text-slate-500 font-normal leading-relaxed">
+                        Equilíbrio entre proporções faciais e dentárias. Inclui toxina botulínica e preenchimentos para realçar sua beleza natural.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Sticked Parallax Work -->
+<section id="parallax-work" class="relative h-[400vh] z-30 bg-slate-50 border-y border-slate-100">
+    <div class="sticky top-0 h-screen w-full overflow-hidden flex flex-col lg:flex-row items-center justify-center px-6 lg:px-[10%] gap-12 lg:gap-24">
+        
+        <!-- Text Side -->
+        <div class="relative z-20 text-left w-full lg:w-1/2 max-w-xl">
+            <span class="font-mono text-[10px] text-teal-600 uppercase tracking-widest block mb-6">Excelência Clínica</span>
+            <h2 id="work-text" class="text-4xl md:text-5xl lg:text-7xl font-bold text-slate-900 tracking-tighter uppercase leading-[0.9] transition-all duration-500">
+                Excelência em <br> 
+                <span class="text-teal-600">cada detalhe</span>
+            </h2>
+            <div class="w-16 h-1 bg-teal-500 my-8 rounded-full"></div>
+            <p id="work-subtext" class="text-lg text-slate-500 font-medium leading-relaxed max-w-md transition-all duration-500">
+                Um ambiente planejado para o seu conforto e bem-estar.
+            </p>
+
+            <!-- Custom Progress Indicator -->
+            <div class="mt-12 flex gap-4">
+                <div class="dot-container h-1 w-24 bg-slate-200 rounded-full overflow-hidden">
+                    <div id="work-progress-bar" class="h-full bg-teal-500 transition-all duration-300 w-0"></div>
+                </div>
+                <div class="text-[10px] font-bold text-slate-400 font-mono tracking-widest">
+                    0<span id="current-step">1</span> / 03
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards Side -->
+        <div class="relative w-full lg:w-1/2 h-[50vh] lg:h-[70vh] flex items-center justify-center">
+            <div id="cards-container" class="relative w-full h-full">
+                <!-- Card 1 -->
+                <div class="work-card opacity-100" id="card-1">
+                    <div class="work-card-inner">
+                        <img src="./assets/Gemini_Generated_Image_9z7v1j9z7v1j9z7v.png" class="img-quality-boost" alt="Clínica">
+                    </div>
+                </div>
+                <!-- Card 2 -->
+                <div class="work-card opacity-0 translate-y-20 scale-95" id="card-2">
+                    <div class="work-card-inner">
+                        <img src="./assets/Gemini_Generated_Image_wrfbm4wrfbm4wrfb.png" class="img-quality-boost" alt="Conforto">
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div class="work-card opacity-0 translate-y-20 scale-95" id="card-3">
+                    <div class="work-card-inner">
+                        <img src="./assets/Gemini_Generated_Image_xul3zixul3zixul3.png" class="img-quality-boost" alt="Tradição">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Before & After Sticky Section -->
+<section id="parallax-before-after" class="relative h-[300vh] z-30 bg-white border-b border-slate-100">
+    <div class="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
+        
+        <div class="max-w-[1600px] mx-auto px-6 lg:px-[6%] w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            
+            <!-- Left: Text -->
+            <div class="relative z-10 scroll-reveal">
+                <span class="font-mono text-[10px] text-teal-600 uppercase tracking-widest block mb-6">Comprovação Clínica</span>
+                <h2 class="text-4xl lg:text-6xl font-bold text-slate-900 tracking-tighter uppercase leading-[0.95] mb-8">
+                    A transformação <br>
+                    que você <br>
+                    <span class="text-teal-600">deseja.</span>
+                </h2>
+                <div class="h-[1px] w-12 bg-teal-500 mb-8"></div>
+                <p class="text-lg text-slate-500 font-medium leading-relaxed max-w-sm">
+                    Resultados reais que mostram como a odontologia de alta performance pode mudar vidas.
+                </p>
+                <div class="mt-12 flex items-center gap-4 text-slate-300">
+                    <span class="iconify w-6 h-6 animate-pulse" data-icon="solar:mouse-scroll-linear"></span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest">Role para aplicar o resultado</span>
+                </div>
+            </div>
+
+            <!-- Right: Image Stack -->
+            <div class="relative flex justify-center scroll-reveal delay-200">
+                <div class="relative w-full max-w-[540px] aspect-[4/3] rounded-sm overflow-hidden shadow-2xl border-4 border-white bg-slate-100 group">
+                    <!-- Before Image -->
+                    <div id="ba-before" class="absolute inset-0 z-10">
+                        <img src="./assets/before.png" class="w-full h-full object-cover" alt="Antes">
+                        <div class="ba-label">Antes</div>
+                    </div>
+                    <!-- After Image -->
+                    <div id="ba-after" class="absolute inset-0 z-20 opacity-0">
+                        <img src="./assets/after.png" class="w-full h-full object-cover" alt="Depois">
+                        <div class="ba-label !text-teal-600 !bg-white/95" style="left: auto; right: 24px;">Depois</div>
+                    </div>
+
+                    <!-- Overlay for better contrast on labels -->
+                    <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/10 to-transparent z-25 pointer-events-none"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Portfolio (Antes e Depois) -->
+<section id="portfolio" class="py-24 bg-slate-900 relative border-y border-slate-800">
+    <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#64748b 1px, transparent 1px); background-size: 24px 24px;"></div>
+    
+    <div class="max-w-[1600px] mx-auto px-6 lg:px-[6%] relative z-10">
+        <div class="flex flex-col md:flex-row items-end justify-between mb-16 scroll-reveal">
+            <div>
+                <span class="font-mono text-xs text-teal-400 uppercase tracking-widest block mb-4">Portfólio de Resultados</span>
+                <h2 class="text-4xl lg:text-5xl font-semibold text-white tracking-tight">O Poder de um <br/>Novo Sorriso.</h2>
+            </div>
+            <a href="https://wa.me/5567993446458" class="text-xs font-semibold uppercase tracking-wide text-teal-400 hover:text-teal-300 transition-colors flex items-center gap-1 mt-6 md:mt-0 pb-2 border-b border-teal-500/30 hover:border-teal-400">
+                Quero este resultado
+                <span class="iconify w-3.5 h-3.5" data-icon="solar:arrow-right-linear"></span>
+            </a>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Portfólio Item 1 -->
+            <div class="group relative overflow-hidden rounded-sm scroll-reveal delay-100 bg-slate-800">
+                <!-- Using placeholder medical/dental images -->
+                <div class="aspect-[16/10] overflow-hidden">
+                    <img src="./assets/lentes_contato.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Resultado de Lente de Contato">
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent opacity-80"></div>
+                <div class="absolute bottom-0 left-0 right-0 p-8">
+                    <div class="text-[10px] uppercase font-bold text-teal-400 tracking-widest mb-2 font-mono">10 Lentes de Contato Emax</div>
+                    <h3 class="text-2xl font-semibold text-white">Transformação Completa</h3>
+                </div>
+            </div>
+
+            <!-- Portfólio Item 2 -->
+            <div class="group relative overflow-hidden rounded-sm scroll-reveal delay-200 bg-slate-800">
+                <div class="aspect-[16/10] overflow-hidden">
+                    <img src="./assets/clareamento_dental.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Resultado de Clareamento">
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent opacity-80"></div>
+                <div class="absolute bottom-0 left-0 right-0 p-8">
+                    <div class="text-[10px] uppercase font-bold text-teal-400 tracking-widest mb-2 font-mono">Clareamento + Resina Composta</div>
+                    <h3 class="text-2xl font-semibold text-white">Fechamento de Diastemas</h3>
+                </div>
+            </div>
+        </div>
+        <p class="text-xs text-slate-500 text-center mt-12 font-mono uppercase tracking-widest">* Resultados reais. Imagens autorizadas pelos pacientes. A odontologia é uma ciência que não pode prometer resultados exatos para todos devido às variações biológicas.</p>
+    </div>
+</section>
+
+<!-- Prova Social (Avaliações) -->
+<section id="depoimentos" class="py-24 bg-slate-50 relative">
+    <div class="max-w-[1600px] mx-auto px-6 lg:px-[6%]">
+        <div class="text-center max-w-3xl mx-auto mb-16 scroll-reveal">
+            <span class="font-mono text-xs text-slate-400 uppercase tracking-widest block mb-4">Experiências Reais</span>
+            <h2 class="text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight">O que dizem <br>nossos pacientes</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Review 1 -->
+            <div class="bg-white p-8 rounded-sm border border-slate-200 hover:border-teal-100 hover:shadow-lg transition-all duration-300 scroll-reveal delay-100">
+                <div class="flex gap-1 text-yellow-400 mb-6">
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                </div>
+                <p class="text-base font-normal leading-relaxed mb-8 text-slate-600">
+                    "Trabalho impecável! A Dra. Giordana foi extremamente atenciosa desde a primeira avaliação. Fiz minhas lentes de contato e o resultado ficou muito natural, exatamente como eu sonhava."
+                </p>
+                <div class="flex items-center gap-4 border-t border-slate-100 pt-4">
+                    <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+                         <img src="https://i.pravatar.cc/100?img=5" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm">Mariana Costa</h4>
+                        <p class="text-xs text-slate-400">Paciente Lentes de Contato</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review 2 -->
+            <div class="bg-white p-8 rounded-sm border border-slate-200 hover:border-teal-100 hover:shadow-lg transition-all duration-300 scroll-reveal delay-200">
+                <div class="flex gap-1 text-yellow-400 mb-6">
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                </div>
+                <p class="text-base font-normal leading-relaxed mb-8 text-slate-600">
+                    "Consultório belíssimo e atendimento nota 1000. Profissional super detalhista. O clareamento a laser não doeu absolutamente nada e o tom ficou perfeito. Recomendo de olhos fechados."
+                </p>
+                <div class="flex items-center gap-4 border-t border-slate-100 pt-4">
+                    <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+                         <img src="https://i.pravatar.cc/100?img=11" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm">Rafael Oliveira</h4>
+                        <p class="text-xs text-slate-400">Paciente Clareamento</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review 3 -->
+            <div class="bg-white p-8 rounded-sm border border-slate-200 hover:border-teal-100 hover:shadow-lg transition-all duration-300 scroll-reveal delay-300">
+                <div class="flex gap-1 text-yellow-400 mb-6">
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                    <span class="iconify w-5 h-5" data-icon="solar:star-bold"></span>
+                </div>
+                <p class="text-base font-normal leading-relaxed mb-8 text-slate-600">
+                    "Mudou minha autoestima. Tinha muita vergonha de sorrir por conta de dentes desgastados. A Dra. refez meu sorriso com facetas e o ajuste foi super cuidadoso. O melhor investimento da vida."
+                </p>
+                <div class="flex items-center gap-4 border-t border-slate-100 pt-4">
+                    <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+                         <img src="https://i.pravatar.cc/100?img=9" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm">Juliana Mendes</h4>
+                        <p class="text-xs text-slate-400">Paciente Estética</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-12 text-center animate-reveal delay-500">
+            <a href="https://wa.me/5567993446458" class="inline-flex items-center gap-3 pl-8 pr-3 py-3 bg-white hover:bg-teal-50 border border-slate-200 rounded-full transition-all shadow-md group">
+                <span class="text-sm font-bold text-slate-900 group-hover:text-teal-700">Faça Parte Dessa História</span>
+                <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white group-hover:bg-teal-600 transition-colors">
+                    <span class="iconify w-5 h-5" data-icon="solar:calendar-date-bold"></span>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Localização e Contato -->
+<section class="py-24 bg-white border-t border-slate-100">
+    <div class="max-w-[1600px] mx-auto px-6 lg:px-[6%]">
+        <div class="bg-slate-900 rounded-lg overflow-hidden shadow-2xl relative">
+            <!-- Deco grid inside dark box -->
+            <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#94a3b8 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 relative z-10">
+                <div class="p-12 lg:p-20 flex flex-col justify-center">
+                    <h2 class="text-3xl lg:text-4xl font-semibold text-white tracking-tight mb-8">
+                        Pronto para transformar seu sorriso?
+                    </h2>
+                    
+                    <div class="space-y-6 mb-10 text-slate-300">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-teal-400 shrink-0">
+                                <span class="iconify w-5 h-5" data-icon="solar:map-point-bold-duotone"></span>
+                            </div>
+                            <div>
+                                <h4 class="text-white font-semibold mb-1">Localização</h4>
+                                <p class="text-sm">R. Rui Barbosa, 3682 - sala 01<br>Centro, Campo Grande - MS</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-teal-400 shrink-0">
+                                <span class="iconify w-5 h-5" data-icon="solar:clock-circle-bold-duotone"></span>
+                            </div>
+                            <div>
+                                <h4 class="text-white font-semibold mb-1">Horário de Atendimento</h4>
+                                <p class="text-sm">Segunda a Quinta: 08:00 - 18:00<br>Sexta: 08:00 - 12:00<br>Sábado: 08:00 - 11:00</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-teal-400 shrink-0">
+                                <span class="iconify w-5 h-5" data-icon="solar:phone-calling-bold-duotone"></span>
+                            </div>
+                            <div>
+                                <h4 class="text-white font-semibold mb-1">Contato Integrado</h4>
+                                <p class="text-sm border-b border-slate-700 pb-1 w-fit mb-1">(67) 99344-6458</p>
+                                <a href="https://wa.me/5567993446458" class="text-teal-400 text-sm hover:text-teal-300 inline-flex items-center gap-1 font-semibold">
+                                    Agendar via WhatsApp <span class="iconify w-3 h-3" data-icon="solar:arrow-right-linear"></span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Area -->
+                <div class="h-[400px] lg:h-auto w-full bg-slate-800 relative grayscale-[30%] hover:grayscale-0 transition-all duration-700">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d119643.0805367623!2d-54.69741088484196!3d-20.461971701389865!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9486e6443c52a0a5%3A0xe54dbddb4cc4499d!2sR.%20Rui%20Barbosa%2C%203682%20-%20Centro%2C%20Campo%20Grande%20-%20MS%2C%2079002-366!5e0!3m2!1spt-BR!2sbr!4v1713045600000!5m2!1spt-BR!2sbr" width="100%" height="100%" style="border:0; filter: brightness(0.9);" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-white border-t border-slate-100 py-12">
+    <div class="max-w-[1600px] mx-auto px-6 lg:px-[6%] flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="flex flex-col items-center md:items-start gap-2">
+            <div class="font-bold text-slate-900 tracking-tight text-xl flex items-center gap-2">
+                <span class="iconify w-5 h-5 text-teal-600" data-icon="solar:star-fall-bold-duotone"></span> 
+                Dra. Giordana Oliveira
+            </div>
+            <p class="text-xs font-mono text-slate-400">Odontologia Estética • CRO/MS 00000</p>
+        </div>
+        
+        <div class="flex justify-center gap-6 text-sm text-slate-500 font-medium">
+            <a href="#" class="hover:text-teal-600 transition-colors">Termos de Uso</a>
+            <a href="#" class="hover:text-teal-600 transition-colors">Política de Privacidade</a>
+        </div>
+        
+        <div class="text-xs text-slate-400 text-center md:text-right">
+            &copy; 2026 Dra. Giordana Oliveira.<br>Todos os direitos reservados.
+        </div>
+    </div>
+</footer>
+
+<script>
+    lucide.createIcons();
+    
+    // Intersection Observer for scroll animations
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.15
+    };
+
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            document.querySelectorAll('.scroll-reveal').forEach(el => {
+                observer.observe(el);
+            });
+        }, 100);
+
+        // Sticky Parallax Logic - Card Version
+        const workSection = document.getElementById('parallax-work');
+        const cards = [
+            document.getElementById('card-1'),
+            document.getElementById('card-2'),
+            document.getElementById('card-3')
+        ];
+        const mainText = document.getElementById('work-text');
+        const subtext = document.getElementById('work-subtext');
+        const progressBar = document.getElementById('work-progress-bar');
+        const stepDisplay = document.getElementById('current-step');
+
+        const content = [
+            { title: 'Excelência em <br> <span class="text-teal-600">cada detalhe</span>', sub: 'Um ambiente planejado para o seu conforto e bem-estar.' },
+            { title: 'Conforto e <br> <span class="text-teal-600">bem-estar</span>', sub: 'Atendimento humanizado focado na sua melhor experiência.' },
+            { title: 'Tradição e <br> <span class="text-teal-600">confiança</span>', sub: 'Anos de dedicação entregando resultados éticos e profissionais.' }
+        ];
+
+        let currentIdx = -1;
+
+        window.addEventListener('scroll', () => {
+            if (!workSection) return;
+            
+            const rect = workSection.getBoundingClientRect();
+            const viewHeight = window.innerHeight;
+            const trigger = rect.top;
+            
+            if (trigger <= 0 && rect.bottom >= 0) {
+                const totalScroll = workSection.offsetHeight - viewHeight;
+                const progress = Math.min(Math.max(-trigger / totalScroll, 0), 1);
+                
+                // Update Progress Bar
+                progressBar.style.width = `${progress * 100}%`;
+
+                // Determine active index (3 stages)
+                let activeIdx = Math.floor(progress * 3);
+                if (activeIdx > 2) activeIdx = 2;
+
+                // Update Content if changed
+                if (activeIdx !== currentIdx) {
+                    currentIdx = activeIdx;
+                    stepDisplay.innerText = activeIdx + 1;
+                    
+                    mainText.style.opacity = 0;
+                    mainText.style.transform = 'translateY(10px)';
+                    subtext.style.opacity = 0;
+                    
+                    setTimeout(() => {
+                        mainText.innerHTML = content[activeIdx].title;
+                        subtext.innerText = content[activeIdx].sub;
+                        mainText.style.opacity = 1;
+                        mainText.style.transform = 'translateY(0)';
+                        subtext.style.opacity = 1;
+                    }, 300);
+                }
+
+                // Card Reveal Animations
+                cards.forEach((card, i) => {
+                    const stageSize = 1 / 3;
+                    const start = i * stageSize;
+                    
+                    if (progress < start) {
+                        card.style.opacity = 0;
+                        card.style.transform = 'translateY(40px) scale(0.95)';
+                    } else if (progress >= start && progress < start + stageSize) {
+                        const localP = (progress - start) / stageSize;
+                        
+                        if (localP < 0.2) {
+                            const entryP = localP / 0.2;
+                            card.style.opacity = entryP;
+                            card.style.transform = `translateY(${40 * (1 - entryP)}px) scale(${0.95 + entryP * 0.05})`;
+                        } else {
+                            card.style.opacity = 1;
+                            card.style.transform = 'translateY(0) scale(1)';
+                        }
+                    } else {
+                        card.style.opacity = 0;
+                        card.style.transform = 'translateY(-40px) scale(1.05)';
+                    }
+                });
+            }
+
+            // Before & After Logic - Independent Check
+            const baSection = document.getElementById('parallax-before-after');
+            const beforeDiv = document.getElementById('ba-before');
+            const afterDiv = document.getElementById('ba-after');
+
+            if (baSection && beforeDiv && afterDiv) {
+                const baRect = baSection.getBoundingClientRect();
+                const viewHeight = window.innerHeight;
+                
+                if (baRect.top <= 0 && baRect.bottom >= 0) {
+                    const baTotalScroll = baSection.offsetHeight - viewHeight;
+                    const baProgress = Math.min(Math.max(-baRect.top / baTotalScroll, 0), 1);
+                    
+                    // Crossfade
+                    afterDiv.style.opacity = baProgress;
+                    beforeDiv.style.opacity = 1 - baProgress;
+                }
+            }
+        });
+
+        function updateDots(activeIdx) {
+            dots.forEach((dot, i) => {
+                if (i === activeIdx) {
+                    dot.style.backgroundColor = '#2dd4bf';
+                    dot.style.width = '24px';
+                } else {
+                    dot.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                    dot.style.width = '8px';
+                }
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

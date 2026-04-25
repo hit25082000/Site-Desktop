@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Pães e Algo a Mais - Padaria e Encomendas</title>
+    <meta name="description" content="O Seu Pão Quentinho às 5h da Manhã ou a Festa Perfeita no Fim de Semana. Encomenda de salgados e bolos Vila Carvalho. Pães e Algo a Mais delivery Campo Grande MS."/>
+    <meta name="keywords" content="Padaria aberta 5h Campo Grande MS, Encomenda de salgados e bolos Vila Carvalho, Pães e Algo a Mais delivery, Padaria de qualidade Campo Grande"/>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"/>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Schema Markup JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": ["Bakery", "Restaurant", "LocalBusiness"],
+          "name": "Pães e Algo a Mais",
+          "description": "De pães quentinhos à pronta-entrega a serviços de encomendas completos para festas em Campo Grande.",
+          "image": "https://paesealgoamais.com.br/assets/hero_bakery_bread_real_1776534426743.png",
+          "@id": "https://paesealgoamais.com.br/#padaria",
+          "url": "https://paesealgoamais.com.br",
+          "telephone": "+556730422291",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Av. das Bandeiras, 275",
+            "addressLocality": "Campo Grande",
+            "addressRegion": "MS",
+            "addressCountry": "BR"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": -20.4757,
+            "longitude": -54.6186
+          },
+          "openingHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+            "opens": "05:00",
+            "closes": "20:00"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.6",
+            "reviewCount": "612",
+            "bestRating": "5"
+          }
+        }
+      ]
+    }
+    </script>
+    
+    <!-- GSAP / Lenis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
+    
+    <style>
+        /* --- CORE VARS --- */
+        :root {
+            --c-bg: #FFF8E7; /* Bege Quente */
+            --c-dark: #3A2618; /* Marrom Madeira / Café */
+            --c-accent: #DDA73B; /* Amarelo Mostarda / Dourado */
+            --c-primary: #E64A19; /* Laranja Vendas / Food Alert */
+            --font-display: 'Playfair Display', serif;
+            --font-body: 'Inter', sans-serif;
+        }
+        
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-dark);
+            font-family: var(--font-body);
+            margin: 0;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        html, body { overflow-y: auto !important; scroll-behavior: smooth;}
+
+        /* --- PRELOADER (Minimalist) --- */
+        .loader {
+            position: fixed; inset: 0; background: var(--c-bg); z-index: 10000;
+            display: flex; justify-content: center; align-items: center; color: var(--c-dark);
+        }
+
+        /* --- TYPOGRAPHY --- */
+        .display { font-family: var(--font-display); }
+
+        /* --- BUTTONS --- */
+        .btn-primary {
+            background-color: var(--c-primary);
+            color: #fff;
+            padding: 14px 28px;
+            min-height: 44px; min-width: 44px; /* Hitbox Rule */
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px rgba(230, 74, 25, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(230, 74, 25, 0.6); background-color: #D84315; }
+        
+        .btn-ghost {
+            background-color: transparent;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 12px 28px;
+            min-height: 44px; min-width: 44px; /* Hitbox Rule */
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .btn-ghost:hover { background-color: #fff; color: var(--c-dark); }
+
+        .btn-outline-dark {
+            border: 2px solid var(--c-dark);
+            color: var(--c-dark);
+            padding: 10px 24px; min-height: 44px; min-width: 44px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-outline-dark:hover { background-color: var(--c-dark); color: #fff; }
+
+        /* --- STICKY CTA (Mobile First) --- */
+        .sticky-cta {
+            position: fixed;
+            bottom: 24px; left: 50%; transform: translateX(-50%);
+            z-index: 9999;
+            background-color: #25D366; color: #fff;
+            padding: 16px 32px; border-radius: 50px;
+            font-weight: 700; font-size: 1.1rem;
+            display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+            transition: all 0.3s ease;
+            width: 90%; max-width: 400px; justify-content: center;
+        }
+        .sticky-cta:hover { transform: translateX(-50%) scale(1.03); background-color: #1EBE5D; }
+
+        /* --- FORMS --- */
+        .input-field {
+            width: 100%; min-height: 44px;
+            padding: 12px 16px;
+            border: 1px solid rgba(58, 38, 24, 0.2);
+            border-radius: 8px;
+            background: #fff;
+            font-size: 1rem; color: var(--c-dark);
+            margin-bottom: 20px;
+            font-family: var(--font-body);
+        }
+        .input-field:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(230, 74, 25, 0.1); }
+
+        /* Hide elements completely for screen readers only */
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
+
+        /* Grid Image Aspect Ratio Control */
+        .aspect-box { position: relative; width: 100%; aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden; }
+        .aspect-box img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .aspect-box:hover img { transform: scale(1.05); }
+
+        /* Text Splits for GSAP */
+        .word-wrap { display: inline-block; overflow: hidden; padding-bottom: 0.1em; }
+        .word-inner { display: inline-block; transform: translateY(110%); }
+
+        /* Review Carousel */
+        .review-track { display: flex; gap: 24px; padding: 20px 0; overflow-x: auto; scroll-snap-type: x mandatory; -ms-overflow-style: none; scrollbar-width: none;}
+        .review-track::-webkit-scrollbar { display: none; }
+        .review-card { min-width: 300px; max-width: 350px; background: #fff; padding: 24px; border-radius: 12px; scroll-snap-align: start; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(58,38,24,0.05); }
+    </style>
+</head>
+<body>
+
+<!-- Hidden H1 for SEO -->
+<h1 class="sr-only">Padaria e Encomendas na Vila Carvalho, Campo Grande - Pães e Algo a Mais</h1>
+
+<!-- PRELOADER -->
+<div class="loader" id="preloader">
+    <div class="display font-bold text-3xl md:text-5xl tracking-tight text-[#3A2618] loader-text">Pães & Algo a Mais</div>
+</div>
+
+<!-- NAVIGATION -->
+<nav class="absolute top-0 w-full p-6 md:p-8 flex justify-between items-center z-50 mix-blend-difference text-white">
+    <div class="display font-bold text-xl md:text-2xl tracking-tight">Pães e Algo a Mais</div>
+    <div class="hidden md:flex gap-8 text-sm uppercase tracking-widest font-semibold">
+        <a class="hover:text-[var(--c-accent)] transition-colors" href="#vitrine">Cardápio</a>
+        <a class="hover:text-[var(--c-accent)] transition-colors" href="#encomenda">Encomendas</a>
+        <a class="hover:text-[var(--c-accent)] transition-colors" href="#local">Onde Estamos</a>
+    </div>
+</nav>
+
+<!-- WRAPPER -->
+<div class="relative z-10 bg-[var(--c-bg)] shadow-[0_20px_50px_rgba(0,0,0,0.3)] pb-24 h-auto">
+
+    <!-- SEÇÃO 1: HERO SECTION (A Regra dos 5 Segundos) -->
+    <section class="h-[90svh] min-h-[600px] relative flex flex-col justify-center items-center overflow-hidden">
+        <img src="assets/hero_bakery_bread_real_1776534426743.png" alt="Padaria Pães e Algo a Mais - Balcão com Pães" class="absolute inset-0 w-full h-full object-cover brightness-[0.4] scale-105 hero-parallax"/>
+        
+        <div class="relative z-10 text-center text-white px-6 w-full max-w-4xl mt-12">
+            <h2 class="display text-5xl md:text-7xl lg:text-8xl leading-tight font-bold mb-6 drop-shadow-lg split-target">
+                O Seu Pão Quentinho às 5h da Manhã<br/> <span class="text-[var(--c-accent)] italic">ou a Festa Perfeita.</span>
+            </h2>
+            <p class="text-lg md:text-2xl font-light mb-10 max-w-2xl mx-auto opacity-0 hero-fade drop-shadow-md">
+                Da nossa fornada na Av. das Bandeiras direto para a sua porta. Artesanal, rápido e muito prático.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 opacity-0 hero-fade">
+                <a href="https://wa.me/556730422291?text=Ol%C3%A1%2C%20queria%20pedir%20delivery%20agora!" target="_blank" class="btn-primary w-full sm:w-auto">
+                    🚀 Pedir Delivery Agora
+                </a>
+                <a href="#encomenda" class="btn-ghost w-full sm:w-auto">
+                    📅 Agendar Encomenda
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEÇÃO 2: VITRINE AUTÊNTICA -->
+    <section id="vitrine" class="py-24 px-6 md:px-12 max-w-7xl mx-auto">
+        <div class="mb-16">
+            <h2 class="text-sm uppercase tracking-widest text-[var(--c-primary)] font-bold mb-3">Cardápio Diário</h2>
+            <h3 class="display text-4xl md:text-5xl font-bold text-[var(--c-dark)] leading-tight">Nossas Especialidades:<br/>Do Café ao Almoço.</h3>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Produto 1 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-[var(--c-dark)]/5 flex flex-col">
+                <div class="aspect-box mb-4 bg-gray-100">
+                    <img src="assets/breakfast_coffee_real_1776534443716.png" alt="Café da Manhã e Pães Quentes" loading="lazy" decoding="async"/>
+                </div>
+                <div class="flex-grow">
+                    <h4 class="text-xl font-bold text-[var(--c-dark)] mb-2 display">Café & Pães Frescos</h4>
+                    <p class="text-sm text-gray-600 mb-4 line-clamp-2">Pão francês saindo a partir das 05h, café passado na hora, e salgados quentinhos para dominar o seu dia.</p>
+                </div>
+                <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                    <span class="font-bold text-lg text-[var(--c-primary)]">A partir de R$ 9,90</span>
+                    <a href="https://wa.me/556730422291?text=Quero%20pedir%20do%20Caf%C3%A9%20da%20Manh%C3%A3!" target="_blank" class="btn-outline-dark text-sm px-4 py-2">Adicionar</a>
+                </div>
+            </div>
+
+            <!-- Produto 2 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-[var(--c-dark)]/5 flex flex-col">
+                <div class="aspect-box mb-4 bg-gray-100">
+                    <img src="assets/lunch_buffet_real_1776534460573.png" alt="Almoço Caseiro Brasileiro" loading="lazy" decoding="async"/>
+                </div>
+                <div class="flex-grow">
+                    <h4 class="text-xl font-bold text-[var(--c-dark)] mb-2 display">Almoço Caseiro (Executivo)</h4>
+                    <p class="text-sm text-gray-600 mb-4 line-clamp-2">O autêntico sabor brasileiro com ingredientes fartos. Marmitéx e Self-Service de excelência, servido com rapidez.</p>
+                </div>
+                <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                    <span class="font-bold text-lg text-[var(--c-primary)]">Sob Consulta</span>
+                    <a href="https://wa.me/556730422291?text=Gostaria%20de%20pedir%20um%20Almo%C3%A7o!" target="_blank" class="btn-outline-dark text-sm px-4 py-2">Adicionar</a>
+                </div>
+            </div>
+
+            <!-- Produto 3 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-[var(--c-dark)]/5 flex flex-col">
+                <div class="aspect-box mb-4 bg-gray-100">
+                    <img src="assets/party_cakes_real_1776534479750.png" alt="Bolos e Salgados para Festa" loading="lazy" decoding="async"/>
+                </div>
+                <div class="flex-grow">
+                    <h4 class="text-xl font-bold text-[var(--c-dark)] mb-2 display">Bolos e Salgados (Festa)</h4>
+                    <p class="text-sm text-gray-600 mb-4 line-clamp-2">Coxinhas, empadas, docinhos e bolos macios que roubam a cena de qualquer aniversário ou reunião.</p>
+                </div>
+                <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                    <span class="font-bold text-lg text-[var(--c-primary)]">Montar Combo</span>
+                    <a href="#encomenda" class="btn-outline-dark text-sm px-4 py-2 bg-[var(--c-dark)] text-white">Agendar</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEÇÃO 3: HUB DE ENCOMENDAS (Fricção Zero) -->
+    <section id="encomenda" class="py-24 bg-[#2D1D12] text-[#FFF8E7] px-6 lg:px-0">
+        <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+            
+            <div class="order-2 lg:order-1">
+                <div class="bg-[#FFF8E7] p-8 md:p-12 rounded-2xl shadow-2xl relative">
+                    <!-- Decor Detail -->
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-[var(--c-primary)] opacity-10 rounded-bl-full pointer-events-none"></div>
+
+                    <h3 class="display text-3xl font-bold text-[var(--c-dark)] mb-6">Monte o seu pedido</h3>
+                    
+                    <form id="encomendaForm" onsubmit="enviarEncomenda(event)">
+                        <label class="block text-sm font-semibold text-[var(--c-dark)] mb-2">Seu Nome Completo</label>
+                        <input type="text" id="fnome" required placeholder="Como podemos te chamar?" class="input-field"/>
+
+                        <label class="block text-sm font-semibold text-[var(--c-dark)] mb-2">Data e Hora de Retirada/Entrega</label>
+                        <input type="datetime-local" id="fdata" required class="input-field"/>
+
+                        <label class="block text-sm font-semibold text-[var(--c-dark)] mb-2">O Que Você Precisa? (Ex: 100 Salgados + 1 Bolo)</label>
+                        <textarea id="fpedido" rows="3" required placeholder="Descreva os itens do seu evento..." class="input-field max-h-32 min-h-[44px]"></textarea>
+                        
+                        <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl mb-6">
+                            <div class="flex items-center gap-3 mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                <span class="font-bold text-sm text-[var(--c-dark)]">Pagamento 100% Seguro</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-3">O pagamento será realizado via PIX/Cartão diretamente com nosso atendimento no momento da confirmação do seu agendamento no WhatsApp.</p>
+                            <div class="flex gap-4 items-center opacity-70">
+                                <!-- PIX Icon Dummy Vector -->
+                                <span class="font-bold text-[#32BCAD] text-sm tracking-tighter">❖ PIX</span>
+                                <span class="font-bold text-gray-800 text-sm italic">Visa</span>
+                                <span class="font-bold text-red-600 text-sm italic">MasterCard</span>
+                                <span class="text-gray-400 text-xs ml-auto">SSL Insured</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary w-full text-lg">
+                            ✅ Confirmar Encomenda
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="order-1 lg:order-2 space-y-6">
+                <h2 class="text-sm uppercase tracking-widest text-[var(--c-accent)] font-bold mb-2">Ansiedade Zero</h2>
+                <h3 class="display text-4xl md:text-6xl font-bold leading-tight">Sua Encomenda Perfeita em 3 Passos.</h3>
+                <ol class="space-y-6 mt-8 font-light text-lg opacity-90">
+                    <li class="flex gap-4 items-start">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--c-accent)] text-[#2D1D12] flex items-center justify-center font-bold">1</span>
+                        <p><strong>Preencha o Formulário:</strong> Sem burocracia, diga o que precisa e quando.</p>
+                    </li>
+                    <li class="flex gap-4 items-start">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--c-accent)] text-[#2D1D12] flex items-center justify-center font-bold">2</span>
+                        <p><strong>Aprovação Rápida:</strong> Nós recebemos seu pedido diretamente no balcão de produção.</p>
+                    </li>
+                    <li class="flex gap-4 items-start">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--c-accent)] text-[#2D1D12] flex items-center justify-center font-bold">3</span>
+                        <p><strong>Pague com Segurança:</strong> Confirme tudo conosco e retire as fornadas deliciosas na hora exata.</p>
+                    </li>
+                </ol>
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- SEÇÃO 4: AUTORIDADE E PROVA SOCIAL -->
+    <section class="py-24 bg-[#FAF7F0] overflow-hidden px-6 lg:px-12">
+        <div class="max-w-7xl mx-auto mb-12 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between">
+            <div>
+                <h2 class="display text-4xl md:text-5xl font-bold text-[var(--c-dark)] leading-tight mb-4">Quem Experimenta, Confia.</h2>
+                <div class="flex items-center justify-center md:justify-start gap-2 text-xl font-bold text-[var(--c-dark)]">
+                    <span class="text-[#FFB400] text-2xl">★★★★★</span>
+                    <span>4.6</span>
+                </div>
+                <p class="text-sm text-gray-500 mt-1">Baseado em +600 avaliações no Google da Vila Carvalho</p>
+            </div>
+            <div class="hidden md:block">
+                <a href="https://maps.app.goo.gl/UoexTYnngR3FuEEJA" target="_blank" class="text-sm font-semibold text-[var(--c-primary)] underline">Deixar uma avaliação →</a>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto">
+            <div class="review-track text-[var(--c-dark)]">
+                <!-- Review 1 -->
+                <div class="review-card flex-shrink-0">
+                    <div class="flex items-center gap-1 mb-3 text-[#FFB400] text-sm">★★★★★</div>
+                    <p class="font-medium mb-4">"Aberto cedo, excelente atendimento, comida muito boa (os salgados são enormes!), preço justo. Farto."</p>
+                    <p class="text-xs uppercase font-bold text-gray-400">— Cliente Local</p>
+                </div>
+                <!-- Review 2 -->
+                <div class="review-card flex-shrink-0">
+                    <div class="flex items-center gap-1 mb-3 text-[#FFB400] text-sm">★★★★★</div>
+                    <p class="font-medium mb-4">"Marmita top! Arroz soltinho, mistura excelente e chega quentinha. Sempre peço no almoço do trabalho."</p>
+                    <p class="text-xs uppercase font-bold text-gray-400">— J. Fernandes</p>
+                </div>
+                <!-- Review 3 -->
+                <div class="review-card flex-shrink-0">
+                    <div class="flex items-center gap-1 mb-3 text-[#FFB400] text-sm">★★★★☆</div>
+                    <p class="font-medium mb-4">"Fiz encomenda para a festa do meu sobrinho. Pontualidade maravilhosa e os bolos são fantásticos. Confio de olhos fechados."</p>
+                    <p class="text-xs uppercase font-bold text-gray-400">— M. Silva</p>
+                </div>
+                <!-- Review 4 -->
+                <div class="review-card flex-shrink-0">
+                    <div class="flex items-center gap-1 mb-3 text-[#FFB400] text-sm">★★★★★</div>
+                    <p class="font-medium mb-4">"Atendimento rápido. Às 5h da manhã já sai aquele pãozinho. Não troco a Pães e Algo a Mais por nenhuma outra na região."</p>
+                    <p class="text-xs uppercase font-bold text-gray-400">— Carlos Ed.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- FOOTER LOCAL INSTITUCIONAL -->
+<footer id="local" class="py-20 bg-[var(--c-dark)] text-white px-6">
+    <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+        
+        <div class="space-y-6">
+            <div class="display font-bold text-3xl mb-8">Pães e Algo a Mais</div>
+            <p class="text-lg opacity-90 mb-4">A sua padaria parceira para todas as horas. Aberta todos os dias, servindo com abundância e tradição.</p>
+            
+            <div class="space-y-4 font-light opacity-80">
+                <div class="flex items-center gap-3">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <span>Av. das Bandeiras, 275 - Vila Carvalho, Campo Grande - MS</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    <span>Todos os dias a partir das as 05:00 até 20:00</span>
+                </div>
+                <div class="flex items-center gap-3 text-[var(--c-accent)] font-semibold mt-4">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <a href="tel:+556730422291">(67) 3042-2291</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full h-[300px] border border-white/10 rounded-xl overflow-hidden bg-gray-800">
+            <!-- Google Maps Static iFrame -->
+            <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1869.605658602796!2d-54.6190807!3d-20.4756598!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9486e667aaaaaaab%3A0xc62b4b445585b0d0!2sPaes%20E%20Algo%20A%20Mais!5e0!3m2!1spt-BR!2sbr!4v1713463999999!5m2!1spt-BR!2sbr" 
+                width="100%" 
+                height="100%" 
+                style="border:0;" 
+                allowfullscreen="" 
+                loading="lazy" 
+                referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+        </div>
+
+    </div>
+    <div class="text-center mt-16 text-xs uppercase tracking-widest text-white/30">
+        © 2026 Pães e Algo a Mais. Desenvolvido para Alta Conversão.
+    </div>
+</footer>
+
+<!-- OMNIPRESENT CTA BUTTON -->
+<a href="https://wa.me/556730422291" target="_blank" class="sticky-cta">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+    Contato WhatsApp
+</a>
+
+<!-- SCRIPTS DE FUNCIONALIDADES -->
+<script>
+    // Fechar Preloader
+    window.addEventListener("load", () => {
+        const loader = document.getElementById('preloader');
+        gsap.to(loader, { opacity: 0, duration: 0.8, ease: "power2.inOut", onComplete: () => loader.style.display = 'none' });
+
+        // Split Texts animation
+        document.querySelectorAll('.split-target').forEach(el => {
+            const text = el.innerHTML;
+            // Simple split for demo purposes - wrapping lines
+            if(!el.classList.contains('processed')){
+                el.classList.add('processed');
+                // Trigger Hero fades
+                gsap.to('.hero-fade', { opacity: 1, y: 0, duration: 1, delay: 0.3, stagger: 0.2, ease: "power3.out" });
+                gsap.from(el, { opacity:0, y: 30, duration:1, delay:0.1, ease:"power3.out" });
+            }
+        });
+    });
+
+    // Animação Parallax Hero
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.to(".hero-parallax", {
+        yPercent: 30,
+        ease: "none",
+        scrollTrigger: { trigger: ".hero-parallax", start: "top top", end: "bottom top", scrub: true }
+    });
+
+    // Envio do Formulário para WhatsApp
+    function enviarEncomenda(e) {
+        e.preventDefault();
+        
+        const nome = document.getElementById('fnome').value;
+        const data = document.getElementById('fdata').value;
+        const pedido = document.getElementById('fpedido').value;
+
+        // Formatação simples de data para visualização (DD/MM/YYYY HH:MM)
+        const dateObj = new Date(data);
+        const dataFormatada = dateObj.toLocaleString('pt-BR');
+
+        const msg = `*RESUMO DA ENCOMENDA* 📦🎂\n\n` +
+                    `*Nome:* ${nome}\n` +
+                    `*Agendamento para:* ${dataFormatada}\n` +
+                    `*Descrição do Pedido:* ${pedido}\n\n` +
+                    `_Quero confirmar a disponibilidade e receber o Link de Pagamento Seguros._`;
+        
+        const urlParams = encodeURIComponent(msg);
+        window.open(`https://wa.me/556730422291?text=${urlParams}`, '_blank');
+    }
+</script>
+
+</body>
+</html>
