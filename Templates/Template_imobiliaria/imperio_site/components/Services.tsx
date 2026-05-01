@@ -7,31 +7,31 @@ import Image from "next/image";
 const servicos = [
   {
     id: "01",
-    title: "Aprovação de Crédito",
-    desc: "Análise técnica rigorosa do perfil financeiro para garantir as melhores taxas junto aos maiores bancos (Caixa, BB, Itaú, Bradesco).",
-    location: "Assessoria Bancária",
-    img: "/service.png",
+    title: "Imóveis em Destaque",
+    desc: "Seleção visual dos principais imóveis para quem quer conhecer opções sem perder tempo.",
+    location: "Apresentação",
+    img: "/service-1.png",
   },
   {
     id: "02",
-    title: "Uso do FGTS",
-    desc: "Consultoria estratégica para utilização do saldo de FGTS na entrada ou amortização do financiamento, seguindo as normas vigentes do governo.",
-    location: "Estratégia Financeira",
-    img: "/hero.png", // Reusing for placeholder feel but with context
+    title: "Detalhes do Imóvel",
+    desc: "Informações objetivas sobre o ambiente, acabamento e proposta do imóvel.",
+    location: "Informação",
+    img: "/service-2.png",
   },
   {
     id: "03",
-    title: "Minha Casa Minha Vida",
-    desc: "Especialistas no programa habitacional do Governo Federal, garantindo subsídios máximos e menores juros do mercado.",
-    location: "Subsídios Federais",
-    img: "/service.png",
+    title: "Agendar Visita",
+    desc: "Fluxo direto para quem já quer ver o imóvel presencialmente e tirar dúvidas pelo WhatsApp.",
+    location: "Contato",
+    img: "/service-3.png",
   },
   {
     id: "04",
-    title: "Regularização Jurídica",
-    desc: "Assessoria completa para regularização de imóveis, escrituras, ITBI e toda a burocracia documental para viabilizar a transação.",
-    location: "Legal & Compliance",
-    img: "/hero.png",
+    title: "Fechamento",
+    desc: "Atendimento rápido para avançar do interesse à visita e à proposta.",
+    location: "Fechamento",
+    img: "/service-4.png",
   },
 ];
 
@@ -54,11 +54,11 @@ export default function Services() {
       <div className="px-6 md:px-20 max-w-[1400px] mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-end mb-20">
           <div className="max-w-xl">
-            <div className="text-[10px] uppercase tracking-[0.5em] text-black/30 mb-6">02 / Áreas de Atuação</div>
-            <h2 className="display text-5xl md:text-7xl tracking-tighter mix-blend-difference">Nossas <br/><span className="text-gray-400">Soluções</span></h2>
+            <div className="text-[10px] uppercase tracking-[0.5em] text-black/30 mb-6">02 / Imóveis em Evidência</div>
+            <h2 className="display text-5xl md:text-7xl tracking-tighter mix-blend-difference">Conheça os <br/><span className="text-gray-400">Imóveis</span></h2>
           </div>
           <p className="text-xs uppercase tracking-[0.3em] font-light max-w-xs text-right hidden md:block opacity-60">
-            Acompanhamento técnico do início ao fim do processo habitacional.
+            Uma apresentação pensada para despertar interesse e gerar visita.
           </p>
         </div>
 

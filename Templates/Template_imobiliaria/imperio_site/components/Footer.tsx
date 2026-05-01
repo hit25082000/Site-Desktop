@@ -1,6 +1,5 @@
 import React from "react";
-import Image from "next/image";
-import { Mail, Phone, MapPin, Camera, Clock } from "lucide-react";
+import { Mail, Phone, MapPin, Camera } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -9,33 +8,26 @@ export default function Footer() {
         
         {/* Brand & Address */}
         <div className="md:col-span-4">
-          <div className="relative w-48 h-20 mb-6">
-            <Image 
-              src="/logo.png" 
-              alt="Império Logo" 
-              fill 
-              className="object-contain object-left"
-            />
-          </div>
-          <div className="text-[10px] uppercase tracking-widest text-white/30 mb-8">Consultoria Habitacional — CRECI 9384 J</div>
+          <div className="display text-3xl tracking-tight uppercase mb-6">Capta Imóveis</div>
+          <div className="text-[10px] uppercase tracking-widest text-white/30 mb-8">Imóveis à venda e visita agendada pelo WhatsApp</div>
           <p className="text-white/40 font-light text-sm max-w-xs leading-relaxed mb-8">
-            Referência em inteligência habitacional em Mato Grosso do Sul. Segurança jurídica e técnica para o seu maior patrimônio.
+            Página de atendimento para mostrar imóveis, responder dúvidas e conduzir o interessado até a visita.
           </p>
           <div className="space-y-4">
              <div className="flex items-start gap-4 group">
                <MapPin className="text-white/30 group-hover:text-white transition-colors" size={18} />
                <span className="text-xs font-light leading-relaxed">
-                 R. Joaquim Távora, 35 - Centro<br/>
-                 Campo Grande - MS, 79002-076
+                 Av. Central, 1000<br/>
+                 Sua Cidade - BR, 00000-000
                </span>
              </div>
              <div className="flex items-center gap-4 group">
                <Phone className="text-white/30 group-hover:text-white transition-colors" size={18} />
-               <span className="text-xs font-light">+55 67 3045-0333</span>
+               <span className="text-xs font-light">+55 11 99999-9999</span>
              </div>
              <div className="flex items-center gap-4 group">
                <Mail className="text-white/30 group-hover:text-white transition-colors" size={18} />
-               <span className="text-xs font-light">contato@imperioconsultoria.ms</span>
+               <span className="text-xs font-light">contato@captaimoveis.com.br</span>
              </div>
           </div>
         </div>
@@ -55,7 +47,7 @@ export default function Footer() {
           </div>
           <div className="mt-8">
              <a href="https://www.instagram.com" className="flex items-center gap-2 text-xs uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-               <Camera size={16} /> @imperioconsultoria.ms
+               <Camera size={16} /> @captaimoveis
              </a>
           </div>
         </div>
@@ -71,7 +63,7 @@ export default function Footer() {
           
           <div className="mt-12 p-6 border border-white/10 bg-white/5 flex flex-col gap-4">
              <div className="text-[9px] uppercase tracking-[0.3em] opacity-40">Área do Cliente</div>
-             <p className="text-[11px] font-light text-white/60">Acompanhe seu processo de financiamento em tempo real.</p>
+             <p className="text-[11px] font-light text-white/60">Acompanhe seus imóveis, visitas e respostas em tempo real.</p>
              <button className="text-[10px] bg-white text-black py-2 px-4 font-bold tracking-widest hover:bg-gray-300 transition-colors">ENTRAR NO PAINEL</button>
           </div>
         </div>
@@ -80,7 +72,7 @@ export default function Footer() {
 
       <div className="max-w-[1400px] mx-auto mt-24 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="text-[10px] uppercase tracking-widest opacity-20">
-          © 2026 Império Consultoria Habitacional — Todos os direitos reservados.
+          © 2026 Capta Imóveis — Todos os direitos reservados.
         </div>
         <div className="text-[10px] uppercase tracking-widest opacity-20">
           Desenvolvido por Antigravity

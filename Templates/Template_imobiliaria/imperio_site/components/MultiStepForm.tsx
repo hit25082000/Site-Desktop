@@ -7,27 +7,27 @@ import { Check, ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
 const steps = [
   {
     id: "scenário",
-    question: "Qual o seu objetivo principal?",
-    options: ["Comprar primeiro imóvel", "Sair do Aluguel", "Investimento", "Regularizar Imóvel"],
+    question: "O que você procura?",
+    options: ["Comprar um imóvel", "Agendar uma visita", "Ver outras opções", "Falar com corretor"],
   },
   {
     id: "income",
-    question: "Qual a sua renda familiar mensal aproximada?",
+    question: "Qual faixa de investimento faz sentido para você?",
     options: ["Até R$ 3.000", "R$ 3.000 a R$ 6.000", "R$ 6.000 a R$ 10.000", "Acima de R$ 10.000"],
   },
   {
     id: "fgts",
-    question: "Possui FGTS acumulado há mais de 3 anos?",
+    question: "Você já escolheu um bairro ou região?",
     options: ["Sim", "Não"],
   },
   {
     id: "property_value",
-    question: "Qual o valor aproximado do imóvel que deseja?",
+    question: "Qual tipo de imóvel você procura?",
     options: ["Até R$ 200 mil", "R$ 200 mil a R$ 400 mil", "R$ 400 mil a R$ 700 mil", "Acima de R$ 700 mil"],
   },
   {
     id: "contact",
-    question: "Para quem enviamos o resultado da análise?",
+    question: "Para quem enviamos as opções e a visita?",
     isFinal: true,
   },
 ];
@@ -59,9 +59,9 @@ export default function MultiStepForm() {
     <section id="triagem" className="py-24 px-6 md:px-20 bg-[var(--c-dark)] text-white">
       <div className="max-w-4xl mx-auto">
         <div className="mb-12">
-          <div className="text-[10px] uppercase tracking-[0.5em] text-white/50 mb-4">01 / Triagem e Viabilidade</div>
-          <h2 className="display text-4xl md:text-5xl tracking-tighter">Simulador de <span className="text-gray-500 italic">Crédito</span></h2>
-          <p className="mt-4 text-white/40 font-light max-w-lg">Responda 4 perguntas rápidas para receber uma análise preliminar de viabilidade bancária.</p>
+          <div className="text-[10px] uppercase tracking-[0.5em] text-white/50 mb-4">01 / Interesse e Visita</div>
+          <h2 className="display text-4xl md:text-5xl tracking-tighter">Encontre o <span className="text-gray-500 italic">imóvel certo</span></h2>
+          <p className="mt-4 text-white/40 font-light max-w-lg">Responda 4 perguntas rápidas para receber as opções mais aderentes e seguir para o WhatsApp.</p>
         </div>
 
         <div className="bg-[#1a1a1a] p-8 md:p-12 border border-white/5 relative overflow-hidden min-h-[400px] flex flex-col justify-center">
@@ -112,7 +112,7 @@ export default function MultiStepForm() {
                       disabled={isSubmitting}
                       className="w-full mt-10 py-6 bg-white text-black display text-[10px] tracking-widest hover:bg-[#E3E1DC] transition-colors flex justify-center items-center gap-4"
                     >
-                      {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : "ENVIAR PARA ANÁLISE TÉCNICA"}
+                      {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : "RECEBER OPÇÕES"}
                     </button>
                     <p className="text-[9px] text-white/30 uppercase tracking-widest text-center mt-4">
                       Ao enviar, você concorda com nossos termos de privacidade (LGPD).
@@ -142,7 +142,7 @@ export default function MultiStepForm() {
                 </div>
                 <h3 className="display text-3xl mb-4">SOLICITAÇÃO ENVIADA</h3>
                 <p className="text-white/50 font-light max-w-sm mx-auto">
-                  Um de nossos consultores técnicos entrará em contato via WhatsApp nas próximas 24h para apresentar os cenários de viabilidade.
+                  Um corretor entrará em contato via WhatsApp nas próximas 24h com opções de imóvel e visita.
                 </p>
                 <button
                    onClick={() => setIsDone(false)}

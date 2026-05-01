@@ -16,12 +16,13 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Império Consultoria Habitacional | Especialistas em Financiamento e FGTS",
-  description: "Consultoria técnica especializada em processos bancários, FGTS e financiamentos habitacionais em Campo Grande - MS. Segurança e agilidade na sua conquista.",
-  keywords: "consultoria habitacional, financiamento caixa, fgts, aprovação de crédito, campo grande ms, império consultoria",
+  metadataBase: new URL("https://capta-imoveis.vercel.app"),
+  title: "Capta Imóveis | Imóveis à venda e visitas pelo WhatsApp",
+  description: "Página de corretor imobiliário para captar interessados em comprar imóvel, pedir informações e agendar visita pelo WhatsApp.",
+  keywords: "corretor imobiliário, imóveis à venda, agendar visita, whatsapp imobiliário, comprar imóvel",
   openGraph: {
-    title: "Império Consultoria Habitacional",
-    description: "Sua aprovação de crédito imobiliário sem burocracia.",
+    title: "Capta Imóveis",
+    description: "Encontre imóveis, peça informações e agende visita pelo WhatsApp.",
     images: [{ url: '/hero.png' }],
   },
 };
@@ -37,28 +38,27 @@ export default function RootLayout({
         <div className="noise-overlay"></div>
         {children}
         
-        {/* Local Business Schema */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "FinancialService",
-              "name": "Império Consultoria Habitacional",
+              "@type": "RealEstateAgent",
+              "name": "Capta Imóveis",
               "address": {
                 "@type": "PostalAddress",
-                "streetAddress": "R. Joaquim Távora, 35 - Centro",
-                "addressLocality": "Campo Grande",
-                "addressRegion": "MS",
-                "postalCode": "79002-076",
+                "streetAddress": "Av. Central, 1000",
+                "addressLocality": "Sua Cidade",
+                "addressRegion": "BR",
+                "postalCode": "00000-000",
                 "addressCountry": "BR"
               },
-              "telephone": "+55 67 3045-0333",
+              "telephone": "+55 11 99999-9999",
               "openingHours": [
                 "Mo-Fr 08:00-17:30",
                 "Sa 09:00-13:00"
               ],
-              "url": "https://imperioconsultoria.com.br"
+              "url": "https://capta-imoveis.vercel.app"
             })
           }}
         />

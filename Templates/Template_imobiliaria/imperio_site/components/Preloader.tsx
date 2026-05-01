@@ -25,7 +25,7 @@ export default function Preloader() {
   return (
     <div className="loader-container fixed inset-0 bg-[#121212] z-[10000] flex flex-col justify-center items-center overflow-hidden">
       <div className="loader-text display text-white text-[5vw] font-bold tracking-tighter mix-blend-difference">
-        IMPÉRIO
+        CAPTA
       </div>
       <div className="absolute bottom-0 left-0 h-1 bg-white loader-bar w-0" />
     </div>

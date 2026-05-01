@@ -22,14 +22,14 @@ export default function Home() {
       <section className="py-24 px-6 md:px-20 max-w-[1400px] mx-auto border-b border-black/5">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-baseline">
           <div className="md:col-span-4 text-[10px] uppercase tracking-[0.5em] text-black/30">
-            Autoridade Técnica
+            Imóveis e visitas
           </div>
           <div className="md:col-span-8">
              <h2 className="display text-3xl md:text-5xl leading-tight tracking-tighter">
-               Mais do que crédito, entregamos a <span className="italic text-gray-400">segurança</span> de um processo habitacional livre de burocracia.
+               Uma página de corretor para atrair quem quer <span className="italic text-gray-400">comprar um imóvel</span> e falar no WhatsApp.
              </h2>
              <p className="mt-8 text-lg font-light text-black/60 leading-relaxed max-w-2xl">
-               Na Império Consultoria, transformamos a complexidade dos processos bancários em um caminho claro e seguro para a sua conquista. Especialistas em Financiamento, FGTS e Regularização.
+               O foco é apresentação dos imóveis, resposta rápida e agendamento de visita com quem já tem intenção real de comprar.
              </p>
           </div>
         </div>
@@ -42,20 +42,20 @@ export default function Home() {
         <div className="max-w-[1400px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
             <div>
-               <div className="text-[10px] uppercase tracking-[0.5em] text-black/30 mb-8">Prova Social</div>
-               <h2 className="display text-4xl leading-tight tracking-tighter mb-8">O que dizem as famílias que <span className="italic text-gray-400">confiaram</span> no Império.</h2>
+               <div className="text-[10px] uppercase tracking-[0.5em] text-black/30 mb-8">Visitas e interesse</div>
+               <h2 className="display text-4xl leading-tight tracking-tighter mb-8">Quem procura imóvel quer resposta rápida e <span className="italic text-gray-400">visita bem agendada</span>.</h2>
             </div>
             <div className="space-y-12">
                {[
                  { 
-                   text: "A equipe do Império resolveu meu financiamento que estava travado há 3 meses em outro banco. Em 15 dias meu crédito estava aprovado na Caixa.",
-                   author: "Marcos Oliveira",
-                   role: "Proprietário Residencial"
+                   text: "Depois que a página entrou no ar, os contatos passaram a perguntar preço, localização e disponibilidade para visita sem enrolação.",
+                   author: "Marina Costa",
+                   role: "Interessada em comprar"
                  },
                  { 
-                   text: "Todo mundo dizia que eu não conseguiria usar meu FGTS daquela forma. A consultoria técnica deles me mostrou o caminho legal e hoje estou na minha casa.",
-                   author: "Ana Julia Silva",
-                   role: "Primeiro Imóvel"
+                   text: "Eu vi o imóvel, tirei dúvidas no WhatsApp e já saí com a visita marcada para o dia seguinte.",
+                   author: "Lucas Almeida",
+                   role: "Comprador em busca ativa"
                  }
                ].map((t, i) => (
                  <div key={i} className="border-l border-black/10 pl-8">
@@ -72,15 +72,15 @@ export default function Home() {
       {/* How it Works / Process */}
       <section id="como-funciona" className="py-24 px-6 md:px-20 bg-[var(--c-dark)] text-white">
         <div className="max-w-[1400px] mx-auto">
-          <div className="text-[10px] uppercase tracking-[0.5em] text-white/30 mb-8">03 / Metodologia Império</div>
-          <h2 className="display text-4xl md:text-6xl mb-20 tracking-tighter">Nosso <span className="text-gray-500 italic">Processo</span></h2>
+          <div className="text-[10px] uppercase tracking-[0.5em] text-white/30 mb-8">03 / Jornada da Visita</div>
+          <h2 className="display text-4xl md:text-6xl mb-20 tracking-tighter">Como o <span className="text-gray-500 italic">atendimento</span> funciona</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[
-              { step: "01", title: "Triagem Técnica", desc: "Análise preliminar de documentos e perfil de crédito." },
-              { step: "02", title: "Montagem do Processo", desc: "Estruturação completa seguindo as exigências bancárias." },
-              { step: "03", title: "Aprovação & Laudo", desc: "Gestão da avaliação do imóvel e aprovação final." },
-              { step: "04", title: "Assinatura", desc: "Acompanhamento no ato da assinatura da escritura pública." },
+              { step: "01", title: "Apresentação", desc: "Os imóveis aparecem com foco visual e chamada objetiva para o interessado." },
+              { step: "02", title: "Dúvidas", desc: "O visitante entende localização, faixa de preço e detalhes principais." },
+              { step: "03", title: "WhatsApp", desc: "O contato abre direto no WhatsApp para tirar dúvidas sem perder o interesse." },
+              { step: "04", title: "Visita", desc: "A conversa termina com a visita marcada e o próximo passo definido." },
             ].map((item, idx) => (
               <div key={idx} className="p-8 border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
                  <div className="display text-3xl mb-8 text-white/10">{item.step}</div>
@@ -98,13 +98,13 @@ export default function Home() {
       <section className="py-24 px-6 md:px-20 text-center">
         <div className="text-[10px] uppercase tracking-[0.5em] text-black/30 mb-8">Finalização</div>
         <h2 className="display text-5xl md:text-[8vw] tracking-tighter mix-blend-difference mb-12">
-          VAMOS <br/>CONVERSAR?
+          QUERO <br/>VISITAR
         </h2>
         <a 
-          href="tel:+556730450333"
+          href="https://wa.me/5511999999999?text=Olá!%20Tenho%20interesse%20em%20comprar%20um%20imóvel%20e%20quero%20agendar%20uma%20visita."
           className="inline-flex items-center gap-4 text-xs md:text-sm uppercase tracking-[0.4em] font-bold border-b-2 border-black pb-4 hover:gap-8 transition-all"
         >
-          Agendar Consultoria Presencial <ArrowRight size={20} />
+          Falar no WhatsApp Agora <ArrowRight size={20} />
         </a>
       </section>
 
