@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta name="description" content="Studio Ravenna — estúdio de pilates focado em postura, força consciente e bem-estar. Acompanhe no Instagram."/>
+    <title>Studio Ravenna · Pilates</title>
+    <link rel="icon" href="assets/image.png" type="image/png" sizes="any"/>
+    <link rel="apple-touch-icon" href="assets/image.png"/>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
+    <style>
+        :root {
+            --c-bg: #E3E1DC;
+            --c-dark: #121212;
+            --c-accent: #374336;
+            --font-display: 'Syncopate', sans-serif;
+            --font-body: 'Manrope', sans-serif;
+        }
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-dark);
+            font-family: var(--font-body);
+            margin: 0;
+            overflow-x: hidden;
+            cursor: auto;
+            opacity: 0;
+        }
+        .wrapper {
+            position: relative;
+            z-index: 10;
+            background-color: var(--c-bg);
+            margin-bottom: 0;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+        }
+        .word-wrap {
+            display: inline-block;
+            overflow: hidden;
+            vertical-align: top;
+            padding-bottom: 0.1em;
+        }
+        .word-inner {
+            display: inline-block;
+            transform: translateY(110%);
+        }
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+        .loader-text {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .loader-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: var(--c-bg);
+            width: 0%;
+        }
+        .stack-dark {
+            background: var(--c-dark);
+            color: #E3E1DC;
+        }
+        .card-inner {
+            width: 100%;
+            min-height: 420px;
+            background: #1a1a1a;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+        .card-content {
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: #1a1a1a;
+            z-index: 2;
+        }
+        .card-img-wrap {
+            position: relative;
+            width: 100%;
+            min-height: 240px;
+            overflow: hidden;
+        }
+        .card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 1.5s ease;
+        }
+        .card-inner:hover .card-img {
+            transform: scale(1.1);
+        }
+        .display { font-family: var(--font-display); }
+        @media (min-width: 768px) {
+            .card-inner--mirror {
+                grid-template-columns: 1.2fr 1fr;
+            }
+            .card-inner--mirror .card-img-wrap {
+                order: -1;
+            }
+        }
+        .noise-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9000;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+        }
+        @media (max-width: 768px) {
+            .card-inner { grid-template-columns: 1fr; }
+            .card-img-wrap { height: 220px; order: -1; }
+            .card-content { padding: 2rem; }
+        }
+        /* Logo: visível em qualquer fundo; “negativo” vem apenas do blend no <nav>, sem filtro no PNG */
+        .nav-brand {
+            flex-shrink: 0;
+            line-height: 0;
+            isolation: isolate;
+        }
+        .nav-brand img {
+            display: block;
+            height: 2rem;
+            width: auto;
+            max-width: min(48vw, 11rem);
+            object-fit: contain;
+            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 20px rgba(0, 0, 0, 0.35));
+        }
+        @media (min-width: 768px) {
+            .nav-brand img { height: 2.625rem; max-width: 13rem; }
+        }
+        .quiz-option:checked + span {
+            color: var(--c-bg);
+            border-color: rgba(227,225,220,0.5);
+            background: rgba(227,225,220,0.12);
+        }
+        .quiz-step[hidden] { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="noise-overlay"></div>
+    <div class="loader" aria-hidden="true">
+        <div class="loader-text">STUDIO RAVENNA</div>
+        <div class="loader-bar"></div>
+    </div>
+
+    <nav class="fixed top-0 w-full p-6 md:p-8 flex justify-between items-center z-[9400] mix-blend-difference text-white pointer-events-none [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
+        <a href="#" class="nav-brand" aria-label="Studio Ravenna — início">
+            <img src="assets/image.png" width="176" height="48" decoding="async" alt="Studio Ravenna"/>
+        </a>
+        <div class="hidden md:flex gap-10 text-xs uppercase tracking-widest">
+            <a class="hover:text-gray-300 transition-colors" href="#sobre">Sobre</a>
+            <a class="hover:text-gray-300 transition-colors" href="#experiencia">Experiência</a>
+            <a class="hover:text-gray-300 transition-colors" href="#contato">Contato</a>
+            <a class="hover:text-gray-300 transition-colors" href="#quiz">Qualificação</a>
+        </div>
+        <a class="hidden md:inline-flex items-center gap-2 text-xs uppercase tracking-widest border-b border-white/40 pb-1 hover:border-white transition-colors"
+           href="https://www.instagram.com/studioravenna_pilates?utm_source=qr&igsh=c3hnM3VqbDcyOXhj"
+           target="_blank" rel="noopener noreferrer">Instagram</a>
+        <button type="button" class="md:hidden text-xs uppercase tracking-widest js-mobile-menu-open" aria-expanded="false" aria-controls="mobile-menu">Menu</button>
+    </nav>
+
+    <div id="mobile-menu" class="fixed inset-0 z-[9350] bg-[#121212] text-[#E3E1DC] flex flex-col items-center justify-center gap-8 text-sm uppercase tracking-widest opacity-0 pointer-events-none transition-opacity duration-300" hidden>
+        <button type="button" class="absolute top-8 right-8 text-xs js-mobile-menu-close" aria-label="Fechar menu">Fechar</button>
+        <a class="mobile-link" href="#sobre">Sobre</a>
+        <a class="mobile-link" href="#experiencia">Experiência</a>
+        <a class="mobile-link" href="#contato">Contato</a>
+        <a class="mobile-link" href="#quiz">Qualificação</a>
+        <a href="https://www.instagram.com/studioravenna_pilates?utm_source=qr&igsh=c3hnM3VqbDcyOXhj" target="_blank" rel="noopener noreferrer">Instagram</a>
+    </div>
+
+    <div class="wrapper">
+        <section class="h-screen relative flex items-center justify-center overflow-hidden">
+            <img alt="Ambiente do Studio Ravenna" class="absolute inset-0 w-full h-full object-cover brightness-[0.72] hero-img" src="assets/ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2017_57_39%20%284%29.png"/>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/25 pointer-events-none"></div>
+            <div class="relative z-10 text-center text-white px-4 mix-blend-difference">
+                <p class="text-xs md:text-sm uppercase tracking-[0.45em] opacity-90 mb-6 hero-fade">Pilates · Movimento · Presença</p>
+                <h1 class="display text-[10vw] md:text-[8vw] leading-none hero-text overflow-hidden font-bold">
+                    <span class="block translate-y-full">STUDIO</span>
+                </h1>
+                <h1 class="display text-[10vw] md:text-[8vw] leading-none hero-text overflow-hidden font-bold mt-2">
+                    <span class="block translate-y-full">RAVENNA</span>
+                </h1>
+            </div>
+        </section>
+
+        <section id="sobre" class="py-24 md:py-32 px-6 md:px-20 max-w-[1800px] mx-auto border-b border-black/10">
+            <div class="text-xs uppercase tracking-widest mb-12 opacity-50">01 / Sobre o estúdio</div>
+            <div class="grid md:grid-cols-2 gap-14 md:gap-20 items-center">
+                <div class="aspect-[4/5] md:aspect-auto md:h-[min(70vh,640px)] overflow-hidden group cursor-default">
+                    <img src="assets/ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2017_57_37%20%281%29.png" alt="Aula de pilates no Studio Ravenna" class="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105"/>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-widest text-[var(--c-accent)] mb-4">Essência do estúdio</p>
+                    <h2 class="display text-4xl md:text-6xl leading-tight mb-8 split-animate text-[var(--c-dark)]">
+                        Corpo alinhado, respiração guiada.
+                    </h2>
+                    <p class="text-xl font-light leading-relaxed text-gray-700 mb-6">
+                        O Studio Ravenna é um espaço dedicado ao pilates com atenção à postura, à consciência corporal e ao progresso sustentável — sem pressa e com técnica.
+                    </p>
+                    <p class="text-gray-600 font-light leading-relaxed mb-10">
+                        Cada sessão é pensada para fortalecer o centro do corpo, melhorar a mobilidade e devolver sensação de leveza no dia a dia, respeitando o seu momento.
+                    </p>
+                    <a href="https://www.instagram.com/studioravenna_pilates?utm_source=qr&igsh=c3hnM3VqbDcyOXhj"
+                       target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-3 uppercase tracking-widest text-xs border-b border-[var(--c-dark)]/30 pb-2 hover:border-[var(--c-accent)] text-[var(--c-accent)] transition-colors">
+                        <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M17.5 6.5h.01"/></svg>
+                        Acompanhar @studioravenna_pilates
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="experiencia" class="stack-dark py-24 md:py-32 px-6 md:px-20 border-b border-white/10">
+            <div class="max-w-[1400px] mx-auto">
+                <div class="text-xs uppercase tracking-widest mb-12 opacity-50">02 / O que você encontra</div>
+                <p class="text-xs uppercase tracking-widest text-[var(--c-accent)] mb-4">Compromisso</p>
+                <h2 class="display text-4xl md:text-6xl mb-16 max-w-3xl split-animate text-[#E3E1DC]">
+                    Cuidado com detalhes em cada série.
+                </h2>
+
+                <div class="space-y-10 md:space-y-14">
+                    <article class="card-inner">
+                        <div class="card-content">
+                            <div>
+                                <div class="text-5xl display mb-2 text-[var(--c-bg)] opacity-30">01</div>
+                                <h3 class="text-2xl md:text-3xl font-bold text-white">Pilates com foco técnico</h3>
+                                <p class="text-sm mt-4 opacity-70 uppercase tracking-widest text-white">Execução · Alinhamento</p>
+                            </div>
+                            <p class="text-gray-400 font-light text-sm leading-relaxed">
+                                Trabalho de core, estabilidade e controle muscular com progressão segura para ganhar força sem perder a fluidez.
+                            </p>
+                        </div>
+                        <div class="card-img-wrap">
+                            <img alt="Momento da prática — técnica e precisão" class="card-img" src="assets/ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2017_57_38%20%282%29.png"/>
+                        </div>
+                    </article>
+
+                    <article class="card-inner card-inner--mirror">
+                        <div class="card-img-wrap">
+                            <img alt="Bem-estar e presença no estúdio" class="card-img" src="assets/ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2017_57_39%20%283%29.png"/>
+                        </div>
+                        <div class="card-content">
+                            <div>
+                                <div class="text-5xl display mb-2 text-[var(--c-bg)] opacity-30">02</div>
+                                <h3 class="text-2xl md:text-3xl font-bold text-white">Ambiente acolhedor</h3>
+                                <p class="text-sm mt-4 opacity-70 uppercase tracking-widest text-white">Conforto · Atenção</p>
+                            </div>
+                            <p class="text-gray-400 font-light text-sm leading-relaxed">
+                                Um espaço pensado para você se concentrar, respirar com calma e se sentir bem-vinda(o) da entrada ao último alongamento.
+                            </p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-24 md:py-32 px-6 md:px-20 max-w-[1800px] mx-auto border-b border-black/10">
+            <div class="grid md:grid-cols-2 gap-14 items-start">
+                <div>
+                    <div class="text-xs uppercase tracking-widest mb-8 opacity-50">03 / Momentos no estúdio</div>
+                    <p class="text-xs uppercase tracking-widest text-[var(--c-accent)] mb-4">Dia a dia</p>
+                    <h2 class="display text-3xl md:text-5xl leading-tight split-animate">Movimento que organiza o seu dia.</h2>
+                </div>
+                <div class="w-full overflow-hidden rounded-sm border border-black/10 shadow-xl group">
+                    <img src="assets/ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2017_57_37%20%281%29.png" alt="Studio Ravenna — momento no estúdio" class="w-full h-full min-h-[280px] object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105"/>
+                </div>
+            </div>
+        </section>
+
+        <section id="contato" class="py-24 md:py-32 px-6 md:px-20 bg-[var(--c-accent)] text-[#E3E1DC]">
+            <div class="max-w-[900px] mx-auto text-center">
+                <p class="text-xs uppercase tracking-widest opacity-70 mb-6">04 / Fale com a gente</p>
+                <h2 class="display text-3xl md:text-5xl lg:text-6xl leading-tight mb-8 split-animate">Agende pela bio do Instagram ou envie uma mensagem por lá.</h2>
+                <p class="font-light text-lg opacity-90 mb-12 max-w-xl mx-auto leading-relaxed">
+                    Novidades, horários e combinamos o melhor encaixe para você direto pelo perfil oficial do estúdio.
+                </p>
+                <a href="https://www.instagram.com/studioravenna_pilates?utm_source=qr&igsh=c3hnM3VqbDcyOXhj"
+                   target="_blank" rel="noopener noreferrer"
+                   class="inline-flex items-center justify-center gap-3 px-10 py-4 bg-[#E3E1DC] text-[var(--c-dark)] display text-sm md:text-base uppercase tracking-widest font-bold hover:bg-white transition-colors">
+                    Abrir perfil no Instagram
+                </a>
+            </div>
+        </section>
+
+        <section id="quiz" class="stack-dark py-24 md:py-32 px-6 md:px-20 border-t border-white/10">
+            <div class="max-w-[720px] mx-auto">
+                <div class="text-xs uppercase tracking-widest mb-10 opacity-50">05 / Qualificação</div>
+                <p class="text-xs uppercase tracking-widest text-[var(--c-accent)] mb-4">Três perguntas rápidas</p>
+                <h2 class="display text-3xl md:text-5xl text-[#E3E1DC] leading-tight mb-10 split-animate" id="quiz-heading">
+                    Responda para encontrarmos o melhor próximo passo com você.
+                </h2>
+                <form id="lead-quiz" class="border border-white/10 bg-[#1a1a1a] p-6 md:p-10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)]" autocomplete="off" novalidate>
+                    <p class="text-xs uppercase tracking-widest text-gray-400 mb-8 quiz-progress js-quiz-progress" aria-live="polite"><span id="quiz-step-num">1</span> / 3</p>
+
+                    <div class="quiz-step space-y-6" data-step="0" role="group" aria-labelledby="q0-label">
+                        <label id="q0-label" class="block font-body text-lg text-white font-light leading-snug">Já praticou pilates antes?</label>
+                        <div class="grid gap-3">
+                            <label class="flex cursor-pointer group"><input type="radio" required name="experiencia" value="Sim, já pratiquei" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Sim, já pratiquei</span></label>
+                            <label class="flex cursor-pointer group"><input type="radio" name="experiencia" value="Não, será meu primeiro contato" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Não, primeiro contato</span></label>
+                            <label class="flex cursor-pointer group"><input type="radio" name="experiencia" value="Já experimentei poucas vezes" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Experimentei poucas vezes</span></label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-step space-y-6" data-step="1" hidden role="group" aria-labelledby="q1-label">
+                        <label id="q1-label" class="block font-body text-lg text-white font-light leading-snug">O que você mais quer melhorar agora?</label>
+                        <div class="grid gap-3">
+                            <label class="flex cursor-pointer group"><input type="radio" required name="objetivo" value="Postura e alívio de tensões" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Postura · tensões</span></label>
+                            <label class="flex cursor-pointer group"><input type="radio" name="objetivo" value="Força no core / condicionamento" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Core · condicionamento</span></label>
+                            <label class="flex cursor-pointer group"><input type="radio" name="objetivo" value="Reabilitação ou orientação de movimento" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Reabilitação · movimento seguro</span></label>
+                            <label class="flex cursor-pointer group"><input type="radio" name="objetivo" value="Bem-estar geral e consistência" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Bem-estar · hábito</span></label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-step space-y-6" data-step="2" hidden role="group" aria-labelledby="q2-label">
+                        <label id="q2-label" class="block font-body text-lg text-white font-light leading-snug">Quando você gostaria de começar?</label>
+                        <div class="grid gap-3">
+                            <label class="flex cursor-pointer group"><input type="radio" required name="quando" value="Nas próximas 2 semanas" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Nas próximas 2 semanas</span></label>
+                            <label class="flex cursor-pointer group"><input type="radio" name="quando" value="Neste mês" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Neste mês</span></label>
+                            <label class="flex cursor-pointer group"><input type="radio" name="quando" value="Estou só pesquisando opções" class="quiz-option sr-only peer"/><span class="w-full uppercase tracking-widest text-xs border border-white/20 px-5 py-3 text-gray-400 group-hover:border-white/40 group-hover:text-white transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-white/50">Só pesquisando</span></label>
+                        </div>
+                    </div>
+
+                    <div class="quiz-step space-y-8 text-center pt-2" data-step="3" hidden>
+                        <p class="font-body text-lg md:text-xl text-white font-light leading-relaxed">Pronto — enviamos um resumo no WhatsApp para a equipe montar sua resposta sem enrolação.</p>
+                        <a id="quiz-wa" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-10 py-4 bg-[#E3E1DC] text-[var(--c-dark)] display text-xs md:text-sm uppercase tracking-widest font-bold hover:bg-white transition-colors border border-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                            Continuar no WhatsApp
+                        </a>
+                        <button type="button" class="block mx-auto uppercase tracking-widest text-xs text-gray-500 border-b border-white/15 pb-1 hover:text-white hover:border-white/40 transition-colors js-quiz-restart">
+                            Refazer respostas
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-6 mt-10 pt-8 border-t border-white/10 quiz-nav js-quiz-nav">
+                        <button type="button" class="quiz-back uppercase tracking-widest text-xs text-gray-500 border-b border-white/15 pb-1 hover:text-white hover:border-white/40 transition-colors hidden js-quiz-prev">Voltar</button>
+                        <button type="button" class="ml-auto uppercase tracking-widest text-xs text-white border-b border-white/40 pb-2 hover:border-white js-quiz-next">Continuar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <footer class="py-16 px-6 text-center bg-[var(--c-dark)] text-[#E3E1DC]">
+            <p class="display text-lg mb-2">Studio Ravenna</p>
+            <p class="text-xs uppercase tracking-widest opacity-50 mb-6">Pilates</p>
+            <div class="flex flex-wrap gap-8 justify-center items-center text-xs uppercase tracking-widest opacity-70">
+                <a href="https://www.instagram.com/studioravenna_pilates?utm_source=qr&igsh=c3hnM3VqbDcyOXhj"
+                   class="hover:opacity-100 transition-opacity border-b border-white/20 pb-0.5"
+                   target="_blank" rel="noopener noreferrer">Instagram</a>
+                <a href="https://wa.me/5567992859943"
+                   class="hover:opacity-100 transition-opacity border-b border-white/20 pb-0.5"
+                   target="_blank" rel="noopener noreferrer">WhatsApp</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            smooth: true,
+        });
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time) => {
+            lenis.raf(time * 1000);
+        });
+        gsap.ticker.lagSmoothing(0);
+
+        function splitTextToWords(element) {
+            const text = element.innerText.trim();
+            const words = text.split(/\s+/);
+            element.innerHTML = '';
+            words.forEach(word => {
+                const wordWrap = document.createElement('span');
+                wordWrap.classList.add('word-wrap');
+                wordWrap.innerHTML = '<span class="word-inner">' + word + '&nbsp;</span>';
+                element.appendChild(wordWrap);
+            });
+        }
+
+        document.querySelectorAll('.split-animate').forEach(el => {
+            splitTextToWords(el);
+        });
+
+        const loadTl = gsap.timeline({
+            onComplete: () => {
+                document.body.style.opacity = 1;
+                initSite();
+            }
+        });
+
+        loadTl.to('.loader-bar', { width: '100%', duration: 1.4, ease: 'power2.inOut' })
+            .to('.loader-text', { y: -40, opacity: 0, duration: 0.45 })
+            .to('.loader', { yPercent: -100, duration: 0.95, ease: 'power4.inOut' });
+
+        function initSite() {
+            gsap.to('.hero-text span', {
+                y: 0,
+                stagger: 0.12,
+                duration: 1.35,
+                ease: 'power4.out'
+            });
+            gsap.to('.hero-fade', { opacity: 1, duration: 0.9, delay: 0.45 });
+
+            const heroImg = document.querySelector('.hero-img');
+            if (heroImg) {
+                gsap.to('.hero-img', {
+                    yPercent: 28,
+                    ease: 'none',
+                    scrollTrigger: {
+                        trigger: heroImg.closest('section'),
+                        start: 'top top',
+                        end: 'bottom top',
+                        scrub: true
+                    }
+                });
+            }
+
+            document.querySelectorAll('.split-animate').forEach(el => {
+                const words = el.querySelectorAll('.word-inner');
+                gsap.to(words, {
+                    y: '0%',
+                    duration: 1,
+                    ease: 'power3.out',
+                    stagger: 0.02,
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 86%',
+                        toggleActions: 'play none none reverse'
+                    }
+                });
+            });
+
+            ScrollTrigger.refresh();
+        }
+
+        (function mobileMenu() {
+            const panel = document.getElementById('mobile-menu');
+            const openBtn = document.querySelector('.js-mobile-menu-open');
+            const closeBtn = document.querySelector('.js-mobile-menu-close');
+            const links = panel.querySelectorAll('a');
+
+            function open() {
+                panel.hidden = false;
+                panel.offsetHeight;
+                panel.classList.remove('opacity-0', 'pointer-events-none');
+                openBtn.setAttribute('aria-expanded', 'true');
+                document.documentElement.style.overflow = 'hidden';
+            }
+            function close() {
+                panel.classList.add('opacity-0', 'pointer-events-none');
+                openBtn.setAttribute('aria-expanded', 'false');
+                document.documentElement.style.overflow = '';
+                setTimeout(() => {
+                    panel.hidden = true;
+                }, 280);
+            }
+            if (openBtn) openBtn.addEventListener('click', open);
+            if (closeBtn) closeBtn.addEventListener('click', close);
+            links.forEach(a => a.addEventListener('click', close));
+        })();
+
+        (function leadQuiz() {
+            const WA = 'https://wa.me/5567992859943';
+            const form = document.getElementById('lead-quiz');
+            if (!form) return;
+
+            const steps = Array.from(form.querySelectorAll('.quiz-step'));
+            const prog = document.getElementById('quiz-step-num');
+            const progressEl = form.querySelector('.js-quiz-progress');
+            const navEl = form.querySelector('.js-quiz-nav');
+            const btnPrev = form.querySelector('.js-quiz-prev');
+            const btnNext = form.querySelector('.js-quiz-next');
+            const btnWa = document.getElementById('quiz-wa');
+            const btnRestart = form.querySelector('.js-quiz-restart');
+            let i = 0;
+
+            function getAnswers() {
+                const fd = new FormData(form);
+                return {
+                    experiencia: fd.get('experiencia'),
+                    objetivo: fd.get('objetivo'),
+                    quando: fd.get('quando'),
+                };
+            }
+
+            function buildWaUrl() {
+                const a = getAnswers();
+                const text = [
+                    'Olá! Vim pelo site do Studio Ravenna e quero falar sobre aulas/experimento.',
+                    '',
+                    'Qualificação (site):',
+                    '• Pilates antes: ' + (a.experiencia || '—'),
+                    '• Foco agora: ' + (a.objetivo || '—'),
+                    '• Quando começar: ' + (a.quando || '—'),
+                ].join('\n');
+                return WA + '?text=' + encodeURIComponent(text);
+            }
+
+            function currentQuestionInputs() {
+                const nameSel = ['experiencia', 'objetivo', 'quando'][i];
+                return nameSel ? form.querySelectorAll('input[name="' + nameSel + '"]') : [];
+            }
+
+            function validateStep() {
+                if (i < 0 || i > 2) return true;
+                const inputs = Array.from(form.querySelectorAll('.quiz-step[data-step="' + i + '"] input[type="radio"]'));
+                return inputs.some(inp => inp.checked);
+            }
+
+            function render() {
+                steps.forEach((el, idx) => {
+                    el.hidden = idx !== i;
+                });
+                const onResult = i === steps.length - 1;
+                if (prog && progressEl) {
+                    progressEl.hidden = onResult;
+                    if (!onResult && i < 3) prog.textContent = String(i + 1);
+                }
+                if (navEl) navEl.hidden = onResult;
+                if (btnPrev) btnPrev.classList.toggle('hidden', i === 0 || onResult);
+                if (btnWa && onResult) btnWa.href = buildWaUrl();
+
+                btnNext?.classList.toggle('hidden', onResult);
+
+                if (typeof lenis !== 'undefined' && typeof lenis.resize === 'function') lenis.resize();
+                ScrollTrigger.refresh();
+            }
+
+            function go(delta) {
+                const next = i + delta;
+                if (delta > 0 && i <= 2 && !validateStep()) {
+                    currentQuestionInputs().forEach(r => r.classList.add('ring-2', 'ring-red-400/50'));
+                    form.querySelector('.quiz-step:not([hidden])')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    return;
+                }
+                currentQuestionInputs().forEach(r => r.classList.remove('ring-2', 'ring-red-400/50'));
+                if (next < 0 || next >= steps.length) return;
+                if (i === 2 && delta > 0) {
+                    i = steps.length - 1;
+                    render();
+                    return;
+                }
+                i = next;
+                render();
+            }
+
+            btnPrev?.addEventListener('click', () => go(-1));
+            btnNext?.addEventListener('click', () => go(1));
+            btnRestart?.addEventListener('click', () => {
+                form.reset();
+                i = 0;
+                render();
+                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            form.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener('change', () => {
+                r.closest('.quiz-step')?.querySelectorAll('input[type="radio"]').forEach(x =>
+                    x.classList.remove('ring-2', 'ring-red-400/50'));
+                const stepEl = r.closest('.quiz-step');
+                if (!stepEl || steps.indexOf(stepEl) !== i || i > 2) return;
+                queueMicrotask(() => go(1));
+            }));
+
+            render();
+        })();
+    </script>
+</body>
+</html>
