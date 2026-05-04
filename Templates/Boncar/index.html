@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boncar — Oficina mecânica | Seu carro em boas mãos</title>
+  <meta name="description" content="Boncar: mecânica geral, troca de óleo, embreagem, suspensão, freio motor, câmbio e socorro. Agende pelo WhatsApp." />
+  <meta name="theme-color" content="#0b1d3f" />
+  <link rel="icon" href="assets/logo.png" type="image/png" sizes="any" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+  <script src="assets/resource_3fa48481346f.js"></script>
+  <script src="assets/iconify-icon_e19829e7f0e8.js"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link href="https://fonts.gstatic.com" crossorigin rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bon-navy: #0b1d3f;
+      --bon-navy-mid: #152a52;
+      --bon-orange: #f37021;
+      --bon-orange-hover: #e06518;
+      --bon-cream: #e6e3d6;
+      --bon-cream-2: #eae8de;
+      --bon-text: #1c1917;
+      --bon-muted: #57534e;
+    }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background-color: var(--bon-cream);
+      color: var(--bon-text);
+    }
+    .font-newsreader { font-family: "Newsreader", Georgia, serif; }
+    .ds-section { scroll-margin-top: 88px; }
+    html { scroll-behavior: smooth; }
+    .selection-bon::selection {
+      background-color: var(--bon-navy);
+      color: var(--bon-cream);
+    }
+    @keyframes bon-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .bon-float {
+      animation: bon-float 3s ease-in-out infinite;
+    }
+    @keyframes bon-fade-up {
+      from {
+        opacity: 0;
+        transform: translateY(1.75rem);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .bon-hero-inner > .bon-hero-el {
+      opacity: 0;
+      animation: bon-fade-up 0.85s ease-out forwards;
+    }
+    .bon-hero-inner > .bon-hero-el:nth-child(1) { animation-delay: 0.08s; }
+    .bon-hero-inner > .bon-hero-el:nth-child(2) { animation-delay: 0.2s; }
+    .bon-hero-inner > .bon-hero-el:nth-child(3) { animation-delay: 0.32s; }
+    .bon-hero-inner > .bon-hero-el:nth-child(4) { animation-delay: 0.44s; }
+    html.js-bon .bon-reveal:not(.bon-reveal-visible) {
+      opacity: 0;
+      transform: translateY(1.5rem);
+    }
+    html.js-bon .bon-reveal {
+      transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+    }
+    .bon-reveal-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bon-float { animation: none; }
+      .bon-hero-inner > .bon-hero-el {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      html.js-bon .bon-reveal:not(.bon-reveal-visible) {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      html.js-bon .bon-reveal {
+        transition: none !important;
+      }
+    }
+
+    /* Scroll + vídeo montagem (BONCAR) */
+    .bon-sa-section {
+      position: relative;
+      width: 100%;
+      overflow: clip;
+      background: linear-gradient(180deg, #0f1419 0%, #1a2332 45%, #0f1419 100%);
+    }
+    .bon-sa-sticky {
+      position: sticky;
+      top: 0;
+      box-sizing: border-box;
+    }
+    .bon-sa-inner {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      min-height: 100svh;
+      box-sizing: border-box;
+    }
+    .bon-sa-stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+    .bon-sa-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      pointer-events: none;
+    }
+    .bon-sa-mascot {
+      position: absolute;
+      z-index: 3;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(52vw, 220px);
+      height: auto;
+      max-height: 42vh;
+      object-fit: contain;
+      pointer-events: none;
+      filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.45));
+    }
+    .bon-sa-grad {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        rgba(15, 20, 25, 0.55) 0%,
+        rgba(15, 20, 25, 0.15) 35%,
+        rgba(15, 20, 25, 0.75) 100%
+      );
+    }
+    .bon-sa-copy {
+      position: relative;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 1rem 1rem 0.5rem;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .bon-sa-title {
+      margin: 0;
+      font-size: clamp(1.35rem, 4.2vw, 2.25rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: #fff;
+      font-family: "DM Sans", system-ui, sans-serif;
+    }
+    .bon-sa-accent {
+      color: #f97316;
+    }
+    .bon-sa-sub {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 36rem;
+    }
+    .bon-sa-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0.25rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .bon-sa-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(249, 115, 22, 0.35);
+    }
+    .bon-sa-cta-wrap {
+      position: relative;
+      z-index: 4;
+      padding: 0.75rem 1rem 1.25rem;
+      margin-top: auto;
+    }
+    .bon-sa-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.85rem 1.25rem;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      color: #0f1419;
+      background: #f97316;
+      border: none;
+      box-shadow: 0 8px 24px rgba(249, 115, 22, 0.35);
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+    .bon-sa-cta:hover {
+      filter: brightness(1.05);
+    }
+    .bon-sa-cta:active {
+      transform: scale(0.98);
+    }
+    @media (min-width: 768px) {
+      .bon-sa-stage {
+        min-height: 100dvh;
+        min-height: 100svh;
+      }
+      .bon-sa-grad {
+        background: linear-gradient(
+          90deg,
+          rgba(15, 20, 25, 0.92) 0%,
+          rgba(15, 20, 25, 0.55) 38%,
+          rgba(15, 20, 25, 0.12) 62%,
+          rgba(15, 20, 25, 0.35) 100%
+        );
+      }
+      .bon-sa-mascot {
+        width: min(28vw, 320px);
+        max-height: 55vh;
+        left: auto;
+        right: 6%;
+        transform: none;
+      }
+      .bon-sa-copy {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        justify-content: center;
+        width: min(46%, 26rem);
+        padding: 2rem 2rem 2rem 2.25rem;
+      }
+      .bon-sa-sub {
+        font-size: 1.05rem;
+      }
+      .bon-sa-cta-wrap {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: min(46%, 26rem);
+        padding: 0 0 2rem 2.25rem;
+        margin-top: 0;
+        box-sizing: border-box;
+      }
+      .bon-sa-cta {
+        width: auto;
+        min-width: 12rem;
+        padding-inline: 1.75rem;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bon-sa-video {
+        object-fit: cover;
+      }
+    }
+  </style>
+  <style data-scroll-fix="true">
+    html, body { overflow-x: hidden !important; min-height: 100%; }
+    body, main { opacity: 1 !important; visibility: visible !important; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden selection:bg-[#0b1d3f] selection:text-[#E6E3D6]">
+  <script>
+    document.documentElement.classList.add("js-bon");
+  </script>
+
+  <header class="sticky top-0 z-[100] w-full border-b border-stone-800/10 bg-[#E6E3D6]/95 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-6 md:px-12 flex flex-wrap items-center justify-between gap-4 py-3">
+      <a href="#topo" class="flex items-center gap-3 shrink-0">
+        <img src="assets/logo.png" alt="Boncar" class="h-10 md:h-11 w-auto object-contain" width="180" height="44" />
+      </a>
+      <nav class="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-sm font-medium text-stone-600">
+        <a href="#bon-scroll-montagem" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
+          <iconify-icon icon="solar:layers-minimalistic-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
+          Montagem
+        </a>
+        <a href="#servicos" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
+          <iconify-icon icon="solar:wrench-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
+          Serviços
+        </a>
+        <a href="#cambio" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
+          <iconify-icon icon="solar:settings-minimalistic-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
+          Câmbio
+        </a>
+        <a href="#oficina" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
+          <iconify-icon icon="solar:shop-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
+          Oficina
+        </a>
+        <a href="#galeria" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
+          <iconify-icon icon="solar:gallery-wide-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
+          Galeria
+        </a>
+        <a href="#quiz" class="inline-flex items-center gap-2 hover:text-[#f37021] transition-colors">
+          <iconify-icon icon="solar:clipboard-list-linear" width="18" class="text-[#f37021] shrink-0"></iconify-icon>
+          Qualificação
+        </a>
+        <a href="https://wa.me/5567992000561?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20Boncar." target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0b1d3f] text-[#E6E3D6] hover:bg-[#152a52] transition-colors shadow-lg shadow-[#0b1d3f]/15">
+          <iconify-icon icon="solar:chat-round-dots-linear" width="18"></iconify-icon>
+          WhatsApp
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="topo">
+    <!-- Hero -->
+    <section class="relative min-h-[85vh] flex flex-col justify-end md:justify-center overflow-hidden">
+      <div class="absolute inset-0">
+        <img
+          src="ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2022_16_22.png"
+          alt="Mecânico Boncar em serviço no motor do veículo"
+          class="w-full h-full object-cover object-center md:object-[center_30%]"
+        />
+        <div class="absolute inset-0 bg-gradient-to-r from-[#0b1d3f]/95 via-[#0b1d3f]/65 to-[#0b1d3f]/20 md:via-[#0b1d3f]/45 md:to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0b1d3f]/80 via-transparent to-[#0b1d3f]/25 pointer-events-none md:from-[#0b1d3f]/50"></div>
+      </div>
+      <div class="relative z-10 max-w-7xl mx-auto w-full px-6 md:px-12 pb-16 md:py-24 md:pb-24">
+        <div class="max-w-2xl bon-hero-inner">
+          <div class="bon-hero-el inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/25 bg-white/10 backdrop-blur-sm text-sm text-[#E6E3D6] mb-6">
+            <iconify-icon icon="solar:tuning-2-linear" width="18" class="text-[#f37021] shrink-0"></iconify-icon>
+            <span class="w-2 h-2 rounded-full bg-[#f37021] animate-pulse shrink-0"></span>
+            <span>Atendimento com diagnóstico claro</span>
+          </div>
+          <h1 class="bon-hero-el text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.98] tracking-tight text-white mb-5 font-newsreader font-light">
+            <span class="block text-[#E6E3D6]/90 font-newsreader font-light text-3xl sm:text-4xl md:text-5xl mb-1">Oficina mecânica</span>
+            Seu carro em boas mãos
+          </h1>
+          <p class="bon-hero-el text-lg md:text-xl text-white/85 max-w-xl leading-relaxed mb-8">
+            Troca de óleo, revisões, embreagem, suspensão, freio motor, câmbio, socorro e mecânica geral — estrutura e profissionais preparados para cuidar do seu veículo.
+          </p>
+          <div class="bon-hero-el flex flex-col sm:flex-row gap-4">
+            <a href="#quiz" class="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#f37021] text-white rounded-full text-lg font-medium hover:bg-[#e06518] transition-all shadow-xl shadow-black/20">
+              <iconify-icon icon="solar:clipboard-check-linear" width="22" class="shrink-0"></iconify-icon>
+              <span>Começar qualificação</span>
+              <iconify-icon icon="solar:arrow-right-linear" width="20" class="transition-transform group-hover:translate-x-1"></iconify-icon>
+            </a>
+            <a href="https://wa.me/5567992000561?text=Ol%C3%A1%2C%20gostaria%20de%20um%20or%C3%A7amento%20na%20Boncar." target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-3 px-8 py-4 border border-white/35 text-white rounded-full text-lg font-medium hover:bg-white/10 transition-colors">
+              <iconify-icon icon="solar:phone-calling-linear" width="22" class="shrink-0"></iconify-icon>
+              Falar agora
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Montagem: vídeo no scroll + Bonzinho -->
+    <section
+      id="bon-scroll-montagem"
+      class="bon-sa-section ds-section"
+      style="height: 200vh"
+      aria-label="Da peça solta ao carro pronto para rodar"
+    >
+      <div class="bon-sa-sticky">
+        <div class="bon-sa-inner">
+          <div class="bon-sa-stage">
+            <video
+              id="bon-assembly-video"
+              class="bon-sa-video"
+              src="download.mp4"
+              poster="assets/100_e68f6b0cbbf0.jpg"
+              muted
+              playsinline
+              preload="auto"
+              tabindex="-1"
+              aria-hidden="true"
+              disablepictureinpicture
+              disableremoteplayback
+            ></video>
+            <div class="bon-sa-grad" aria-hidden="true"></div>
+            <img
+              class="bon-sa-mascot"
+              src="image.png"
+              alt=""
+              width="320"
+              height="400"
+              decoding="async"
+            />
+            <div class="bon-sa-copy">
+              <h2 class="bon-sa-title">
+                Da peça solta ao carro
+                <span class="bon-sa-accent"> pronto para rodar.</span>
+              </h2>
+              <p class="bon-sa-sub">
+                Na Boncar, cada detalhe passa por uma análise cuidadosa antes do serviço.
+              </p>
+              <ul class="bon-sa-badges">
+                <li class="bon-sa-badge">Motor</li>
+                <li class="bon-sa-badge">Câmbio</li>
+                <li class="bon-sa-badge">Freios</li>
+                <li class="bon-sa-badge">Embreagem</li>
+                <li class="bon-sa-badge">Revisão</li>
+              </ul>
+            </div>
+          </div>
+          <div class="bon-sa-cta-wrap">
+            <a
+              class="bon-sa-cta"
+              href="https://wa.me/5567992000561?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20Boncar%20e%20quero%20fazer%20uma%20avalia%C3%A7%C3%A3o%20no%20meu%20carro."
+              target="_blank"
+              rel="noopener noreferrer"
+              >Chamar no WhatsApp</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Serviços intro -->
+    <section id="servicos" class="ds-section w-full py-24 px-6 md:px-12 border-t border-stone-300/30 bg-[#E6E3D6]">
+      <div class="max-w-7xl mx-auto">
+        <div class="bon-reveal flex flex-col md:flex-row md:items-end justify-between gap-8 mb-14" data-bon-reveal>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.15em] text-stone-500 mb-3 inline-flex items-center gap-2">
+              <iconify-icon icon="solar:wrench-linear" width="16" class="text-[#f37021]"></iconify-icon>
+              O que fazemos
+            </p>
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-newsreader font-light text-[#0b1d3f] leading-[1.05] tracking-tight max-w-3xl">
+              Serviços para manter seu veículo seguro e dentro do plano de manutenção.
+            </h2>
+          </div>
+          <p class="text-lg text-stone-600 max-w-md leading-relaxed">
+            Cada etapa é explicada com transparência. Se precisar de peças ou prazo diferenciado, você decide com informação na mesa.
+          </p>
+        </div>
+
+        <div class="bon-reveal grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8" data-bon-reveal>
+          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
+              <iconify-icon icon="solar:bottle-linear" width="26" class="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"></iconify-icon>
+            </div>
+            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Troca de óleo</h3>
+            <p class="text-stone-600 text-sm leading-relaxed">Lubrificantes e filtros compatíveis com a especificação do fabricante.</p>
+          </article>
+          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
+              <iconify-icon icon="solar:clipboard-check-linear" width="26" class="transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110"></iconify-icon>
+            </div>
+            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Manutenção</h3>
+            <p class="text-stone-600 text-sm leading-relaxed">Revisões programadas, fluidos, correias e itens de desgaste com checklist.</p>
+          </article>
+          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
+              <iconify-icon icon="solar:transmission-linear" width="26" class="transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"></iconify-icon>
+            </div>
+            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Embreagem</h3>
+            <p class="text-stone-600 text-sm leading-relaxed">Diagnóstico de patinação, ruídos e trepidação; troca com alinhamento correto.</p>
+          </article>
+          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
+              <iconify-icon icon="solar:wheel-angle-linear" width="26" class="transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110"></iconify-icon>
+            </div>
+            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Suspensão</h3>
+            <p class="text-stone-600 text-sm leading-relaxed">Amortecedores, batentes, pivôs e geometria para dirigibilidade estável.</p>
+          </article>
+          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
+              <iconify-icon icon="solar:vinyl-record-linear" width="26" class="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-180"></iconify-icon>
+            </div>
+            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Freio motor</h3>
+            <p class="text-stone-600 text-sm leading-relaxed">Sistemas exaustivo/auxiliar em veículos pesados: ajuste, vácuo e segurança.</p>
+          </article>
+          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
+              <iconify-icon icon="solar:settings-minimalistic-linear" width="26" class="transition-transform duration-300 group-hover:rotate-45 group-hover:scale-110"></iconify-icon>
+            </div>
+            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Câmbio</h3>
+            <p class="text-stone-600 text-sm leading-relaxed">Automático ou manual: vazamentos, embreagem dupla, trocas de fluido e revisão.</p>
+          </article>
+          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
+              <iconify-icon icon="solar:siren-rounded-linear" width="26" class="transition-transform duration-300 group-hover:scale-110"></iconify-icon>
+            </div>
+            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Socorrista</h3>
+            <p class="text-stone-600 text-sm leading-relaxed">Atendimento para emergências e encaminhamento para oficina quando necessário.</p>
+          </article>
+          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
+            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
+              <iconify-icon icon="solar:wrench-linear" width="26" class="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"></iconify-icon>
+            </div>
+            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Mecânica geral</h3>
+            <p class="text-stone-600 text-sm leading-relaxed">Motor, arrefecimento, elétrica e demais sistemas com diagnóstico organizado.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Destaque câmbio -->
+    <section id="cambio" class="ds-section w-full py-24 px-6 md:px-12 border-t border-stone-300/30 bg-[#EAE8DE]">
+      <div class="bon-reveal max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-stretch gap-12 lg:gap-16" data-bon-reveal>
+        <div class="flex-1 w-full order-2 lg:order-1 flex flex-col justify-center">
+          <p class="text-xs font-semibold uppercase tracking-[0.15em] text-stone-500 mb-3 inline-flex items-center gap-2">
+            <iconify-icon icon="solar:settings-minimalistic-linear" width="16" class="text-[#f37021]"></iconify-icon>
+            Serviço especializado
+          </p>
+          <h2 class="text-4xl md:text-5xl font-newsreader font-light text-[#0b1d3f] mb-5 leading-[1.05]">
+            Câmbio: diagnóstico e reparo com precisão
+          </h2>
+          <p class="text-lg text-stone-600 leading-relaxed mb-6">
+            Manual ou automático — vazamentos, ruídos, trocas de fluido e intervenções com bancada e ferramental adequados, no padrão Boncar.
+          </p>
+          <a href="#quiz" class="inline-flex items-center gap-2 text-sm font-semibold text-[#f37021] hover:text-[#e06518] transition-colors group/link">
+            <iconify-icon icon="solar:clipboard-check-linear" width="18" class="shrink-0 transition-transform group-hover/link:translate-x-0.5"></iconify-icon>
+            Inclua “câmbio” na qualificação
+            <iconify-icon icon="solar:arrow-right-linear" width="18" class="transition-transform group-hover/link:translate-x-1"></iconify-icon>
+          </a>
+        </div>
+        <div class="flex-1 w-full order-1 lg:order-2 min-h-[280px] lg:min-h-[360px]">
+          <div class="relative h-full min-h-[inherit] rounded-2xl overflow-hidden shadow-2xl shadow-stone-900/20 border border-stone-200/80 group">
+            <img
+              src="ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2022_07_08.png"
+              alt="Câmbio em bancada na oficina Boncar"
+              class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0b1d3f]/75 via-transparent to-transparent pointer-events-none"></div>
+            <p class="absolute bottom-5 left-5 right-5 text-white text-sm font-medium drop-shadow-md">
+              Bancada de câmbio — ambiente controlado e ferramentas organizadas
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Oficina / imagem 2 -->
+    <section id="oficina" class="ds-section w-full py-24 px-6 md:px-12 border-t border-stone-300/30 bg-[#E6E3D6]">
+      <div class="bon-reveal max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center gap-12 lg:gap-20" data-bon-reveal>
+        <div class="flex-1 order-2 lg:order-1">
+          <p class="text-xs font-semibold uppercase tracking-[0.15em] text-stone-500 mb-3">Estrutura</p>
+          <h2 class="text-4xl md:text-5xl font-newsreader font-light text-[#0b1d3f] mb-6 leading-[1.05]">
+            Oficina limpa, ferramentas no lugar e foco no resultado.
+          </h2>
+          <p class="text-lg text-stone-600 leading-relaxed mb-6">
+            Trabalhamos com processos claros: inspeção visual, medições quando aplicável e registro do que foi feito. Ideal para quem quer manter frota ou carro de passeio com previsibilidade.
+          </p>
+          <ul class="space-y-3 text-stone-700">
+            <li class="flex gap-3 items-start">
+              <iconify-icon icon="solar:shield-check-linear" class="text-[#f37021] shrink-0 mt-0.5" width="22"></iconify-icon>
+              <span>Transparência em orçamento e priorização de reparos.</span>
+            </li>
+            <li class="flex gap-3 items-start">
+              <iconify-icon icon="solar:case-round-linear" class="text-[#f37021] shrink-0 mt-0.5" width="22"></iconify-icon>
+              <span>Equipe em uniforme e ambiente alinhado à identidade Boncar.</span>
+            </li>
+            <li class="flex gap-3 items-start">
+              <iconify-icon icon="solar:camera-linear" class="text-[#f37021] shrink-0 mt-0.5" width="22"></iconify-icon>
+              <span>Pronto para receber novas fotos e vídeos da sua operação.</span>
+            </li>
+          </ul>
+          <div class="mt-10">
+            <a href="#quiz" class="inline-flex items-center gap-3 px-8 py-4 bg-[#0b1d3f] text-[#E6E3D6] rounded-full text-lg font-medium hover:bg-[#152a52] transition-all shadow-xl shadow-[#0b1d3f]/15">
+              Quero um atendimento guiado
+              <iconify-icon icon="solar:arrow-right-linear" width="20"></iconify-icon>
+            </a>
+          </div>
+        </div>
+        <div class="flex-1 order-1 lg:order-2 w-full">
+          <div class="relative w-full max-w-lg mx-auto lg:max-w-none aspect-[4/5] rounded-t-[8rem] rounded-b-[2rem] overflow-hidden shadow-2xl shadow-stone-900/25 group">
+            <img
+              src="ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2018_56_00.png"
+              alt="Serviço de limpeza de peças na Boncar"
+              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0b1d3f]/70 via-transparent to-transparent pointer-events-none"></div>
+            <div class="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4 text-white">
+              <div>
+                <p class="text-sm text-white/80 mb-1">Manutenção &amp; higiene de componentes</p>
+                <p class="text-2xl font-newsreader font-light">Padrão de oficina de referência</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Galeria placeholder -->
+    <section id="galeria" class="ds-section w-full py-24 px-6 md:px-12 border-t border-stone-300/30 bg-[#EAE8DE]">
+      <div class="bon-reveal max-w-7xl mx-auto" data-bon-reveal>
+        <h2 class="text-4xl md:text-5xl font-newsreader font-light text-[#0b1d3f] mb-4 inline-flex items-center gap-3 flex-wrap">
+          <iconify-icon icon="solar:gallery-wide-linear" width="36" class="text-[#f37021] shrink-0"></iconify-icon>
+          Galeria
+        </h2>
+        <p class="text-lg text-stone-600 max-w-2xl mb-12">
+          Frota, equipamentos e equipe em ação. Você ainda pode acrescentar mais fotos na pasta do site e duplicar um dos cartões abaixo.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <figure class="group relative aspect-[4/3] rounded-2xl overflow-hidden border border-stone-200 shadow-lg shadow-stone-900/10 bg-stone-900">
+            <img
+              src="image.png"
+              alt="Equipamento e frota na Boncar"
+              class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0b1d3f]/90 to-transparent pt-12 pb-3 px-4">
+              <span class="text-sm font-medium text-white">Frota &amp; mecânica pesada</span>
+            </figcaption>
+          </figure>
+          <figure class="group relative aspect-[4/3] rounded-2xl overflow-hidden border border-stone-200 shadow-lg shadow-stone-900/10 bg-stone-900">
+            <img
+              src="ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2018_55_56.png"
+              alt="Equipe Boncar na oficina"
+              class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0b1d3f]/90 to-transparent pt-12 pb-3 px-4">
+              <span class="text-sm font-medium text-white">Oficina e atendimento</span>
+            </figcaption>
+          </figure>
+          <div class="aspect-[4/3] rounded-2xl border-2 border-dashed border-stone-300 bg-white/50 flex flex-col items-center justify-center text-center p-6 text-stone-500 transition-colors hover:border-[#f37021]/40">
+            <iconify-icon icon="solar:album-linear" width="40" class="text-stone-400 mb-3"></iconify-icon>
+            <span class="text-sm font-medium">Foto 3 — em breve</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quiz -->
+    <section id="quiz" class="ds-section w-full py-24 px-6 md:px-12 border-t border-stone-300/30 bg-[#E6E3D6]">
+      <div class="max-w-3xl mx-auto">
+        <div class="bon-reveal text-center mb-3" data-bon-reveal>
+          <iconify-icon icon="solar:clipboard-list-linear" width="40" class="text-[#f37021] mx-auto mb-3"></iconify-icon>
+          <p class="text-xs font-semibold uppercase tracking-[0.15em] text-stone-500">Qualificação rápida</p>
+        </div>
+        <h2 class="bon-reveal text-4xl md:text-5xl font-newsreader font-light text-[#0b1d3f] mb-4 text-center leading-[1.05]" data-bon-reveal>
+          Responda em poucos passos — levamos seu contexto para o WhatsApp.
+        </h2>
+        <p class="bon-reveal text-center text-stone-600 mb-10 max-w-xl mx-auto" data-bon-reveal>
+          Toque em uma opção para avançar. No final, abrimos o WhatsApp com um resumo das respostas.
+        </p>
+
+        <div id="quiz-card" class="bon-reveal bg-white rounded-3xl border border-stone-200 shadow-xl shadow-stone-900/5 overflow-hidden" data-bon-reveal>
+          <div class="h-1.5 bg-[#0b1d3f]/15">
+            <div id="quiz-progress" class="h-full bg-[#f37021] transition-all duration-300 w-[20%]"></div>
+          </div>
+          <div class="p-8 md:p-10">
+            <p id="quiz-step-label" class="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-2">Passo 1 de 5</p>
+            <h3 id="quiz-question" class="text-2xl md:text-3xl font-newsreader font-medium text-[#0b1d3f] mb-6"></h3>
+            <div id="quiz-options" class="flex flex-col gap-3"></div>
+            <div class="mt-10">
+              <button type="button" id="quiz-back" class="text-sm font-medium text-stone-500 hover:text-[#0b1d3f] transition-colors disabled:opacity-40 disabled:pointer-events-none">
+                Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="quiz-result" class="hidden mt-10 bg-[#0b1d3f] rounded-3xl p-8 md:p-10 text-[#E6E3D6] text-center border border-white/10">
+          <iconify-icon icon="solar:chat-round-check-linear" width="48" class="text-[#f37021] mx-auto mb-4"></iconify-icon>
+          <h3 class="text-2xl md:text-3xl font-newsreader font-light mb-3">Pronto para falar com a Boncar</h3>
+          <p class="text-white/80 mb-6 max-w-md mx-auto text-sm leading-relaxed">Enviaremos o resumo abaixo no WhatsApp. Você pode editar a mensagem antes de enviar.</p>
+          <pre id="quiz-summary" class="text-left text-xs md:text-sm bg-black/20 rounded-xl p-4 mb-8 whitespace-pre-wrap font-sans text-white/90 overflow-x-auto"></pre>
+          <a id="quiz-wa" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#f37021] text-white rounded-full text-lg font-medium hover:bg-[#e06518] transition-colors shadow-lg">
+            <iconify-icon icon="simple-icons:whatsapp" width="22" class="brightness-0 invert"></iconify-icon>
+            Abrir WhatsApp
+          </a>
+          <button type="button" id="quiz-restart" class="block mx-auto mt-6 text-sm text-white/70 hover:text-white underline underline-offset-2">
+            Refazer questionário
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-auto border-t border-stone-300/30 bg-[#0b1d3f] text-[#E6E3D6] py-14 px-6 md:px-12">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+      <div class="flex items-center gap-4">
+        <div class="rounded-xl bg-white p-2 shadow-sm">
+          <img src="assets/logo.png" alt="" class="h-10 w-auto object-contain" width="160" height="40" />
+        </div>
+        <div>
+          <p class="font-newsreader text-xl">Boncar</p>
+          <p class="text-sm text-white/70">Seu carro em boas mãos</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-6 text-sm text-white/80">
+        <a href="https://wa.me/5567992000561" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 hover:text-[#f37021] transition-colors">
+          <iconify-icon icon="solar:chat-round-dots-linear" width="18" class="opacity-80"></iconify-icon>
+          WhatsApp
+        </a>
+        <a href="#servicos" class="inline-flex items-center gap-2 hover:text-[#f37021] transition-colors">
+          <iconify-icon icon="solar:wrench-linear" width="18" class="opacity-80"></iconify-icon>
+          Serviços
+        </a>
+        <a href="#quiz" class="inline-flex items-center gap-2 hover:text-[#f37021] transition-colors">
+          <iconify-icon icon="solar:clipboard-list-linear" width="18" class="opacity-80"></iconify-icon>
+          Qualificação
+        </a>
+      </div>
+    </div>
+    <p class="max-w-7xl mx-auto mt-10 pt-8 border-t border-white/10 text-xs text-white/50 text-center md:text-left">
+      © <span id="year"></span> Boncar. Página institucional — valores e disponibilidade confirmados pelo WhatsApp.
+    </p>
+  </footer>
+
+  <a href="https://wa.me/5567992000561?text=Ol%C3%A1%2C%20Boncar%21" target="_blank" rel="noopener noreferrer" class="bon-float fixed bottom-6 right-6 z-[90] flex items-center justify-center w-14 h-14 rounded-full bg-[#25D366] text-white shadow-xl shadow-black/25 hover:scale-105 active:scale-95 transition-transform" aria-label="WhatsApp Boncar">
+    <iconify-icon icon="simple-icons:whatsapp" width="26" class="brightness-0 invert"></iconify-icon>
+  </a>
+
+  <script>
+    (function () {
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      var WHATSAPP = "5567992000561";
+      var questions = [
+        {
+          id: "servico",
+          label: "Qual serviço ou sintoma está mais próximo do que você precisa?",
+          options: [
+            { value: "Troca de óleo / filtros", label: "Troca de óleo / filtros" },
+            { value: "Manutenção / revisão", label: "Manutenção / revisão programada" },
+            { value: "Embreagem", label: "Embreagem (patinação, ruído, peso)" },
+            { value: "Suspensão", label: "Suspensão / amortecedores / ruídos" },
+            { value: "Freio motor", label: "Freio motor (caminhão / veículo pesado)" },
+            { value: "Câmbio", label: "Câmbio (manual ou automático)" },
+            { value: "Socorrista", label: "Socorro / guincho / emergência" },
+            { value: "Mecânica geral / outro", label: "Mecânica geral ou outro" }
+          ]
+        },
+        {
+          id: "veiculo",
+          label: "Qual tipo de veículo?",
+          options: [
+            { value: "Carro de passeio", label: "Carro de passeio" },
+            { value: "Utilitário / SUV", label: "Utilitário / SUV" },
+            { value: "Caminhão / ônibus", label: "Caminhão / ônibus / frota pesada" },
+            { value: "Outro", label: "Outro" }
+          ]
+        },
+        {
+          id: "urgencia",
+          label: "Qual a urgência?",
+          options: [
+            { value: "Hoje / o quanto antes", label: "Hoje ou o quanto antes" },
+            { value: "Esta semana", label: "Esta semana" },
+            { value: "Planejamento", label: "Só planejamento / orçamento" }
+          ]
+        },
+        {
+          id: "orcamento",
+          label: "Você já tem orçamento de outro lugar?",
+          options: [
+            { value: "Não", label: "Não, quero avaliação da Boncar" },
+            { value: "Sim, comparar", label: "Sim, quero comparar" },
+            { value: "Parcial", label: "Tenho parcial / só peças" }
+          ]
+        },
+        {
+          id: "contato",
+          label: "Como prefere continuar após o primeiro contato?",
+          options: [
+            { value: "WhatsApp texto", label: "Somente WhatsApp (texto)" },
+            { value: "Ligação", label: "Podem me ligar" },
+            { value: "Visita à oficina", label: "Agendar visita à oficina" }
+          ]
+        }
+      ];
+
+      var state = { index: 0, answers: {} };
+      var elCard = document.getElementById("quiz-card");
+      var elResult = document.getElementById("quiz-result");
+      var elStep = document.getElementById("quiz-step-label");
+      var elQ = document.getElementById("quiz-question");
+      var elOpts = document.getElementById("quiz-options");
+      var elBack = document.getElementById("quiz-back");
+      var elProgress = document.getElementById("quiz-progress");
+      var elSummary = document.getElementById("quiz-summary");
+      var elWa = document.getElementById("quiz-wa");
+      var elRestart = document.getElementById("quiz-restart");
+
+      function render() {
+        var q = questions[state.index];
+        elStep.textContent = "Passo " + (state.index + 1) + " de " + questions.length;
+        elQ.textContent = q.label;
+        elProgress.style.width = ((state.index + 1) / questions.length) * 100 + "%";
+        elOpts.innerHTML = "";
+        q.options.forEach(function (opt) {
+          var id = "opt_" + q.id + "_" + opt.value.replace(/\W+/g, "_").slice(0, 40);
+          var wrap = document.createElement("label");
+          wrap.className =
+            "flex items-center gap-3 p-4 rounded-xl border border-stone-200 cursor-pointer hover:border-[#f37021]/50 hover:bg-[#f37021]/5 transition-colors has-[:checked]:border-[#0b1d3f] has-[:checked]:bg-[#0b1d3f]/5";
+          var input = document.createElement("input");
+          input.type = "radio";
+          input.name = q.id;
+          input.value = opt.value;
+          input.id = id;
+          input.className = "w-4 h-4 accent-[#f37021] shrink-0";
+          if (state.answers[q.id] === opt.value) input.checked = true;
+          var span = document.createElement("span");
+          span.className = "text-stone-800 text-sm md:text-base font-medium";
+          span.textContent = opt.label;
+          wrap.appendChild(input);
+          wrap.appendChild(span);
+          elOpts.appendChild(wrap);
+        });
+        elBack.disabled = state.index === 0;
+        elOpts.querySelectorAll("input[type=radio]").forEach(function (inp) {
+          inp.addEventListener("change", function () {
+            if (!this.checked) return;
+            advanceFromAnswer();
+          });
+        });
+      }
+
+      function advanceFromAnswer() {
+        var q = questions[state.index];
+        var sel = elOpts.querySelector("input[name=\"" + q.id + "\"]:checked");
+        if (!sel) return;
+        state.answers[q.id] = sel.value;
+        if (state.index < questions.length - 1) {
+          state.index++;
+          render();
+        } else {
+          elCard.classList.add("hidden");
+          elResult.classList.remove("hidden");
+          var msg = buildMessage();
+          elSummary.textContent = msg;
+          elWa.href = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msg);
+        }
+      }
+
+      function buildMessage() {
+        var lines = [
+          "Olá, Boncar! Vim pelo site.",
+          "",
+          "*Qualificação:*",
+          "- Serviço / necessidade: " + (state.answers.servico || "-"),
+          "- Veículo: " + (state.answers.veiculo || "-"),
+          "- Urgência: " + (state.answers.urgencia || "-"),
+          "- Orçamento prévio: " + (state.answers.orcamento || "-"),
+          "- Preferência de contato: " + (state.answers.contato || "-"),
+          "",
+          "Podem me orientar no próximo passo?"
+        ];
+        return lines.join("\n");
+      }
+
+      elBack.addEventListener("click", function () {
+        if (state.index > 0) {
+          state.index--;
+          render();
+        }
+      });
+
+      elRestart.addEventListener("click", function () {
+        state.index = 0;
+        state.answers = {};
+        elResult.classList.add("hidden");
+        elCard.classList.remove("hidden");
+        render();
+      });
+
+      render();
+    })();
+  </script>
+  <script>
+    (function () {
+      var EPS = 0.03;
+      function clamp(v, lo, hi) {
+        return Math.min(hi, Math.max(lo, v));
+      }
+      var section = document.getElementById("bon-scroll-montagem");
+      var video = document.getElementById("bon-assembly-video");
+      if (!section || !video) return;
+
+      var mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      var metaReady = false;
+      var progress = 0;
+      var pending = false;
+      var scrollBound = false;
+
+      function snapEnd() {
+        var d = video.duration;
+        if (!d || !isFinite(d)) return;
+        try {
+          video.currentTime = d;
+        } catch (e) {}
+      }
+
+      function apply() {
+        pending = false;
+        if (mq.matches || !metaReady) return;
+        var d = video.duration;
+        if (!d || !isFinite(d)) return;
+        var t = clamp(progress, 0, 1) * d;
+        if (Math.abs(video.currentTime - t) < EPS) return;
+        try {
+          video.currentTime = t;
+        } catch (e) {}
+      }
+
+      function schedule() {
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(function () {
+          pending = false;
+          apply();
+        });
+      }
+
+      function update() {
+        if (mq.matches || !metaReady) return;
+        var rect = section.getBoundingClientRect();
+        var scrollY = window.scrollY || window.pageYOffset;
+        var sectionTop = scrollY + rect.top;
+        var sectionH = section.offsetHeight;
+        var vh = window.innerHeight;
+        var denom = Math.max(1, sectionH - vh);
+        progress = clamp((scrollY - sectionTop) / denom, 0, 1);
+        schedule();
+      }
+
+      function bindScrollOnce() {
+        if (scrollBound) return;
+        scrollBound = true;
+        window.addEventListener("scroll", update, { passive: true });
+        window.addEventListener("resize", update);
+      }
+
+      function unbindScroll() {
+        if (!scrollBound) return;
+        scrollBound = false;
+        window.removeEventListener("scroll", update);
+        window.removeEventListener("resize", update);
+      }
+
+      function onMeta() {
+        metaReady = true;
+        if (mq.matches) {
+          snapEnd();
+          return;
+        }
+        bindScrollOnce();
+        update();
+      }
+
+      mq.addEventListener("change", function () {
+        if (mq.matches) {
+          unbindScroll();
+          snapEnd();
+        } else if (metaReady) {
+          bindScrollOnce();
+          update();
+        }
+      });
+
+      video.addEventListener("loadedmetadata", onMeta);
+      video.addEventListener("canplay", function () {
+        if (metaReady && !mq.matches) update();
+      });
+
+      if (video.readyState >= 1) onMeta();
+    })();
+  </script>
+  <script>
+    (function () {
+      var nodes = document.querySelectorAll("[data-bon-reveal]");
+      if (!nodes.length) return;
+      var mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      function showAll() {
+        nodes.forEach(function (el) {
+          el.classList.add("bon-reveal-visible");
+        });
+      }
+      if (mq.matches) {
+        showAll();
+        return;
+      }
+      if (!("IntersectionObserver" in window)) {
+        showAll();
+        return;
+      }
+      requestAnimationFrame(function () {
+        nodes.forEach(function (el) {
+          var r = el.getBoundingClientRect();
+          if (r.top < window.innerHeight && r.bottom > 0) {
+            el.classList.add("bon-reveal-visible");
+          }
+        });
+      });
+      var io = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("bon-reveal-visible");
+            io.unobserve(entry.target);
+          });
+        },
+        { rootMargin: "0px 0px -12% 0px", threshold: 0.06 }
+      );
+      nodes.forEach(function (el) {
+        io.observe(el);
+      });
+    })();
+  </script>
+</body>
+</html>
