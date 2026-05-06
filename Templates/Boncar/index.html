@@ -284,46 +284,94 @@
     }
   </style>
   <style data-scroll-fix="true">
-    html, body { overflow-x: hidden !important; min-height: 100%; }
+    html, body { overflow-x: clip !important; min-height: 100%; }
     body, main { opacity: 1 !important; visibility: visible !important; }
+    @keyframes scroll-carousel {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
   </style>
+  <link rel="canonical" href="https://www.boncar.com.br" />
+  <meta property="og:title" content="Boncar — Oficina mecânica | Seu carro em boas mãos" />
+  <meta property="og:description" content="Boncar: mecânica geral, troca de óleo, embreagem, suspensão, freio motor, câmbio e socorro. Agende pelo WhatsApp." />
+  <meta property="og:image" content="https://www.boncar.com.br/assets/logo.png" />
+  <meta property="og:url" content="https://www.boncar.com.br" />
+  <meta property="og:type" content="website" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AutoRepair",
+    "name": "Boncar Oficina Mecânica",
+    "image": "https://www.boncar.com.br/assets/logo.png",
+    "telephone": "+5567992000561",
+    "url": "https://www.boncar.com.br",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Rua Temprano, 1",
+      "addressLocality": "Campo Grande",
+      "addressRegion": "MS",
+      "postalCode": "79041-370",
+      "addressCountry": "BR"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": -20.4846433,
+      "longitude": -54.6186981
+    },
+    "priceRange": "",
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        "opens": "08:00",
+        "closes": "18:00"
+      }
+    ],
+    "sameAs": [
+      "https://wa.me/5567992000561"
+    ]
+  }
+  </script>
 </head>
-<body class="min-h-screen flex flex-col overflow-x-hidden selection:bg-[#0b1d3f] selection:text-[#E6E3D6]">
+<body class="min-h-screen flex flex-col overflow-x-clip selection:bg-[#0b1d3f] selection:text-[#E6E3D6]">
   <script>
     document.documentElement.classList.add("js-bon");
   </script>
 
-  <header class="sticky top-0 z-[100] w-full border-b border-stone-800/10 bg-[#E6E3D6]/95 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-6 md:px-12 flex flex-wrap items-center justify-between gap-4 py-3">
+  <header class="relative z-[100] w-full border-b border-stone-800/10 bg-[#E6E3D6]/95 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between py-3">
       <a href="#topo" class="flex items-center gap-3 shrink-0">
-        <img src="assets/logo.png" alt="Boncar" class="h-10 md:h-11 w-auto object-contain" width="180" height="44" />
+        <img src="assets/logo.png" alt="Boncar" class="h-10 md:h-11 w-auto object-contain mix-blend-multiply" width="180" height="44" />
       </a>
-      <nav class="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-sm font-medium text-stone-600">
-        <a href="#bon-scroll-montagem" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
-          <iconify-icon icon="solar:layers-minimalistic-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
-          Montagem
-        </a>
-        <a href="#servicos" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
+      
+      <!-- Mobile menu button -->
+      <button id="mobile-menu-btn" class="md:hidden flex items-center justify-center p-2 text-stone-600 hover:text-[#f37021] transition-colors" aria-label="Abrir menu">
+        <iconify-icon icon="solar:hamburger-menu-linear" width="28"></iconify-icon>
+      </button>
+
+      <!-- Desktop & Mobile Nav -->
+      <nav id="mobile-menu" class="hidden md:flex absolute md:relative top-full left-0 w-full md:w-auto bg-[#E6E3D6] md:bg-transparent border-b md:border-b-0 border-stone-800/10 flex-col md:flex-row items-start md:items-center justify-end gap-x-6 gap-y-4 text-sm font-medium text-stone-600 px-6 py-6 md:p-0 shadow-lg md:shadow-none z-50">
+        <a href="#servicos" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors w-full md:w-auto">
           <iconify-icon icon="solar:wrench-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
           Serviços
         </a>
-        <a href="#cambio" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
+        <a href="#cambio" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors w-full md:w-auto">
           <iconify-icon icon="solar:settings-minimalistic-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
           Câmbio
         </a>
-        <a href="#oficina" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
+        <a href="#oficina" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors w-full md:w-auto">
           <iconify-icon icon="solar:shop-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
           Oficina
         </a>
-        <a href="#galeria" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors">
+        <a href="#galeria" class="inline-flex items-center gap-2 hover:text-[#0b1d3f] transition-colors w-full md:w-auto">
           <iconify-icon icon="solar:gallery-wide-linear" width="18" class="text-[#f37021]/90 shrink-0"></iconify-icon>
           Galeria
         </a>
-        <a href="#quiz" class="inline-flex items-center gap-2 hover:text-[#f37021] transition-colors">
+        <a href="#quiz" class="inline-flex items-center gap-2 hover:text-[#f37021] transition-colors w-full md:w-auto">
           <iconify-icon icon="solar:clipboard-list-linear" width="18" class="text-[#f37021] shrink-0"></iconify-icon>
-          Qualificação
+          Solicitar orçamento
         </a>
-        <a href="https://wa.me/5567992000561?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20Boncar." target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0b1d3f] text-[#E6E3D6] hover:bg-[#152a52] transition-colors shadow-lg shadow-[#0b1d3f]/15">
+        <a href="https://wa.me/5567992000561?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20Boncar." target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-[#0b1d3f] text-[#E6E3D6] hover:bg-[#152a52] transition-colors shadow-lg shadow-[#0b1d3f]/15 w-full md:w-auto mt-2 md:mt-0">
           <iconify-icon icon="solar:chat-round-dots-linear" width="18"></iconify-icon>
           WhatsApp
         </a>
@@ -331,19 +379,63 @@
     </div>
   </header>
 
+  <script>
+    document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+      var menu = document.getElementById('mobile-menu');
+      if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        menu.classList.add('flex');
+        this.innerHTML = '<iconify-icon icon="solar:close-circle-linear" width="28"></iconify-icon>';
+      } else {
+        menu.classList.add('hidden');
+        menu.classList.remove('flex');
+        this.innerHTML = '<iconify-icon icon="solar:hamburger-menu-linear" width="28"></iconify-icon>';
+      }
+    });
+
+    document.querySelectorAll('#mobile-menu a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        if (window.innerWidth < 768) {
+          var menu = document.getElementById('mobile-menu');
+          var btn = document.getElementById('mobile-menu-btn');
+          menu.classList.add('hidden');
+          menu.classList.remove('flex');
+          btn.innerHTML = '<iconify-icon icon="solar:hamburger-menu-linear" width="28"></iconify-icon>';
+        }
+      });
+    });
+  </script>
+
   <main id="topo">
     <!-- Hero -->
-    <section class="relative min-h-[85vh] flex flex-col justify-end md:justify-center overflow-hidden">
-      <div class="absolute inset-0">
-        <img
-          src="ChatGPT%20Image%203%20de%20mai.%20de%202026%2C%2022_16_22.png"
-          alt="Mecânico Boncar em serviço no motor do veículo"
-          class="w-full h-full object-cover object-center md:object-[center_30%]"
-        />
-        <div class="absolute inset-0 bg-gradient-to-r from-[#0b1d3f]/95 via-[#0b1d3f]/65 to-[#0b1d3f]/20 md:via-[#0b1d3f]/45 md:to-transparent"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-[#0b1d3f]/80 via-transparent to-[#0b1d3f]/25 pointer-events-none md:from-[#0b1d3f]/50"></div>
-      </div>
-      <div class="relative z-10 max-w-7xl mx-auto w-full px-6 md:px-12 pb-16 md:py-24 md:pb-24">
+    <section id="hero-scroll-section" class="relative w-full bg-stone-900" style="height: 300vh;">
+      <div class="sticky top-0 w-full h-[100dvh] flex flex-col justify-end md:justify-center overflow-hidden">
+        <div class="absolute inset-0">
+          <img
+            id="hero-video-fallback"
+            src="ChatGPT Image 3 de mai. de 2026, 22_16_22.png"
+            alt=""
+            class="absolute inset-0 w-full h-full object-cover object-center"
+            loading="eager"
+            decoding="async"
+            aria-hidden="true"
+          />
+          <video
+            id="hero-video"
+            data-src="video_scroll.mp4"
+            class="w-full h-full object-cover object-center"
+            muted
+            playsinline
+            preload="none"
+            tabindex="-1"
+            aria-hidden="true"
+            disablepictureinpicture
+            disableremoteplayback
+          ></video>
+          <div class="absolute inset-0 bg-gradient-to-r from-[#0b1d3f]/95 via-[#0b1d3f]/60 via-25% to-transparent to-50%"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-[#0b1d3f]/80 via-transparent to-[#0b1d3f]/25 pointer-events-none md:from-[#0b1d3f]/50"></div>
+        </div>
+        <div class="relative z-10 max-w-7xl mx-auto w-full px-6 md:px-12 pb-16 md:py-24 md:pb-24">
         <div class="max-w-2xl bon-hero-inner">
           <div class="bon-hero-el inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/25 bg-white/10 backdrop-blur-sm text-sm text-[#E6E3D6] mb-6">
             <iconify-icon icon="solar:tuning-2-linear" width="18" class="text-[#f37021] shrink-0"></iconify-icon>
@@ -360,7 +452,7 @@
           <div class="bon-hero-el flex flex-col sm:flex-row gap-4">
             <a href="#quiz" class="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#f37021] text-white rounded-full text-lg font-medium hover:bg-[#e06518] transition-all shadow-xl shadow-black/20">
               <iconify-icon icon="solar:clipboard-check-linear" width="22" class="shrink-0"></iconify-icon>
-              <span>Começar qualificação</span>
+              <span>Solicitar orçamento</span>
               <iconify-icon icon="solar:arrow-right-linear" width="20" class="transition-transform group-hover:translate-x-1"></iconify-icon>
             </a>
             <a href="https://wa.me/5567992000561?text=Ol%C3%A1%2C%20gostaria%20de%20um%20or%C3%A7amento%20na%20Boncar." target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-3 px-8 py-4 border border-white/35 text-white rounded-full text-lg font-medium hover:bg-white/10 transition-colors">
@@ -370,70 +462,11 @@
           </div>
         </div>
       </div>
-    </section>
-
-    <!-- Montagem: vídeo no scroll + Bonzinho -->
-    <section
-      id="bon-scroll-montagem"
-      class="bon-sa-section ds-section"
-      style="height: 200vh"
-      aria-label="Da peça solta ao carro pronto para rodar"
-    >
-      <div class="bon-sa-sticky">
-        <div class="bon-sa-inner">
-          <div class="bon-sa-stage">
-            <video
-              id="bon-assembly-video"
-              class="bon-sa-video"
-              src="download.mp4"
-              poster="assets/100_e68f6b0cbbf0.jpg"
-              muted
-              playsinline
-              preload="auto"
-              tabindex="-1"
-              aria-hidden="true"
-              disablepictureinpicture
-              disableremoteplayback
-            ></video>
-            <div class="bon-sa-grad" aria-hidden="true"></div>
-            <img
-              class="bon-sa-mascot"
-              src="image.png"
-              alt=""
-              width="320"
-              height="400"
-              decoding="async"
-            />
-            <div class="bon-sa-copy">
-              <h2 class="bon-sa-title">
-                Da peça solta ao carro
-                <span class="bon-sa-accent"> pronto para rodar.</span>
-              </h2>
-              <p class="bon-sa-sub">
-                Na Boncar, cada detalhe passa por uma análise cuidadosa antes do serviço.
-              </p>
-              <ul class="bon-sa-badges">
-                <li class="bon-sa-badge">Motor</li>
-                <li class="bon-sa-badge">Câmbio</li>
-                <li class="bon-sa-badge">Freios</li>
-                <li class="bon-sa-badge">Embreagem</li>
-                <li class="bon-sa-badge">Revisão</li>
-              </ul>
-            </div>
-          </div>
-          <div class="bon-sa-cta-wrap">
-            <a
-              class="bon-sa-cta"
-              href="https://wa.me/5567992000561?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20Boncar%20e%20quero%20fazer%20uma%20avalia%C3%A7%C3%A3o%20no%20meu%20carro."
-              target="_blank"
-              rel="noopener noreferrer"
-              >Chamar no WhatsApp</a>
-          </div>
-        </div>
       </div>
     </section>
 
-    <!-- Serviços intro -->
+
+<!-- Serviços intro -->
     <section id="servicos" class="ds-section w-full py-24 px-6 md:px-12 border-t border-stone-300/30 bg-[#E6E3D6]">
       <div class="max-w-7xl mx-auto">
         <div class="bon-reveal flex flex-col md:flex-row md:items-end justify-between gap-8 mb-14" data-bon-reveal>
@@ -451,66 +484,211 @@
           </p>
         </div>
 
-        <div class="bon-reveal grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8" data-bon-reveal>
-          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
-              <iconify-icon icon="solar:bottle-linear" width="26" class="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"></iconify-icon>
+        <div class="relative w-full overflow-hidden group bon-reveal" data-bon-reveal>
+          <div class="absolute top-0 bottom-0 left-0 w-8 md:w-24 bg-gradient-to-r from-[#E6E3D6] to-transparent z-10 pointer-events-none"></div>
+          <div class="absolute top-0 bottom-0 right-0 w-8 md:w-24 bg-gradient-to-l from-[#E6E3D6] to-transparent z-10 pointer-events-none"></div>
+          
+          <div class="flex w-max animate-[scroll-carousel_40s_linear_infinite] group-hover:[animation-play-state:paused] py-4">
+            <div class="flex gap-6 pr-6">
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Troca de óleo / filtros')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_oleo_1777897675492.png" alt="Troca de óleo" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:bottle-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Troca de óleo</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Lubrificantes e filtros compatíveis com a especificação do fabricante.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Manutenção / revisão')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_manutencao_1777897688385.png" alt="Manutenção" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:clipboard-check-linear" width="28" class="transition-transform duration-300 group-hover/item:-rotate-6 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Manutenção</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Revisões programadas, fluidos, correias e itens de desgaste com checklist.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Embreagem')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_embreagem_1777897712660.png" alt="Embreagem" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:transmission-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-6 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Embreagem</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Diagnóstico de patinação, ruídos e trepidação; troca com alinhamento correto.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Suspensão')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_suspensao_1777897727734.png" alt="Suspensão" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:wheel-angle-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-90 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Suspensão</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Amortecedores, batentes, pivôs e geometria para dirigibilidade estável.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Freio motor')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_freio_1777897754126.png" alt="Freio motor" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:vinyl-record-linear" width="28" class="transition-transform duration-300 group-hover/item:scale-110 group-hover/item:rotate-180"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Freio motor</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Sistemas exaustivo/auxiliar em veículos pesados: ajuste, vácuo e segurança.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Câmbio')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_cambio_1777897769366.png" alt="Câmbio" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:settings-minimalistic-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-45 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Câmbio</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Automático ou manual: vazamentos, embreagem dupla, trocas de fluido e revisão.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Socorrista')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_socorrista_1777897784788.png" alt="Socorrista" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:siren-rounded-linear" width="28" class="transition-transform duration-300 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Socorrista</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Atendimento para emergências e encaminhamento para oficina quando necessário.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Mecânica geral / outro')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_geral_1777897799885.png" alt="Mecânica geral" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:wrench-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Mecânica geral</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Motor, arrefecimento, elétrica e demais sistemas com diagnóstico organizado.</p>
+                </div>
+              </article>
             </div>
-            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Troca de óleo</h3>
-            <p class="text-stone-600 text-sm leading-relaxed">Lubrificantes e filtros compatíveis com a especificação do fabricante.</p>
-          </article>
-          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
-              <iconify-icon icon="solar:clipboard-check-linear" width="26" class="transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110"></iconify-icon>
+            <!-- DUPLICATED FOR INFINITE SCROLL -->
+            <div class="flex gap-6 pr-6" aria-hidden="true">
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Troca de óleo / filtros')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_oleo_1777897675492.png" alt="Troca de óleo" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:bottle-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Troca de óleo</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Lubrificantes e filtros compatíveis com a especificação do fabricante.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Manutenção / revisão')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_manutencao_1777897688385.png" alt="Manutenção" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:clipboard-check-linear" width="28" class="transition-transform duration-300 group-hover/item:-rotate-6 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Manutenção</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Revisões programadas, fluidos, correias e itens de desgaste com checklist.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Embreagem')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_embreagem_1777897712660.png" alt="Embreagem" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:transmission-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-6 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Embreagem</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Diagnóstico de patinação, ruídos e trepidação; troca com alinhamento correto.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Suspensão')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_suspensao_1777897727734.png" alt="Suspensão" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:wheel-angle-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-90 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Suspensão</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Amortecedores, batentes, pivôs e geometria para dirigibilidade estável.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Freio motor')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_freio_1777897754126.png" alt="Freio motor" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:vinyl-record-linear" width="28" class="transition-transform duration-300 group-hover/item:scale-110 group-hover/item:rotate-180"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Freio motor</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Sistemas exaustivo/auxiliar em veículos pesados: ajuste, vácuo e segurança.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Câmbio')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_cambio_1777897769366.png" alt="Câmbio" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:settings-minimalistic-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-45 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Câmbio</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Automático ou manual: vazamentos, embreagem dupla, trocas de fluido e revisão.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Socorrista')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_socorrista_1777897784788.png" alt="Socorrista" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:siren-rounded-linear" width="28" class="transition-transform duration-300 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Socorrista</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Atendimento para emergências e encaminhamento para oficina quando necessário.</p>
+                </div>
+              </article>
+              <article class="relative flex-none w-[85vw] sm:w-[45vw] lg:w-[380px] bg-white rounded-2xl border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group/item overflow-hidden cursor-pointer" onclick="selectQuizService('Mecânica geral / outro')">
+                <div class="h-48 overflow-hidden">
+                  <img src="assets/service_geral_1777897799885.png" alt="Mecânica geral" class="w-full h-full object-cover transition-transform duration-500 group-hover/item:scale-105" />
+                </div>
+                <div class="p-6 relative bg-white">
+                  <div class="absolute -top-8 right-6 w-14 h-14 rounded-xl bg-white/95 backdrop-blur-md flex items-center justify-center text-[#0b1d3f] shadow-sm border border-stone-100 group-hover/item:text-[#f37021] group-hover/item:bg-[#f37021]/10 transition-colors z-10">
+                    <iconify-icon icon="solar:wrench-linear" width="28" class="transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110"></iconify-icon>
+                  </div>
+                  <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2 mt-2">Mecânica geral</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed">Motor, arrefecimento, elétrica e demais sistemas com diagnóstico organizado.</p>
+                </div>
+              </article>
             </div>
-            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Manutenção</h3>
-            <p class="text-stone-600 text-sm leading-relaxed">Revisões programadas, fluidos, correias e itens de desgaste com checklist.</p>
-          </article>
-          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
-              <iconify-icon icon="solar:transmission-linear" width="26" class="transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"></iconify-icon>
-            </div>
-            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Embreagem</h3>
-            <p class="text-stone-600 text-sm leading-relaxed">Diagnóstico de patinação, ruídos e trepidação; troca com alinhamento correto.</p>
-          </article>
-          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
-              <iconify-icon icon="solar:wheel-angle-linear" width="26" class="transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110"></iconify-icon>
-            </div>
-            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Suspensão</h3>
-            <p class="text-stone-600 text-sm leading-relaxed">Amortecedores, batentes, pivôs e geometria para dirigibilidade estável.</p>
-          </article>
-          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
-              <iconify-icon icon="solar:vinyl-record-linear" width="26" class="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-180"></iconify-icon>
-            </div>
-            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Freio motor</h3>
-            <p class="text-stone-600 text-sm leading-relaxed">Sistemas exaustivo/auxiliar em veículos pesados: ajuste, vácuo e segurança.</p>
-          </article>
-          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
-              <iconify-icon icon="solar:settings-minimalistic-linear" width="26" class="transition-transform duration-300 group-hover:rotate-45 group-hover:scale-110"></iconify-icon>
-            </div>
-            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Câmbio</h3>
-            <p class="text-stone-600 text-sm leading-relaxed">Automático ou manual: vazamentos, embreagem dupla, trocas de fluido e revisão.</p>
-          </article>
-          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
-              <iconify-icon icon="solar:siren-rounded-linear" width="26" class="transition-transform duration-300 group-hover:scale-110"></iconify-icon>
-            </div>
-            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Socorrista</h3>
-            <p class="text-stone-600 text-sm leading-relaxed">Atendimento para emergências e encaminhamento para oficina quando necessário.</p>
-          </article>
-          <article class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm hover:border-[#f37021]/40 hover:shadow-md transition-all duration-300 group">
-            <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/8 flex items-center justify-center text-[#0b1d3f] mb-5 group-hover:bg-[#f37021]/15 group-hover:text-[#f37021] transition-colors">
-              <iconify-icon icon="solar:wrench-linear" width="26" class="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"></iconify-icon>
-            </div>
-            <h3 class="text-xl font-newsreader font-medium text-[#0b1d3f] mb-2">Mecânica geral</h3>
-            <p class="text-stone-600 text-sm leading-relaxed">Motor, arrefecimento, elétrica e demais sistemas com diagnóstico organizado.</p>
-          </article>
+          </div>
         </div>
-      </div>
-    </section>
+</section>
 
     <!-- Destaque câmbio -->
     <section id="cambio" class="ds-section w-full py-24 px-6 md:px-12 border-t border-stone-300/30 bg-[#EAE8DE]">
@@ -528,7 +706,7 @@
           </p>
           <a href="#quiz" class="inline-flex items-center gap-2 text-sm font-semibold text-[#f37021] hover:text-[#e06518] transition-colors group/link">
             <iconify-icon icon="solar:clipboard-check-linear" width="18" class="shrink-0 transition-transform group-hover/link:translate-x-0.5"></iconify-icon>
-            Inclua “câmbio” na qualificação
+            Inclua “câmbio” no orçamento
             <iconify-icon icon="solar:arrow-right-linear" width="18" class="transition-transform group-hover/link:translate-x-1"></iconify-icon>
           </a>
         </div>
@@ -647,7 +825,7 @@
       <div class="max-w-3xl mx-auto">
         <div class="bon-reveal text-center mb-3" data-bon-reveal>
           <iconify-icon icon="solar:clipboard-list-linear" width="40" class="text-[#f37021] mx-auto mb-3"></iconify-icon>
-          <p class="text-xs font-semibold uppercase tracking-[0.15em] text-stone-500">Qualificação rápida</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.15em] text-stone-500">Orçamento rápido</p>
         </div>
         <h2 class="bon-reveal text-4xl md:text-5xl font-newsreader font-light text-[#0b1d3f] mb-4 text-center leading-[1.05]" data-bon-reveal>
           Responda em poucos passos — levamos seu contexto para o WhatsApp.
@@ -687,6 +865,72 @@
         </div>
       </div>
     </section>
+      <!-- FAQ Section -->
+    <section id="faq" class="ds-section w-full py-24 px-6 md:px-12 bg-white">
+      <div class="max-w-4xl mx-auto bon-reveal" data-bon-reveal>
+        <p class="text-xs font-semibold uppercase tracking-[0.15em] text-stone-500 mb-3 text-center">Dúvidas Frequentes</p>
+        <h2 class="text-4xl md:text-5xl font-newsreader font-light text-[#0b1d3f] mb-12 text-center leading-[1.05]">
+          Tudo o que você precisa saber
+        </h2>
+        
+        <div class="space-y-4">
+          <details class="group border border-stone-200 rounded-2xl bg-stone-50 [&_summary::-webkit-details-marker]:hidden">
+            <summary class="flex items-center justify-between gap-4 p-6 font-medium text-[#0b1d3f] cursor-pointer hover:text-[#f37021] transition-colors">
+              <span>Vocês oferecem garantia nos serviços realizados?</span>
+              <span class="transition-transform group-open:rotate-180">
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="24"></iconify-icon>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-stone-600 text-sm leading-relaxed">
+              Sim, todos os nossos serviços possuem garantia legal conforme as normas do Código de Defesa do Consumidor, variando de acordo com a peça e o sistema (geralmente de 90 dias a 1 ano). Utilizamos apenas peças de alta qualidade e com procedência comprovada.
+            </div>
+          </details>
+          <details class="group border border-stone-200 rounded-2xl bg-stone-50 [&_summary::-webkit-details-marker]:hidden">
+            <summary class="flex items-center justify-between gap-4 p-6 font-medium text-[#0b1d3f] cursor-pointer hover:text-[#f37021] transition-colors">
+              <span>Posso agendar uma revisão diretamente pelo WhatsApp?</span>
+              <span class="transition-transform group-open:rotate-180">
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="24"></iconify-icon>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-stone-600 text-sm leading-relaxed">
+              Com certeza! Nosso atendimento no WhatsApp é focado em agilizar seu dia. Você pode usar o orçamento rápido aqui no site ou mandar uma mensagem direta para marcarmos o melhor horário para sua visita à oficina.
+            </div>
+          </details>
+          <details class="group border border-stone-200 rounded-2xl bg-stone-50 [&_summary::-webkit-details-marker]:hidden">
+            <summary class="flex items-center justify-between gap-4 p-6 font-medium text-[#0b1d3f] cursor-pointer hover:text-[#f37021] transition-colors">
+              <span>A oficina conta com serviço de socorrista/guincho?</span>
+              <span class="transition-transform group-open:rotate-180">
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="24"></iconify-icon>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-stone-600 text-sm leading-relaxed">
+              Temos suporte para atendimento a emergências. Caso o seu veículo não possa rodar com segurança, acionamos nossos parceiros socorristas para buscar seu carro com total cuidado e segurança.
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Map & Address Section -->
+    <section id="localizacao" class="w-full h-[500px] md:h-[600px] relative border-t border-stone-200">
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3737.525992928172!2d-54.6186981!3d-20.4846433!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9486e66e927bb2cd%3A0xc66518a4a51130d2!2sR.%20Temprano%2C%201%20-%20Tiradentes%2C%20Campo%20Grande%20-%20MS%2C%2079041-370!5e0!3m2!1spt-BR!2sbr!4v1714800000000!5m2!1spt-BR!2sbr" class="w-full h-full border-0 grayscale hover:grayscale-0 transition-all duration-700" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      
+      <div class="absolute bottom-6 left-6 md:bottom-12 md:left-12 max-w-[90%] md:max-w-sm w-full bg-white/95 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-2xl border border-stone-200/50 bon-reveal" data-bon-reveal>
+        <div class="w-12 h-12 rounded-xl bg-[#0b1d3f]/10 flex items-center justify-center text-[#0b1d3f] mb-4">
+          <iconify-icon icon="solar:map-point-linear" width="24"></iconify-icon>
+        </div>
+        <h3 class="text-xl md:text-2xl font-newsreader font-medium text-[#0b1d3f] mb-2">Onde estamos</h3>
+        <p class="text-stone-600 text-sm md:text-base leading-relaxed mb-5">
+          Rua Temprano, 1<br>
+          Campo Grande — MS<br>
+          <span class="text-xs text-stone-400 mt-1 block">CEP 79041-370</span>
+        </p>
+        <a href="https://maps.google.com/?q=Rua+Temprano+1+Campo+Grande+MS" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm font-semibold text-[#f37021] hover:text-[#e06518] transition-colors group">
+          Traçar rota
+          <iconify-icon icon="solar:arrow-right-linear" width="18" class="transition-transform group-hover:translate-x-1"></iconify-icon>
+        </a>
+      </div>
+    </section>
   </main>
 
   <footer class="mt-auto border-t border-stone-300/30 bg-[#0b1d3f] text-[#E6E3D6] py-14 px-6 md:px-12">
@@ -711,7 +955,7 @@
         </a>
         <a href="#quiz" class="inline-flex items-center gap-2 hover:text-[#f37021] transition-colors">
           <iconify-icon icon="solar:clipboard-list-linear" width="18" class="opacity-80"></iconify-icon>
-          Qualificação
+          Solicitar orçamento
         </a>
       </div>
     </div>
@@ -732,7 +976,7 @@
       var questions = [
         {
           id: "servico",
-          label: "Qual serviço ou sintoma está mais próximo do que você precisa?",
+          label: "Qual serviço está mais próximo do que você precisa?",
           options: [
             { value: "Troca de óleo / filtros", label: "Troca de óleo / filtros" },
             { value: "Manutenção / revisão", label: "Manutenção / revisão programada" },
@@ -850,7 +1094,7 @@
         var lines = [
           "Olá, Boncar! Vim pelo site.",
           "",
-          "*Qualificação:*",
+          "*Solicitar orçamento:*",
           "- Serviço / necessidade: " + (state.answers.servico || "-"),
           "- Veículo: " + (state.answers.veiculo || "-"),
           "- Urgência: " + (state.answers.urgencia || "-"),
@@ -877,24 +1121,53 @@
         render();
       });
 
+      window.selectQuizService = function (val) {
+        state.answers['servico'] = val;
+        state.index = 1;
+        elResult.classList.add('hidden');
+        elCard.classList.remove('hidden');
+        render();
+        document.getElementById('quiz').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+
       render();
     })();
   </script>
   <script>
     (function () {
-      var EPS = 0.03;
       function clamp(v, lo, hi) {
         return Math.min(hi, Math.max(lo, v));
       }
-      var section = document.getElementById("bon-scroll-montagem");
-      var video = document.getElementById("bon-assembly-video");
+      var section = document.getElementById("hero-scroll-section");
+      var video = document.getElementById("hero-video");
+      var fallback = document.getElementById("hero-video-fallback");
       if (!section || !video) return;
 
       var mq = window.matchMedia("(prefers-reduced-motion: reduce)");
       var metaReady = false;
-      var progress = 0;
-      var pending = false;
+      var targetProgress = 0;
+      var currentProgress = 0;
+      var loopRunning = false;
       var scrollBound = false;
+      var sourceLoaded = false;
+
+      function hideFallback() {
+        if (!fallback) return;
+        fallback.style.transition = "opacity 300ms ease";
+        fallback.style.opacity = "0";
+        window.setTimeout(function () {
+          if (fallback) fallback.style.display = "none";
+        }, 320);
+      }
+
+      function loadVideoSource() {
+        if (sourceLoaded) return;
+        var src = video.getAttribute("data-src");
+        if (!src) return;
+        sourceLoaded = true;
+        video.setAttribute("src", src);
+        video.load();
+      }
 
       function snapEnd() {
         var d = video.duration;
@@ -904,25 +1177,29 @@
         } catch (e) {}
       }
 
-      function apply() {
-        pending = false;
-        if (mq.matches || !metaReady) return;
-        var d = video.duration;
-        if (!d || !isFinite(d)) return;
-        var t = clamp(progress, 0, 1) * d;
-        if (Math.abs(video.currentTime - t) < EPS) return;
-        try {
-          video.currentTime = t;
-        } catch (e) {}
-      }
+      function loop() {
+        if (mq.matches || !metaReady) {
+          loopRunning = false;
+          return;
+        }
+        
+        var diff = targetProgress - currentProgress;
+        
+        if (Math.abs(diff) < 0.0005) {
+          currentProgress = targetProgress;
+          loopRunning = false;
+        } else {
+          currentProgress += diff * 0.08;
+          requestAnimationFrame(loop);
+        }
 
-      function schedule() {
-        if (pending) return;
-        pending = true;
-        requestAnimationFrame(function () {
-          pending = false;
-          apply();
-        });
+        var d = video.duration;
+        if (d && isFinite(d)) {
+          var t = clamp(currentProgress, 0, 1) * d;
+          if (Math.abs(video.currentTime - t) > 0.001) {
+            try { video.currentTime = t; } catch (e) {}
+          }
+        }
       }
 
       function update() {
@@ -933,8 +1210,12 @@
         var sectionH = section.offsetHeight;
         var vh = window.innerHeight;
         var denom = Math.max(1, sectionH - vh);
-        progress = clamp((scrollY - sectionTop) / denom, 0, 1);
-        schedule();
+        targetProgress = clamp((scrollY - sectionTop) / denom, 0, 1);
+        
+        if (!loopRunning) {
+          loopRunning = true;
+          requestAnimationFrame(loop);
+        }
       }
 
       function bindScrollOnce() {
@@ -953,6 +1234,7 @@
 
       function onMeta() {
         metaReady = true;
+        hideFallback();
         if (mq.matches) {
           snapEnd();
           return;
@@ -973,8 +1255,25 @@
 
       video.addEventListener("loadedmetadata", onMeta);
       video.addEventListener("canplay", function () {
+        hideFallback();
         if (metaReady && !mq.matches) update();
       });
+
+      if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              loadVideoSource();
+              io.disconnect();
+            });
+          },
+          { rootMargin: "300px 0px" }
+        );
+        io.observe(section);
+      } else {
+        loadVideoSource();
+      }
 
       if (video.readyState >= 1) onMeta();
     })();
@@ -1018,6 +1317,56 @@
       nodes.forEach(function (el) {
         io.observe(el);
       });
+    })();
+  </script>
+  <!-- Floating Actions -->
+  <div class="fixed bottom-6 right-6 z-50 flex flex-row items-center gap-3">
+    <!-- Accelerator -->
+    <button id="scroll-accelerator" class="w-12 h-12 rounded-full bg-stone-900/60 backdrop-blur border border-white/10 text-white flex items-center justify-center transition-all shadow-lg select-none" aria-label="Rolar para baixo (segure)">
+      <iconify-icon icon="solar:double-alt-arrow-down-linear" width="24" class="animate-bounce pointer-events-none"></iconify-icon>
+    </button>
+    <!-- WhatsApp -->
+    <a href="https://wa.me/5567992000561?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20Boncar." target="_blank" rel="noopener noreferrer" class="w-14 h-14 rounded-full bg-[#25D366] text-white flex items-center justify-center hover:bg-[#1EBE5D] hover:scale-110 transition-transform shadow-xl" aria-label="Falar no WhatsApp">
+      <iconify-icon icon="simple-icons:whatsapp" width="28"></iconify-icon>
+    </a>
+  </div>
+
+  <script>
+    (function() {
+      var btn = document.getElementById("scroll-accelerator");
+      var scrolling = false;
+      var raf;
+
+      function doScroll() {
+        if (!scrolling) return;
+        window.scrollBy({ top: 35, behavior: 'instant' });
+        raf = requestAnimationFrame(doScroll);
+      }
+
+      function startScroll(e) {
+        if (e.type === 'touchstart' && e.cancelable) e.preventDefault();
+        if (!scrolling) {
+          scrolling = true;
+          raf = requestAnimationFrame(doScroll);
+          btn.classList.add('bg-[#f37021]', 'scale-110');
+          btn.classList.remove('bg-stone-900/60');
+        }
+      }
+
+      function stopScroll() {
+        if (scrolling) {
+          scrolling = false;
+          cancelAnimationFrame(raf);
+          btn.classList.remove('bg-[#f37021]', 'scale-110');
+          btn.classList.add('bg-stone-900/60');
+        }
+      }
+
+      btn.addEventListener("mousedown", startScroll);
+      btn.addEventListener("touchstart", startScroll, { passive: false });
+      window.addEventListener("mouseup", stopScroll);
+      window.addEventListener("touchend", stopScroll);
+      btn.addEventListener("mouseleave", stopScroll);
     })();
   </script>
 </body>
