@@ -229,8 +229,18 @@ export default function Home() {
 
   // Helper to map DB references categories to B2B categories
   const getDbRefsForCategory = (catName) => {
-    const refsSource = dbReferences.length > 0 ? dbReferences : FALLBACK_REFERENCES;
-    return refsSource.filter(ref => {
+    // Merge fallback references (local) with dbReferences (remote) to avoid empty states or RLS limitations
+    const mergedRefs = [...FALLBACK_REFERENCES];
+    dbReferences.forEach(dbRef => {
+      const idx = mergedRefs.findIndex(r => r.id === dbRef.id);
+      if (idx !== -1) {
+        mergedRefs[idx] = dbRef;
+      } else {
+        mergedRefs.push(dbRef);
+      }
+    });
+
+    return mergedRefs.filter(ref => {
       if (catName === 'Fotos Executivas') {
         return ref.category === 'Executivo' || ref.category === 'Studio';
       }
