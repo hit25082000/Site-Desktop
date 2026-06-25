@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <!-- Outer gradient ring -->
+  <circle cx="64" cy="64" r="60" fill="none" stroke="url(#logo-grad)" stroke-width="8"/>
+  <!-- Camera body -->
+  <path d="M40 56c0-4.4 3.6-8 8-8h8.2c4.1 0 7.8-2.3 9.6-6l2-4c1.8-3.6 5.5-6 9.6-6h13.2c4.1 0 7.8 2.4 9.6 6l2 4c1.8 3.7 5.5 6 9.6 6H112c4.4 0 8 3.6 8 8v40c0 4.4-3.6 8-8 8H48c-4.4 0-8-3.6-8-8V56z" fill="none" stroke="#1d4ed8" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Camera lens -->
+  <circle cx="80" cy="76" r="18" fill="none" stroke="#1d4ed8" stroke-width="6"/>
+  <circle cx="80" cy="76" r="8" fill="#d97706"/>
+  <!-- Flash light -->
+  <circle cx="104" cy="62" r="4" fill="#3b82f6"/>
+  
+  <defs>
+    <linearGradient id="logo-grad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,41 @@
+96:             <button onclick="openCheckoutModal()" class="w-full sm:w-auto bg-gradient-to-tr from-gray-900 to-black hover:from-black hover:to-gray-900 text-white px-8 py-3 rounded-full font-medium transition flex items-center justify-center gap-2 shadow-lg shadow-black/10">
+<span>Finalizar Seleção e Pagar</span>
+<i data-lucide="arrow-right" class="w-4 h-4"></i>
+</button>
+</div>
+</div>
+103:     <!-- LIGHTBOX: AMPLIAR IMAGEM -->
+<div id="lightbox-modal" class="fixed inset-0 bg-neutral-950/95 z-50 flex flex-col justify-between hidden" style="touch-action: none;">
+<!-- Top Toolbar -->
+<div class="p-4 flex justify-between items-center text-white bg-gradient-to-b from-black/60 to-transparent">
+<span class="text-xs text-white/70 tracking-wide font-mono" id="lightbox-index">Foto 1 de 20</span>
+<div class="flex items-center gap-3">
+<button onclick="toggleLightboxSelect()" class="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold backdrop-blur-md border border-white/20 transition" id="lightbox-select-btn">
+<i data-lucide="check" class="w-4 h-4"></i>
+<span>Selecionar</span>
+</button>
+<button onclick="closeLightbox()" class="p-2 bg-white/10 hover:bg-white/20 rounded-full transition">
+<i data-lucide="x" class="w-5 h-5"></i>
+</button>
+125:             <div class="relative max-h-[75vh] max-w-full flex items-center justify-center">
+<img id="lightbox-img" src="" class="max-h-[75vh] max-w-full object-contain rounded-lg shadow-2xl transition-transform duration-200 select-none pointer-events-none"/>
+<!-- Blocker Overlay -->
+<div class="absolute inset-0 bg-transparent select-none z-10"></div>
+</div>
+131:             <!-- Variation badge in lightbox -->
+<span class="absolute bottom-4 bg-indigo-600/90 text-white text-xs px-3 py-1 rounded-full backdrop-blur-md border border-white/10 hidden z-20" id="lightbox-var-badge">
+Variação de Pose
+</span>
+136:             <button onclick="nextLightbox()" class="absolute right-4 p-3 bg-black/40 hover:bg-black/60 text-white rounded-full transition z-20">
+<i data-lucide="chevron-right" class="w-6 h-6"></i>
+</button>
+</div>
+141:         <!-- Bottom details -->
+<div class="p-6 text-center text-white bg-gradient-to-t from-black/60 to-transparent">
+<p class="text-sm text-white/80" id="lightbox-description">Dica: Use as setas do teclado para navegar</p>
+</div>
+</div>
+147:     <!-- MODAL: CHECKOUT MERCADO PAGO (SIMULADO) -->
+<div id="checkout-modal" class="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+<div class="bg-white border border-neutral-200 rounded-3xl p-6 max-w-md w-full shadow-2xl relative">
+<button onclick="closeModal('checkout-modal')" class="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition">

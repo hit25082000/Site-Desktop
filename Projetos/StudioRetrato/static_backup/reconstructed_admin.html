@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Painel do Fotógrafo — Studio Retrato</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="assets/css2_19fd9cc6b396.css" rel="stylesheet"/>
+<link href="assets/css2_86e10c4bcbd4.css" rel="stylesheet"/>
+<script src="assets/resource_3fa48481346f.js"></script>
+<script src="assets/lucide_f4308f5e6a68.js"></script>
+<style>
+.font-geist { font-family: 'Geist', sans-serif !important; }
+/* Custom scrollbar */
+::-webkit-scrollbar {
+width: 6px;
+height: 6px;
+}
+::-webkit-scrollbar-track {
+background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+background: #cbd5e1;
+border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+background: #94a3b8;
+}
+</style>
+</head>
+<body class="antialiased bg-neutral-50 text-neutral-900 min-h-screen font-geist">
+<!-- Aura background gradient matching catalog -->
+<div class="fixed top-0 w-full h-screen -z-10 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50"></div>
+36:     <div class="max-w-7xl mx-auto px-4 py-8">
+<!-- Bad
+<!-- Badge Header 
+<header class="shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] bg-white border border-neutral-200 rounded-3xl p-6 mb-8">
+<div class="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+<div class="flex items-center gap-4">
+<div class="h-12 w-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
+<i data-lucide="sliders" class="w-6 h-6"></i>
+</div>
+<div>
+<h1 class="text-2xl font-bold tracking-tight text-neutral-950">Painel do Fotógrafo</h1>
+<p class="text-sm text-neutral-500">Gerenciador de ensaios e entrega de fotos com IA</p>
+</div>
+</div>
+50:                 <div class="flex flex-wrap items-center gap-4 text-sm w-full md:w-auto">
+<!-- MISSING LINE 50 -->
+<!-- MISSING LINE 51 -->
+<!-- MISSING LINE 52 -->
+<!-- MISSING LINE 53 -->
+<!-- MISSING LINE 54 -->
+<!-- MISSING LINE 55 -->
+<!-- MISSING LINE 56 -->
+<!-- MISSING LINE 57 -->
+<!-- MISSING LINE 58 -->
+<!-- MISSING LINE 59 -->
+<!-- MISSING LINE 60 -->
+<!-- MISSING LINE 61 -->
+<!-- MISSING LINE 62 -->
+<!-- MISSING LINE 63 -->
+<!-- MISSING LINE 64 -->
+<!-- MISSING LINE 65 -->
+<!-- MISSING LINE 66 -->
+<!-- MISSING LINE 67 -->
+<!-- MISSING LINE 68 -->
+<!-- MISSING LINE 69 -->
+<!-- MISSING LINE 70 -->
+<!-- MISSING LINE 71 -->
+<!-- MISSING LINE 72 -->
+<!-- MISSING LINE 73 -->
+<!-- MISSING LINE 74 -->
+<!-- MISSING LINE 75 -->
+<!-- MISSING LINE 76 -->
+<!-- MISSING LINE 77 -->
+<i data-lucide="library" class="w-5 h-5"></i>
+<span>Biblioteca de Referências</span>
+</button>
+<button onclick="switchTab('clients')" id="tab-btn-clients" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left font-medium transition duration-150 text-neutral-700 hover:bg-neutral-100 bg-transparent">
+<i data-lucide="users" class="w-5 h-5"></i>
+<span>Clientes & Books</span>
+</button>
+</nav>
+87:             <!-- Content Area -->
+<!-- MISSING LINE 87 -->
+<main class="lg:col-span-9">
+<!-- TAB: OVERVIEW & SETTINGS -->
+<div id="tab-overview" class="space-y-8">
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+<div class="bg-white border border-neutral-200 rounded-3xl p-6 shadow-sm">
+<p class="text-xs text-neutral-500 uppercase tracking-wider font-semibold">Total de Clientes</p>
+<h3 class="text-3xl font-bold mt-2 text-neutral-900" id="stat-total-clients">0</h3>
+</div>
+<div class="bg-white border border-neutral-200 rounded-3xl p-6 shadow-sm">
+<p class="text-xs text-neutral-500 uppercase tracking-wider font-semibold">Books Criados</p>
+<h3 class="text-3xl font-bold mt-2 text-neutral-900" id="stat-total-books">0</h3>
+</div>
+<!-- MISSING LINE 101 -->
+<!-- MISSING LINE 102 -->
+<!-- MISSING LINE 103 -->
+<!-- MISSING LINE 104 -->
+<!-- MISSING LINE 105 -->
+<!-- MISSING LINE 106 -->
+<!-- MISSING LINE 107 -->
+<!-- MISSING LINE 108 -->
+<!-- MISSING LINE 109 -->
+<i data-lucide="settings" class="w-5 h-5 text-indigo-600"></i>
+<h2 class="text-lg font-bold text-neutral-950">Configurações Gerais da Ferramenta</h2>
+</div>
+114:                         <form id="settings-form" class="space-y-6">
+<form id="settings-form" class="space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Preço Padrão por Foto (R$)</label>
+<input type="number" id="sett-price" step="0.01" class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600" required/>
+</div>
+<div>
+<label class="block text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Chave de API ImgBB (Opcional)</label>
+<input type="text" id="sett-imgbb" placeholder="Para hospedar fotos e gerar links públicos reais" class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"/>
+<p class="text-xs text-neutral-400 mt-1">Gere uma chave gratuita em api.imgbb.com para hospedar imagens locais na nuvem automaticamente.</p>
+</div>
+</div>
+127:                             <hr class="border-neutral-200"/>
+<!-- MISSING LINE 127 -->
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+<!-- MISSING LINE 129 -->
+<div class="flex items-center justify-between">
+<div>
+<h3 class="text-sm font-bold text-neutral-950">Mercado Pago - Checkout Pro</h3>
+<p class="text-xs text-neutral-500 mt-0.5">Selecione o modo de pagamento desejado.</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-xs text-neutral-500" id="sandbox-label">Modo Simulação (Sem chaves)</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" id="sett-mp-sandbox" class="sr-only peer" checked onchange="toggleMpKeyInput()"/>
+<div class="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+</label>
+</div>
+</div>
+144:                                 <div id="mp-key-container" class="mt-4 hidden">
+<!-- MISSING LINE 144 -->
+<label class="block text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Chave Pública do Mercado Pago (Production Public Key)</label>
+<input type="text" id="sett-mp-key" placeholder="APP_USR-..." class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"/>
+</div>
+</div>
+150:                             <button type="submit" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium transition duration-150">
+<button type="submit" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium transition duration-150">
+Salvar Configurações
+</button>
+</form>
+</div>
+</div>
+157:                 <!-- TAB: CATEGORIAS & PROMPTS IA -->
+<h2 class="text-xl font-bold text-neutral-950">Biblioteca de Referências</h2>
+<div id="tab-categories" class="space-y-6 hidden">
+<div class="flex justify-between items-center">
+<div>
+<h2 class="text-xl font-bold text-neutral-950">Categorias & Prompts IA</h2>
+<p class="text-sm text-neutral-500">Gerencie e personalize as categorias de estilo e seus prompts para o motor Nano Banana Pro</p>
+</div>
+<button onclick="openNewCategoryModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium transition duration-150">
+<i data-lucide="plus" class="w-4 h-4"></i>
+<span>Nova Categoria</span>
+</button>
+</div>
+170:                     <!-- Categories Table / Card List -->
+<!-- Categories Table / Card List -->
+<div class="bg-white border border-neutral-200 rounded-3xl overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-neutral-200 bg-neutral-50/50">
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-neutral-500">Nome da Categoria</th>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-neutral-500 text-right">Ações</th>
+</tr>
+</thead>
+<tbody id="categories-table-body" class="divide-y divide-neutral-100 text-sm text-neutral-700">
+<!-- Loaded dynamically -->
+</tbody>
+</table>
+</div>
+</div>
+</div>
+188:                 <!-- TAB: BIBLIOTECA DE REFERÊNCIAS -->
+189:                 <!-- TAB: BIBLIOTECA DE REFERÊNCIAS -->
+<div id="tab-references" class="space-y-6 hidden">
+<div class="flex justify-between items-center">
+<div>
+<h2 class="text-xl font-bold te
+<!-- MISSING LINE 193 -->
+<!-- MISSING LINE 194 -->
+</div>
+<button onclick="openNewRefModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium transition duration-150">
+<i data-lucide="plus" class="w-4 h-4"></i>
+<span>Nova Referência</span>
+</button>
+</div>
+202:                     <!-- References List -->
+<!-- MISSING LINE 202 -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="references-grid">
+<!-- Loaded dynamically -->
+</div>
+</div>
+208:                 <!-- TAB: CLIENTES & BOOKS -->
+<!-- MISSING LINE 208 -->
+<div id="tab-clients" class="grid grid-cols-1 md:grid-cols-12 gap-8 hidden">
+<!-- Left: Clients Column -->
+<div class="md:col-span-4 bg-white border border-neutral-200 rounded-3xl p-6 shadow-sm h-fit">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-bold text-neutral-950">Meus Clientes</h3>
+<button onclick="openNewClientModal()" class="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition duration-150">
+<i data-lucide="plus" class="w-4 h-4"></i>
+</button>
+</div>
+219:                         <!-- Client List -->
+<!-- MISSING LINE 219 -->
+<div class="space-y-2 max-h-[400px] overflow-y-auto pr-2" id="clients-list">
+</div>
+</div>
+</main>
+</div>
+</div>
+227:     <!-- MODAL: NOVA REFERÊNCIA -->
+<!-- MISSING LINE 227 -->
+<div>
+<h3 class="text-xl font-bold text-neutral-950" id="detail-client-name">Selecione um cliente</h3>
+<p class="text-sm text-neutral-500" id="detail-client-contact">-</p>
+</div>
+<div class="flex items-center gap-2">
+<button onclick="deleteSelectedClient()" class="flex items-center gap-1.5 border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+<i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Excluir Cliente
+</button>
+<button onclick="openNewBookModal()" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition">
+<i data-lucide="plus" class="w-3.5 h-3.5"></i> Novo Book
+</button>
+</div>
+</div>
+242:                             <hr class="border-neutral-100 mb-6"/>
+<!-- MISSING LINE 242 -->
+244:                             <div class="space-y-4">
+<!-- MISSING LINE 244 -->
+<h4 class="text-xs font-semibold uppercase tracking-wider text-neutral-500">Books deste Cliente</h4>
+<div class="space-y-3" id="books-list">
+<!-- Loaded dynamically -->
+</div>
+</div>
+</div>
+<!-- MISSING LINE 251 -->
+<!-- MISSING LINE 252 -->
+<!-- MISSING LINE 253 -->
+<!-- MISSING LINE 254 -->
+<!-- MISSING LINE 255 -->
+<!-- MISSING LINE 256 -->
+<!-- MISSING LINE 257 -->
+<!-- MISSING LINE 258 -->
+<!-- MISSING LINE 259 -->
+</div>
+</div>
+263:     <!-- MODAL: NOVA/EDITAR CATEGORIA -->
+<!-- MISSING LINE 263 -->
+<div id="category-modal" class="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+<div class="bg-white border border-neutral-200 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative">
+<button onclick="closeModal('category-modal')" class="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition">
+<i data-lucide="x" class="w-5 h-5"></i>
+</button>
+<h3 class="text-lg font-bold text-neutral-950 mb-4" id="category-modal-title">Adicionar Categoria</h3>
+<input type="hidden" id="cat-id"/>
+<div>
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Nome da Categoria</label>
+<input type="text" id="cat-name" placeholder="Ex: Corporativo, Casual" class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" required/>
+</div>
+<button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium transition">
+Salvar Categoria
+</button>
+</form>
+</div>
+</div>
+282:     <!-- MODAL: NOVA REFERÊNCIA -->
+</button>
+<div id="new-ref-modal" class="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+<div class="bg-white border border-neutral-200 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
+<button onclick="closeModal('new-ref-modal')" class="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition">
+<i data-lucide="x" class="w-5 h-5"></i>
+</button>
+<h3 class="text-lg font-bold text-neutral-950 mb-4">Adicionar Nova Referência<
+<form id="new-ref-form" class="space-y-4" onsubmit="handleNewRef(event)">
+<div>
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Nome/Estilo</label>
+<input type="text" id="ref-name" placeholder="Ex: Executivo Estúdio, Casual Externo" class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" required/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Categoria</label>
+<select id="ref-category" class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2" required>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Categoria</label>
+<select id="ref-category" class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2" required>
+<truncated 1003 bytes>
+<!-- MISSING LINE 304 -->
+<option value="false">Não (Apenas Biblioteca)</option>
+</select>
+</div>
+</div>
+<div>
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Imagem</label>
+<div class="flex gap-4">
+<input type="url" id="ref-url" placeholder="https://unsplash.com/..." class="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2"/>
+<label class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2.5 rounded-xl font-medium cursor-pointer text-sm flex items-center shrink-0">
+<span>Subir Arquivo</span>
+<input type="file" id="ref-file" accept="image/*" class="hidden" onchange="handleRefFile(event)"/>
+</label>
+</div>
+<p class="text-[10px] text-neutral-400 mt-1">Cole uma URL de alta qualidade ou selecione um arquivo do computador.</p>
+</div>
+<div id="ref-preview-box" class="h-40 rounded-2xl bg-neutral-50 border border-dashed border-neutral-200 flex items-center justify-center overflow-hidden hidden">
+<img id="ref-preview-img" src="" class="h-full w-full object-cover"/>
+</div>
+<div>
+<truncated 278 bytes>
+</button>
+</form>
+<i data-lucide="sparkles" class="w-3 h-3"></i>
+<span>Extrair Prompt com Agente IA</span>
+</button>
+</div>
+<textarea id="ref-prompt" rows="3" placeholder="Insira o prompt ou use o Agente IA acima para extrair da imagem..." class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20" required></textarea>
+</div>
+334:                 <!-- TERMINAL LOGS DO AGENTE EXTRATOR DE PROMPT -->
+<i data-lucide="x" class="w-5 h-5"></i>
+<div id="prompt-extractor-container" class="hidden border border-neutral-800 bg-neutral-950 rounded-2xl p-4 font-mono text-neutral-300 text-[10px] space-y-2 max-h-48 overflow-y-auto shadow-inner">
+<div class="flex items-center justify-between border-b border-neutral-800 pb-1.5 mb-2 text-neutral-400">
+<span class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+<span class="w-2 h-2 rounded-full bg-yellow-500 inline-block"></span>
+<span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> 
+<span class="ml-1 font-bold text-neutral-200">Agente Extrator de Prompt v1.2</span>
+</span>
+<span class="animate-pulse text-indigo-400 font-bold">EXECUÇÃO ATIVA</span>
+</div>
+<div id="prompt-extractor-logs" class="space-y-1">
+<!-- Logs dinâmicos -->
+</div>
+</div>
+350:                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium transition">
+</div>
+Adicionar Referência
+</button>
+</form>
+</div>
+</div>
+357:     <!-- MODAL: NOVO CLIENTE -->
+<!-- MISSING LINE 357 -->
+<div id="new-client-modal" class="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+<div class="bg-white border border-neutral-200 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative">
+<button onclick="closeModal('new-client-modal')" class="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition">
+<i data-lucide="x" class="w-5 h-5"></i>
+</button>
+<h3 class="text-lg font-bold text-neutral-950 mb-4">Cadastrar Novo Cliente</h3>
+<form id="new-client-form" class="space-y-4" onsubmit="handleNewClient(event)">
+<div>
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Nome Completo</label>
+<input type="text" id="cli-name" placeholder="Ex: Maria Silva" class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" required/>
+</div>
+<div>
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Contato (WhatsApp)</label>
+<input type="text" id="cli-phone" placeholder="Ex: +55 67 9652-4559" class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" required/>
+</div>
+<button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium transition">
+Cadastrar Cliente
+</button>
+</form>
+</div>
+</div>
+380:     <!-- MODAL: CRIAR NOVO BOOK (WIZARD DE IA) -->
+</button>
+</form>
+</div>
+</div>
+385:     <!-- MODAL: CRIAR NOVO BOOK (WIZARD DE IA) -->
+</button>
+<div id="new-book-modal" class="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+<div class="bg-white border border-neutral-200 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative overflow-y-auto max-h-[90vh]">
+<button onclick="closeModal('new-book-modal')" class="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition">
+<i data-lucide="x" class="w-5 h-5"></i>
+</button>
+<h3 class="text-lg font-bold text-neutral-950 mb-4">Criar Novo Book de Fotos</h3>
+393:             <form id="new-book-form" class="space-y-4" onsubmit="handleNewBook(event)">
+394:                 <div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Título do Book / Ocasião</label>
+<input type="text" id="book-title" placeholder="Ex: Mesversário 1 Mês, Ensaio Corporativo" class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2" required/>
+</div>
+399:                 <div class="grid grid-cols-2 gap-4">
+<!-- MISSING LINE 399 -->
+<div>
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Preço Por Foto (R$)</label>
+<truncated 2251 bytes>
+<!-- MISSING LINE 403 -->
+<!-- MISSING LINE 404 -->
+406:                 <div>
+<!-- MISSING LINE 406 -->
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Selecionar Referências Usadas</label>
+<div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border border-neutral-200 rounded-xl p-3 bg-neutral-50" id="book-references-list">
+<!-- Loaded dynamically -->
+</div>
+</div>
+413:                 <div>
+<!-- MISSING LINE 413 -->
+<label class="block text-xs font-semibold uppercase text-neutral-500 mb-1">Upload das Fotos de Rosto (Cliente)</label>
+<input type="file" id="book-face-file" accept="image/*" class="w-full text-sm file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 cursor-pointer" multiple required/>
+</div>
+418:                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2">
+<!-- MISSING LINE 418 -->
+<i data-lucide="sparkles" class="w-4 h-4"></i>
+<span>Iniciar Confeccionador de IA</span>
+</button>
+</form>
+</div>
+</div>
+426:     <!-- PIPELINE IA: SIMULAÇÃO PROCESSAMENTO -->
+427:                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2">
+<div id="ai-pipeline-modal" class="fixed inset-0 bg-neutral-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+<i data-lucide="sparkles" class="w-4 h-4"></i>
+<span>Iniciar Confeccionador de IA</span>
+</button>
+</form>
+</div>
+</div>
+435:     <!-- MODAL: SELECIONAR REFERÊNCIAS -->
+<!-- MISSING LINE 435 -->
+<div id="ref-selector-modal" class="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-[60] flex items-center justify-center hidden p-4">
+<div class="bg-white border border-neutral-200 rounded-3xl p-6 max-w-2xl w-full shadow-2xl relative max-h-[85vh] flex flex-col">
+<button type="button" onclick="closeModal('ref-selector-modal')" class="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition">
+<i data-lucide="x" class="w-5 h-5"></i>
+</button>
+<h3 class="text-lg font-bold text-neutral-950 mb-1">Selecionar Referências</h3>
+<p class="text-xs text-neutral-500 mb-4">Escolha as fotos de referência que servirão de inspiração para este book.</p>
+444:             <div class="mb-4">
+<!-- Populado dinamicamente -->
+<input type="text" id="ref-selector-search" oninput="filterSelectorReferences()" placeholder="Buscar referências pelo nome ou categoria..." class="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20"/>
+</div>
+448:             <div class="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-3 pr-1 min-h-[30vh]" id="selector-refs-grid">
+<button type="button" onclick="closeModal('ref-selector-modal')" class="px-4 py-2 text-xs font-semibold text-neutral-500 hover:text-neutral-700 transition">
+<!-- Populado dinamicamente -->
+</div>
+<button type="button" onclick="confirmReferenceSelection()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-xs font-semibold transition">
+Confirmar Seleção
+</button>
+</div>
+</div>
+</div>
+458:     <!-- PIPELINE IA: SIMULAÇÃO PROCESSAMENTO -->
+<!-- MISSING LINE 458 -->
+<div id="ai-pipeline-modal" class="fixed inset-0 bg-neutral-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+<div class="bg-neutral-900 border border-white/10 rounded-3xl p-6 max-w-md w-full shadow-2xl text-white relative">
+<!-- MISSING LINE 461 -->
+<!-- MISSING LINE 462 -->
+<!-- MISSING LINE 463 -->
+<!-- MISSING LINE 464 -->
+<!-- MISSING LINE 465 -->
+<!-- MISSING LINE 466 -->
+<!-- MISSING LINE 467 -->
+<!-- MISSING LINE 468 -->
+<!-- MISSING LINE 469 -->
+<!-- MISSING LINE 470 -->
+<!-- MISSING LINE 471 -->
+<!-- MISSING LINE 472 -->
+<!-- MISSING LINE 473 -->
+<!-- MISSING LINE 474 -->
+<!-- MISSING LINE 475 -->
+<!-- MISSING LINE 476 -->
+<!-- MISSING LINE 477 -->
+<!-- MISSING LINE 478 -->
+<!-- MISSING LINE 479 -->
+</div>
+</div>
+483:     <!-- BOOK DETAIL VIEWER MODAL -->
+"https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600",
+<div id="book-view-modal" class="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+<div class="bg-white border border-neutral-200 rounded-3xl p-6 max-w-4xl w-full shadow-2xl relative overflow-y-auto max-h-[90vh]">
+<button onclick="closeModal('book-view-modal')" class="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition">
+<i data-lucide="x" class="w-5 h-5"></i>
+</button>
+490:             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600",
+<div>
+<h3 class="text-xl font-bold text-neutral-950" id="view-book-title">Título do Book</h3>
+<p class="text-sm text-neutral-500" id="view-book-details">0 fotos • Preço por foto: R$ 30</p>
+</div>
+<div class="flex items-center gap-3">
+<button id="view-book-copy-link" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+<i data-lucide="copy" class="w-4 h-4"></i>
+<span>Copiar Link do Cliente</span>
+</button>
+<button id="view-book-delete" class="p-2 border border-red-200 text-red-600 hover:bg-
+<script src="assets/db.js"></script>
+<script>
+// High quality portraits from unsplash for simulating results
+const UNSPLASH_MOCK_PORTRAITS = [
+"https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600",
+"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600",
+"https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=600",
+<div>
+<span class="text-xs text-neutral-500 block uppercase font-semibold">Status de Seleção</span>
+<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold mt-1" id="view-book-status-badge">
+Pendente
+</span>
+</div>
+<div>
+<span class="text-xs text-neutral-500 block uppercase font-semibold">Fotos Escolhidas</span>
+<span class="text-sm font-semibold text-neutral-950 mt-1 block" id="view-book-selected-count">0 selecionadas</span>
+</div>
+<div>
+<span class="text-xs text-neutral-500 block uppercase font-semibold">Faturamento</span>
+<span class="text-sm font-semibold text-neutral-950 mt-1 block" id="view-book-amount">R$ 0,00</span>
+</div>
+</div>
+524:             <!-- Gallery Grid -->
+<!-- MISSING LINE 524 -->
+<div>
+<h4 class="text-sm font-bold text-neutral-950 mb-4 flex items-center justify-between">
+<span>Galeria do Book</span>
+<span class="text-xs text-neutral-400 font-normal">*Variações adicionais contam a partir da foto 11</span>
+</h4>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="view-book-photos-grid">
+<!-- Dynamic images -->
+</div>
+</div>
+</div>
+</div>
+537:     <!-- Scripts -->
+"https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600",
+<script src="assets/db.js"></script>
+<script>
+// High quality portraits from unsplash for simulating results
+"https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600",
+"https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=600",
+"https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=600",
+"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600",
+"https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=600",
+"https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=600",
+"https://images.unsplash.com/photo-1552058544-f2b08422138a?q=80&w=600",
+"https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?q=80&w=600",
+"https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?q=80&w=600",
+"https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600",
+"https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?q=80&w=600",
+"https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=600",
+"https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=600",
+"https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=600",
+"https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=600",
+"https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=600",
+"https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?q=80&w=600",
+"https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=600",
+"https://images.unsplash.com/photo-1489980508314-941910ded1f4?q=80&w=600",
+"https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=600"
+];
+563:         let selectedClientId = null;
+document.getElementById('tab-categories').classList.add('hidden');
+let activeTab = 'overview';
+let currentRefBase64 = null;
+let currentRefBatch = [];
+let currentBookSelectedRefs = [];
+let selectedRefsInModal = [];
+570:         // Auto clock matching catalog
+571:             // Show current tab
+setInterval(() => {
+const timeSpan = document.getElementById('live-time');
+if (timeSpan) {
+const now = new Date();
+timeSpan.textContent = now.toLocaleTimeString('pt-BR');
+}
+}, 1000);
+579:         // Run when DB is ready
+<div class="flex items-center justify-end gap-2">
+window.addEventListener('load', () => {
+setTimeout(() => {
+if (window.srDb) {
+loadSettings();
+loadStats();
+loadReferences();
+loadClients();
+populateCategoryDropdown();
+}
+}, 300);
+});
+592:         // Tab Switcher
+</td>
+function switchTab(tabName) {
+// Hide all tabs
+document.getElementById('tab-overview').classList.add('hidden');
+document.getElementById('tab-references').classList.add('hidden');
+document.getElementById('tab-clients').classList.add('hidden');
+document.getElementById('tab-categories').classList.add('hidden');
+600:             // Remove active classes from navigation buttons
+async function populateCategoryDropdown() {
+const categories = await srDb.getCategories();
+const select = document.getElementById('ref-category');
+if (select) {
+const currentVal = select.value;
+select.innerHTML = '';
+categories.forEach(cat => {
+const opt = document.createElement('option');
+opt.value = cat.name;
+opt.textContent = cat.name;
+select.appendChild(opt);
+});
+if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+select.value = currentVal;
+}
+}
+}
+618:         function openNewCategoryModal() {
+<!-- MISSING LINE 618 -->
+document.getElementById('category-form').reset();
+document.getElementById('cat-id').value = '';
+document.getElementById('category-modal-title').textContent = 'Adicionar Categoria';
+document.getElementById('category-modal').classList.remove('hidden');
+}
+625:         async function openEditCategoryModal(id) {
+<!-- MISSING LINE 625 -->
+const categories = await srDb.getCategories();
+document.getElementById('category-modal-title').textContent = 'Editar Categoria';
+document.getElementById('category-modal').classList.remove('hidden');
+}
+}
+632:         async function handleCategorySubmit(e) {
+<!-- MISSING LINE 632 -->
+e.preventDefault();
+const id = document.getElementById('cat-id').value;
+const name = document.getElementById('cat-name').value;
+const prompt = document.getElementById('cat-prompt').value;
+638:             const categories = await srDb.getCategories();
+<!-- MISSING LINE 638 -->
+if (id) {
+const idx = categories.findIndex(c => c.id === id);
+if (idx > -1) {
+categories[idx].name = name;
+categories[idx].prompt = prompt;
+}
+} else {
+const newId = 'cat_' + Date.now();
+categories.push({ id: newId, name, prompt });
+}
+650:             await srDb.saveCategories(categories);
+tbody.appendChild(tr);
+});
+lucide.createIcons();
+populateCategoryDropdown();
+}
+656:         async function populateCategoryDropdown() {
+}
+const categories = await srDb.getCategories();
+const select = document.getElementById('ref-category');
+if (select) {
+const currentVal = select.value;
+select.innerHTML = '';
+categories.forEach(cat => {
+const opt = document.createElement('option');
+opt.value = cat.name;
+opt.textContent = cat.name;
+select.appendChild(opt);
+});
+if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+select.value = currentVal;
+}
+}
+}
+674:         function openNewCategoryModal() {
+// SETTINGS & STATS FUNCTIONS
+document.getElementById('category-form').reset();
+document.getElementById('cat-id').value = '';
+document.getElementById('category-modal-title').textContent = 'Adicionar Categoria';
+document.getElementById('category-modal').classList.remove('hidden');
+}
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+document.getElementById('sett-mp-key').value = config.mercadoPagoPublicKey || '';
+toggleMpKeyInput();
+}
+685:         function toggleMpKeyInput() {
+<!-- MISSING LINE 685 -->
+const isSandbox = document.getElementById('sett-mp-sandbox').checked;
+const container = document.getElementById('mp-key-container');
+const label = document.getElementById('sandbox-label');
+if (isSandbox) {
+container.classList.add('hidden');
+label.textContent = "Modo Simulação (Sem chaves)";
+} else {
+container.classList.remove('hidden');
+label.textContent = "Modo Produção (Mercado Pago real)";
+}
+}
+698:         document.getElementById('settings-form').addEventListener('submit', async (e) => {
+<!-- MISSING LINE 698 -->
+e.preventDefault();
+const config = {
+pricePerPhoto: parseFloat(document.getElementById('sett-price').value),
+imgbbApiKey: document.getElementById('sett-imgbb').value,
+mercadoPagoSandbox: document.getElementById('sett-mp-sandbox').checked,
+mercadoPagoPublicKey: document.getElementById('sett-mp-key').value
+};
+await srDb.saveSettings(config);
+alert('Configurações salvas com sucesso!');
+loadStats();
+});
+711:         async function loadStats() {
+listEl.appendChild(btn);
+const clients = await srDb.getClients();
+const books = await srDb.getAllBooks();
+const config = await srDb.getSettings();
+716:             document.getElementById('stat-total-clients').textContent = clients.length;
+document.getElementById('new-client-form').reset();
+document.getElementById('stat-total-books').textContent = books.length;
+719:             let revenue = 0;
+}
+categories = categories.filter(c => c.id !== id);
+await srDb.saveCategories(categories);
+loadCategoriesList();
+}
+}
+726:         // ==========================================
+}
+// SETTINGS & STATS FUNCTIONS
+}
+}
+731:         // ==========================================
+document.getElementById('sett-price').value = config.pricePerPhoto;
+// SETTINGS & STATS FUNCTIONS
+// ==========================================
+async function loadSettings() {
+const config = await srDb.getSettings();
+document.getElementById('sett-price').value = config.pricePerPhoto;
+document.getElementById('sett-imgbb').value = config.imgbbApiKey || '';
+document.getElementById('sett-mp-sandbox').checked = config.mercadoPagoSandbox;
+document.getElementById('sett-mp-key').value = config.mercadoPagoPublicKey || '';
+toggleMpKeyInput();
+}
+743:         function toggleMpKeyInput() {
+container.classList.add('hidden');
+const isSandbox = document.getElementById('sett-mp-sandbox').checked;
+const container = document.getElementById('mp-key-container');
+const label = document.getElementById('sandbox-label');
+if (isSandbox) {
+container.classList.add('hidden');
+label.textContent = "Modo Simulação (Sem chaves)";
+} else {
+container.classList.remove('hidden');
+label.textContent = "Modo Produção (Mercado Pago real)";
+}
+}
+756:         document.getElementById('settings-form').addEventListener('submit', async (e) => {
+mercadoPagoSandbox: document.getElementById('sett-mp-sandbox').checked,
+e.preventDefault();
+const config = {
+pricePerPhoto: parseFloat(document.getElementById('sett-price').value),
+imgbbApiKey: document.getElementById('sett-imgbb').value,
+mercadoPagoSandbox: document.getElementById('sett-mp-sandbox').checked,
+mercadoPagoPublicKey: document.getElementById('sett-mp-key').value
+};
+await srDb.saveSettings(config);
+alert('Configurações salvas com sucesso!');
+loadStats();
+});
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+<div class="h-48 w-full bg-neutral-100 overflow-hidden relative">
+<img src="${ref.url}" alt="${ref.name}" class="h-full w-full object-cover"/>
+<span class="absolute top-3 left-3 bg-neutral-900/80 text-white text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md backdrop-blur-sm">${ref.category}</span>
+</div>
+<div class="p-4 flex-1 flex flex-col j
+<div>
+<h4 class="font-bold text-neutral-900 leading-tight">${ref.name}</h4>
+<p class="text-xs text-neutral-500 mt-1">${ref.public ? 'Exibido no Catálogo' : 'Apenas Biblioteca'}</p>
+</div>
+<div class="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100">
+<label class="flex items-center gap-2 cursor-pointer">
+781:         // ==========================================
+<div class="w-9 h-5 bg-neutral-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 relative"></div>
+// REFERENCES FUNCTIONS
+// ==========================================
+async function loadReferences() {
+const list = await srDb.getReferences();
+const grid = document.getElementById('references-grid');
+grid.innerHTML = '';
+789:             if (list.length === 0) {
+</div>
+grid.innerHTML = `
+<div class="col-span-full bg-neutral-100 border border-dashed border-neutral-200 rounded-3xl p-10 text-center text-neutral-500">
+<i data-lucide="library" class="w-8 h-8 mx-auto mb-2 text-neutral-400"></i>
+<p class="text-sm">Nenhuma referência cadastrada ainda. Adicione uma nova clicando no botão acima.</p>
+</div>
+`;
+lucide.createIcons();
+return;
+}
+800:             list.forEach(ref => {
+801:         function openNewRefModal() {
+const card = document.createElement('div');
+card.className = "bg-white border border-neutral-200 rounded-3xl overflow-hidden shadow-sm flex flex-col";
+card.innerHTML = `
+<div class="h-48 w-full bg-neutral-100 overflow-hidden relative">
+<img src="${ref.url}" alt="${ref.name}" class="h-full w-full object-cover"/>
+<span class="absolute top-3 left-3 bg-neutral-900/
+populateCategoryDropdown();
+document.getElementById('new-ref-modal').classList.remove('hidden');
+}
+811:         function handleRefFile(e) {
+const file = e.target.files[0];
+const file = e.target.files[0];
+if (file) {
+const reader = new FileReader();
+reader.onload = (event) => {
+currentRefBase64 = event.target.result;
+document.getElementById('ref-preview-img').src = currentRefBase64;
+document.getElementById('ref-preview-box').classList.remove('hidden');
+};
+reader.readAsDataURL(file);
+}
+}
+824:                             <button onclick="deleteRef('${ref.id}')" class="p-1.5 border border-red-100 text-red-500 hover:bg-red-50 rounded-lg transition duration-150">
+e.preventDefault();
+<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+</button>
+</div>
+</div>
+`;
+grid.appendChild(card);
+});
+lucide.createIcons();
+}
+835:         function openNewRefModal() {
+}
+document.getElementById('new-ref-form').reset();
+const previewBox = document.getElementById('ref-preview-box');
+previewBox.classList.add('hidden');
+previewBox.innerHTML = '';
+document.getElementById('prompt-extractor-container').classList.add('hidden');
+document.getElementById('prompt-extractor-logs').innerHTML = '';
+currentRefBase64 = null;
+currentRefBatch = [];
+populateCategoryDropdown();
+document.getElementById('new-ref-modal').classList.remove('hidden');
+}
+848:         function handleRefFile(e) {
+};
+const files = Array.from(e.target.files);
+if (files.length === 0) return;
+852:             const previewBox = document.getElementById('ref-preview-box');
+853:         async function handleNewRef(e) {
+previewBox.innerHTML = '';
+currentRefBatch = [];
+856:             let loadedCount = 0;
+const fileInput = document.getElementById('ref-file');
+files.forEach((file) => {
+const reader = new FileReader();
+reader.onload = (event) => {
+const base64 = event.target.result;
+if (config.imgbbApiKey) {
+try {
+imgUrl = await srDb.uploadToImgBB(fileInput.files[0], config.imgbbApiKey);
+} catch (err) {
+console.warn('Falha no ImgBB upload, usando base64 localmente:', err);
+imgUrl = currentRefBase64;
+}
+} else {
+imgUrl = currentRefBase64;
+}
+}
+873:             if (!imgUrl && currentRefBase64) {
+}
+imgUrl = currentRefBase64;
+}
+877:             if (!imgUrl) {
+let name = nameInput.value.trim();
+alert('Forneça uma URL ou selecione um arquivo de imagem!');
+return;
+}
+882:             const reference = {
+883:             // Exibir container de logs do terminal, desabilitar botão
+name: document.getElementById('ref-name').value,
+category: document.getElementById('ref-category').value,
+public: document.getElementById('ref-public').value === 'true',
+url: imgUrl,
+prompt: document.getElementById('ref-prompt').value || ''
+};
+890:             await srDb.saveReference(reference);
+const p = document.createElement('p');
+closeModal('new-ref-modal');
+loadReferences();
+}
+895:         async function runPromptExtractor() {
+p.className = 'text-red-400 font-semibold';
+const urlInput = document.getElementById('ref-url').value;
+const previewBox = document.getElementById('ref-preview-box');
+const hasPreview = !previewBox.classList.contains('hidden');
+900:             if (!urlInput && !hasPreview) {
+} else if (type === 'code') {
+alert('Por favor, selecione um arquivo de imagem ou cole uma URL primeiro!');
+return;
+}
+905:             const category = document.getElementById('ref-category').value || 'Casual';
+p.innerHTML = `▶ ${text}`;
+const nameInput = document.getElementById('ref-name');
+let name = nameInput.value.trim();
+909:             const container = document.getElementById('prompt-extractor-container');
+};
+const logsEl = document.getElementById('prompt-extractor-logs');
+const btn = document.getElementById('btn-extract-prompt');
+913:             // Exibir container de logs do terminal, desabilitar botão
+914:         async function deleteSelectedClient() {
+container.classList.remove('hidden');
+logsEl.innerHTML = '';
+btn.disabled = true;
+btn.classList.add('opacity-50', 'cursor-not-allowed');
+919:             const addLog = (text, type = 'info') => {
+920:                 addLog('Processando imagem para desconstrução estética...', 'info');
+const p = document.createElement('p');
+await sleep(800);
+923:                 addLog('Identificando pose, iluminação e características estilísticas...', 'info');
+}
+await sleep(700);
+}
+}
+928:         async function runPromptExtractor() {
+"Corporativo": {
+const urlInput = document.getElementById('ref-url').value;
+const previewBox = document.getElementById('ref-preview-box');
+const hasPreview = !previewBox.classList.contains('hidden');
+933:             if (!urlInput && !hasPreview) {
+},
+alert('Por favor, selecione um arquivo de imagem ou cole uma URL primeiro!');
+return;
+}
+938:             const category = document.getElementById('ref-category').value || 'Casual';
+detalhes: "Bokeh natural de plantas e luzes urbanas, grão analógico suave, f/1.8"
+const nameInput = document.getElementById('ref-name');
+const item = currentRefBatch[i];
+const num = i + 1;
+const total = currentRefBatch.length;
+944:                         let imgUrl = '';
+const btn = document.getElementById('btn-extract-prompt');
+if (config.imgbbApiKey) {
+try {
+imgUrl = await srDb.uploadToImgBB(item.fileObject, config.imgbbApiKey);
+} catch (err) {
+console.warn('Falha no ImgBB upload, usando base64 localmente:', err);
+imgUrl = item.base64;
+}
+} else {
+imgUrl = item.base64;
+}
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+<truncated 9086 bytes>
+<!-- MISSING LINE 957 -->
+<!-- MISSING LINE 958 -->
+<!-- MISSING LINE 959 -->
+<!-- MISSING LINE 960 -->
+<!-- MISSING LINE 961 -->
+<!-- MISSING LINE 962 -->
+<!-- MISSING LINE 963 -->
+<!-- MISSING LINE 964 -->
+<!-- MISSING LINE 965 -->
+<!-- MISSING LINE 966 -->
+<!-- MISSING LINE 967 -->
+<!-- MISSING LINE 968 -->
+<!-- MISSING LINE 969 -->
+<!-- MISSING LINE 970 -->
+<!-- MISSING LINE 971 -->
+<!-- MISSING LINE 972 -->
+<!-- MISSING LINE 973 -->
+<!-- MISSING LINE 974 -->
+<!-- MISSING LINE 975 -->
+<!-- MISSING LINE 976 -->
+estilo: "Retrato de gestação minimalista artístico, foco no ventre",
+iluminacao: "Contraluz etéreo criando silhueta suave, luz de janela difusa",
+composicao: "Enquadramento de perfil focado na silhueta da gravidez",
+detalhes: "Tons pastéis monocromáticos, tecidos translúcidos fluidos, f/1.8"
+},
+"Editorial": {
+estilo: "Retrato de revista de arte e design contemporâneo",
+iluminacao: "Esquema de luz experimental com filtros de cores e sombras projetadas",
+composicao: "Enquadramento assimétrico de vanguarda, pose theatrical",
+detalhes: "Alta nitidez comercial, paleta de cores frias estilizadas, 8k"
+},
+"Recém-nascido": {
+estilo: "Retrato de recém-nascido (newborn) ultra-aconchegante",
+iluminacao: "Luz de estúdio extremamente suave e indireta, sem sombras duras",
+composicao: "Close-up macro no bebê dormindo confortavelmente em mantas",
+detalhes: "Texturas de lã felpuda, tons de pele rosados naturais, f/1.2"
+}
+};
+996:                 const catDetails = promptsPorCategoria[category] || {
+const refs = await srDb.getReferences();
+estilo: `Retrato fotográfico de estilo ${category}`,
+iluminacao: "Iluminação profissional adaptada ao ambiente",
+composicao: "Composição harmônica com foco nítido no assunto",
+detalhes: "Altamente detalhado, realismo premium, f/2.0, 8k"
+};
+1003:                 addLog('Gerando especificações estéticas em formato JSON...', 'info');
+refs.forEach(r => {
+await sleep(700);
+1006:                 const jsonPrompt = {
+<input type="checkbox" name="book-refs" value="${r.id}" class="rounded border-neutral-300 text-indigo-6
+versao_motor: "Nano Banana Pro v2.0",
+estilo: catDetails.estilo,
+iluminacao: catDetails.iluminacao,
+composicao: catDetails.composicao,
+detalhes: catDetails.detalhes,
+prompt_final: `${catDetails.estilo}, ${catDetails.iluminacao}, ${catDetails.composicao}, ${catDetails.detalhes}`
+};
+1015:                 addLog('Especificações JSON extraídas:', 'info');
+1016:         async function replaceBookPhoto(bookId, photoId, event) {
+addLog(JSON.stringify(jsonPrompt, null, 4), 'code');
+await sleep(1500);
+1019:                 addLog('Compilando JSON em prompt descritivo final...', 'info');
+const reader = new FileReader();
+await sleep(600);
+1022:                 const finalPrompt = jsonPrompt.prompt_final;
+1023:             const selectedRefs = Array.from(document.querySelectorAll('input[name="book-refs"]:checked')).map(cb => cb.value);
+document.getElementById('ref-prompt').value = finalPrompt;
+1025:                 // Auto-nomeia a referência caso esteja sem nome
+1026:             // Show AI progress wizard overlay
+if (!name) {
+const randomSuffix = Math.floor(100 + Math.random() * 900);
+const autoName = `${category} Estilo Pro ${randomSuffix}`;
+<truncated 995 bytes>
+} else {
+p.className = 'text-neutral-300';
+p.innerHTML = `▶ ${text}`;
+}
+logsEl.appendChild(p);
+container.scrollTop = container.scrollHeight;
+};
+1038:             const sleep = ms => new Promise(r => setTimeout(r, ms));
+const references = await srDb.getReferences();
+1040:             let itemsToProcess = [];
+const uniqueCategoriesUsed = [...new Set(selectedRefsObjs.map(r => r.category))];
+if (hasFiles) {
+itemsToProcess = currentRefBatch.map((item, index) => {
+return {
+source: 'file',
+fileObject: item.fileObject,
+base64: item.base64,
+fileName: item.name,
+index: index
+};
+});
+} else {
+itemsToProcess = [{
+source: 'url',
+url: urlInput,
+fileName: 'URL Referência',
+index: 0
+}];
+}
+1060:             try {
+1061:                 if (!imgUrl) {
+addLog(`Iniciando Agente de Visão Multimodal para ${itemsToProcess.length} referências...`, 'info');
+await sleep(500);
+1064:                 const config = await srDb.getSettings();
+1065:                 const reference = {
+1066:                 for (let i = 0; i < itemsToProcess.length; i++) {
+name: name,
+const item =
+public: document.getElementById('ref-public').value === 'true',
+url: imgUrl,
+prompt: finalPrompt
+};
+1073:                 await srDb.saveReference(reference);
+await new Promise(r => setTimeout(r, 800));
+addLog('Referência salva com sucesso!', 'success');
+await sleep(800);
+1077:                 // Fecha o modal e atualiza a biblioteca
+co
+await sleep(500);
+1080:                     // Detalhes estéticos baseados na categoria
+1081:             } catch (err) {
+const promptsPorCategoria = {
+"Corporativo": {
+estilo: "Retrato executivo profissional de alto padrão",
+iluminacao: "Iluminação de estúdio suave de três pontos com preenchimento sutil",
+composicao: "Plano médio curto (headshot), lente 85mm, profundidade de campo curta",
+detalhes: "Fundo corporativo desfocado cinza neutro, textura de pele realista, 8k, f/2.8"
+},
+"Casual": {
+estilo: "Retrato casual e espontâneo ao ar livre, estilo de vida urbano",
+iluminacao: "Luz solar natural quente difusa, iluminação golden hour suave",
+composicao: "Plano médio, enquadramento dinâmico com desfoque de fundo suave",
+detalhes: "Bokeh natural de plantas e luzes urbanas, grão analógico suave, f/1.8"
+},
+"Estúdio": {
+estilo: "Retrato clássico de estúdio fotográfico, alto contraste dramático",
+iluminacao: "Luz direcional marcante com sombras suaves (efeito Rembrandt)",
+composicao: "Plano fechado com foco nítido nos olhos, pose expressiva",
+detalhes: "Fundo degradê escuro minimalista, alta definição nos poros e cabelos, 8k"
+},
+"Pintura": {
+estilo: "Retrato em estilo de pintura a óleo renascentista clássica",
+iluminacao: "Iluminação dramática chiaroscuro de alto contraste",
+composicao: "Pose clássica de três quartos com expressão introspectiva",
+detalhes: "Texturas rústicas de tela e pinceladas visíveis, cores terrosas profundas"
+},
+"Filme": {
+estilo: "Retrato cinematográfico vintage, atmosfera retro e melancólica",
+iluminacao: "Iluminação de cena difusa com luzes de neon e sombras marcantes",
+composicao: "Enquadramento widescreen cinematográfico com desfoque sutil",
+detalhes: "Grão de filme analógico de 35mm visível (Kodak Portra 400), f/1.4"
+},
+"Vogue": {
+estilo: "Editorial de moda de alta costura, conceito de revista Vogue",
+iluminacao: "Iluminação de estúdio de alta potência com sombras geométricas",
+composicao: "Pose editorial angulosa de alta costura, ângulo dramático",
+detalhes: "Maquiagem artística brilhante, fundo minimalista de estúdio, f/4.0"
+<truncated 2512 bytes>
+imgUrl = currentRefBase64;
+}
+} else if (!imgUrl && currentRefBase64) {
+imgUrl = currentRefBase64;
+}
+1124:                 if (!imgUrl) {
+<!-- MISSING LINE 1124 -->
+throw new Error('URL ou arquivo de imagem não localizado ao salvar.');
+}
+1128:                 const reference = {
+<!-- MISSING LINE 1128 -->
+name: name,
+category: category,
+public: document.getElementById('ref-public').value === 'true',
+url: imgUrl,
+prompt: finalPrompt
+};
+1136:                 await srDb.saveReference(reference);
+<!-- MISSING LINE 1136 -->
+addLog('Referência salva com sucesso!', 'success');
+await sleep(800);
+1140:                 // Fecha o modal e atualiza a biblioteca
+detalhes: "Alta nitidez comercial, paleta de cores frias estilizadas, 8k"
+},
+"Recém-nascido": {
+estilo: "Retrato de recém-nascido (newborn) ultra-aconchegante",
+iluminacao: "Luz de estúdio extremamente suave e indireta, sem sombras duras",
+composicao: "Close-up macro no bebê dormindo confortavelmente em mantas",
+detalhes: "Texturas de lã felpuda, tons de pele rosados naturais, f/1.2"
+}
+};
+1150:                     const catDetails = promptsPorCategoria[category] || {
+estilo: "Retrato de recém-nascido (newborn) ultra-aconchegante",
+iluminacao: "Luz de estúdio extremamente suave e indireta, sem sombras duras",
+composicao: "Close-up macro no bebê dormindo confortavelmente em mantas",
+detalhes: "Texturas de lã felpuda, tons de pele rosados naturais, f/1.2"
+}
+};
+1157:                     const catDetails = promptsPorCategoria[category] || {
+const refsSection = document.getElementById('view-book-refs-section');
+estilo: `Retrato fotográfico de estilo ${category}`,
+iluminacao: "Iluminação profissional adaptada ao ambiente",
+composicao: "Composição harmônica com foco nítido no assunto",
+detalhes: "Altamente detalhado, realismo premium, f/2.0, 8k"
+};
+1164:                     addLog('Gerando especificações estéticas em formato JSON...', 'info');
+composicao: catDetails.composicao,
+await sleep(500);
+1167:                     const jsonPrompt = {
+};
+versao_motor: "NanoBanana Pro v2.0",
+estilo: catDetails.estilo,
+iluminacao: catDetails.iluminacao,
+composicao: catDetails.composicao,
+detalhes: catDetails.detalhes,
+prompt_final: `${catDetails.estilo},
+await sleep(400);
+1176:                     const finalPrompt = jsonPrompt.prompt_final;
+}
+addLog(JSON.stringify(jsonPrompt, null, 4), 'code');
+await sleep(1000);
+1180:                     addLog('Compilando JSON em prompt descritivo final...', 'info');
+}
+await sleep(400);
+1183:                     const finalPrompt = jsonPrompt.prompt_final;
+let itemName = '';
+1185:                     if (total === 1) {
+itemName = total > 1 ? `${baseName} - ${num}` : baseName;
+document.getElementById('ref-prompt').value = finalPrompt;
+}
+1189:                     // Determinar nome da referência
+if (total === 1) {
+let itemName = '';
+if (baseName) {
+itemName = total > 1 ? `${baseName} - ${num}` : baseName;
+} else {
+const randomSuffix = Math.floor(100 + Math.random() * 900);
+itemName = `${category} Estilo Pro ${randomSuffix}`;
+if (total === 1) {
+nameInput.value = itemName;
+}
+}
+1201:                     addLog(`Nome da referência: "${itemName}"`, 'info');
+try {
+1203:                     // Upload de imagem
+addLog('Upload ImgBB concluído com sucesso.', 'success');
+let finalImgUrl = '';
+if (item.source === 'file') {
+if (config.imgbbApiKey) {
+addLog('Fazendo upload para o ImgBB...', 'info');
+try {
+finalImgUrl = await srDb.uploadToImgBB(item.fileObject, config.imgbbApiKey);
+addLog('Upload ImgBB concluído com sucesso.', 'success');
+} finally {
+btn.disabled = false;
+btn.classList.remove('opacity-50', 'cursor-not-allowed');
+}
+}
+1217:         async function toggleRefVisibility(id, isPublic) {
+}
+const refs = await srDb.getReferences();
+public: isPublic,
+url: finalImgUrl,
+prompt: finalPrompt
+};
+1224:                     addLog(`Salvando referência no IndexedDB...`, 'info');
+}
+await srDb.saveReference(reference);
+addLog(`✓ Referência "${itemName}" salva com sucesso!`, 'success');
+await sleep(500);
+}
+1230:                 addLog('Todos os itens do lote foram processados com sucesso!', 'success');
+}
+await sleep(1000);
+1233:                 // Fecha o modal e atualiza a biblioteca
+<!-- MISSING LINE 1233 -->
+closeModal('new-ref-modal');
+loadReferences();
+1237:             } catch (err) {
+const list = await srDb.getClients();
+addLog(`Erro na extração: ${err.message}`, 'error');
+} finally {
+btn.disabled = false;
+btn.classList.remove('opacity-50', 'cursor-not-allowed');
+}
+}
+1245:         async function toggleRefVisibility(id, isPublic) {
+1246:             list.forEach(cli => {
+const refs = await srDb.getReferences();
+const ref = refs.find(r => r.id === id);
+if (ref) {
+ref.public = isPublic;
+await srDb.saveReference(ref);
+}
+}
+1254:         async function updateRefCategory(id, categoryName) {
+container.innerHTML = `<p class="text-xs text-neutral-500 col-span-2">Cadastre referências primeiro!</p>`;
+const refs = await srDb.getReferences();
+const ref = refs.find(r => r.id === id);
+if (ref) {
+ref.category = categoryName;
+await srDb.saveReference(ref);
+loadReferences();
+<span class="truncate font-semibold">${r.name}</span>
+</label>
+`;
+});
+}
+1267:             document.getElementById('new-book-modal').classList.remove('hidden');
+}
+}
+1270:         async function handleNewBook(e) {
+}
+e.preventDefault();
+const title = document.getElementById('book-title').value;
+const price = parseFloat(document.getElementById('book-price').value);
+const qty = parseInt(documen
+// ==========================================
+function closeModal(id) {
+document.getElementById(id).classList.add('hidden');
+}
+1280:         lucide.createIcons();
+<!-- MISSING LINE 1280 -->
+</script>
+</body>
+</html>
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+<!-- MISSING LINE 1285 -->
+<!-- MISSING LINE 1286 -->
+<!-- MISSING LINE 1287 -->
+<!-- MISSING LINE 1288 -->
+<!-- MISSING LINE 1289 -->
+<!-- MISSING LINE 1290 -->
+<!-- MISSING LINE 1291 -->
+<!-- MISSING LINE 1292 -->
+<!-- MISSING LINE 1293 -->
+<!-- MISSING LINE 1294 -->
+<!-- MISSING LINE 1295 -->
+<!-- MISSING LINE 1296 -->
+<!-- MISSING LINE 1297 -->
+<!-- MISSING LINE 1298 -->
+<!-- MISSING LINE 1299 -->
+<!-- MISSING LINE 1300 -->
+<!-- MISSING LINE 1301 -->
+<!-- MISSING LINE 1302 -->
+<!-- MISSING LINE 1303 -->
+<!-- MISSING LINE 1304 -->
+<!-- MISSING LINE 1305 -->
+<!-- MISSING LINE 1306 -->
+<!-- MISSING LINE 1307 -->
+"📐 Alinhando proporções e pose base com as referências selecionadas...",
+"🎨 Renderizando faces com motor Nano Banana Pro e ControlNet...",
+"⚡ Pose & Expression: Criando 10 variações adicionais com expressões faciais e corporais...",
+"🌤️ Lighting & Environment: Gerando variações de ambiente e iluminação pelo Nano Banana Pro...",
+"💎 Executando Upscale 4K para nitidez de retrato profissional com Nano Banana Pro...",
+"✅ Book de fotos confeccionado com sucesso!"
+);
+1316:             for (let i = 0; i < logs.length; i++) {
+<!-- MISSING LINE 1316 -->
+const logLine = document.createElement('p');
+logLine.textContent = logs[i];
+logsEl.appendChild(logLine);
+logsEl.scrollTop = logsEl.scrollHeight;
+1322:                 const percent = Math.min(((i + 1) / logs.length) * 100, 100);
+<!-- MISSING LINE 1322 -->
+pBar.style.width = `${percent}%`;
+1325:                 // delay
+<!-- MISSING LINE 1325 -->
+await new Promise(r => setTimeout(r, 800));
+}
+1329:             // Generate Photos list with Mock Unsplash Portraits
+<!-- MISSING LINE 1329 -->
+</div>
+`;
+list.appendChild(card);
+}
+lucide.createIcons();
+}
+1337:         async function openNewBookModal() {
+url: mockUrl,
+const config = await srDb.getSettings();
+document.getElementById('new-book-form').reset();
+document.getElementById('book-price').value = config.pricePerPhoto;
+1342:             // Load reference list checkboxes with thumbnails
+<!-- MISSING LINE 1342 -->
+const refs = await srDb.getReferences();
+const container = document.getElementById('book-references-list');
+container.innerHTML = '';
+1347:             if (refs.length === 0) {
+<!-- MISSING LINE 1347 -->
+container.innerHTML = `<p class="text-xs text-neutral-500 col-span-2">Cadastre referências primeiro!</p>`;
+} else {
+<div class="min-w-0">
+<h4 class="font-bold text-neutral-900 text-sm truncate">${b.title}</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs text-neutral-500">${b.photos.length} fotos geradas</span>
+<span class="h-1 w-1 bg-neutral-300 rounded-full"></span>
+<span class="text-xs text-neutral-500">Preço: R$ ${b.pricePerPhoto.toFixed(2)} / foto</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 self-end sm:self-center">
+<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${isPaid ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-neutral-100 text-neutral-600 border border-neutral-200'}">
+${isPaid ? 'Comprado (' + selectedCount + ' fotos)' : 'Aguardando Seleção'}
+</span>
+<i data-lucide="eye" class="w-4 h-4 text-neutral-400"></i>
+</div>
+`;
+list.appendChild(card);
+}
+lucide.createIcons();
+}
+1371:         async function openNewBookModal() {
+1372:             closeModal('new-book-modal');
+const config = await s
+document.getElementById('new-book-form').reset();
+document.getElementById('book-price').value = config.pricePerPhoto;
+1376:             // Load reference list checkboxes with thumbnails
+const pBar = document.getElementById('ai-progress-bar');
+const refs = await srDb.getReferences();
+const container = document.getElementById('book-references-list');
+container.innerHTML = '';
+1381:             if (refs.length === 0) {
+logsEl.innerHTML = '';
+container.innerHTML = `<p class="text-xs text-neutral-500 col-span-2">Cadastre referências primeiro!</p>`;
+} else {
+refs.forEach(r => {
+container.innerHTML += `
+<label class="flex items-center gap-3 text-xs text-neutral-700 cursor-pointer hover:bg-neutral-100/50 p-1.5 rounded-xl border border-neutral-200/50 transition">
+<input type="checkbox" name="book-refs" value="${r.id}" class="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500 shrink-0"/>
+<img src="${r.url}" class="h-8 w-8 rounded-lg object-cover border border-neutral-200 shrink-0" alt="${r.name}"/>
+<span class="truncate font-semibold">${r.name}</span>
+</label>
+`;
+});
+}
+1395:             document.getElementById('new-book-modal').classList.remove('hidden');
+document.getElementById('new-book-modal').classList.remove('hidden');
+}
+1398:         async function handleNewBook(e) {
+"🧬 Mapeando características biométricas e traços faciais...",
+e.preventDefault();
+const title = document.getElementById('book-title').value;
+const price = parseFloat(document.getElementById('book-price').value);
+const qty = parseInt(document.getElementById('book-qty').value);
+1404:             const selectedRefs = Array.from(document.querySelectorAll('input[name="book-refs"]:checked')).map(cb => cb.value);
+"✅ Book de fotos confeccionado com sucesso!"
+1406:             closeModal('new-book-modal');
+1407:             for (let i = 0; i < logs.length; i++) {
+1408:             // Show AI progress wizard overlay
+const logLine = document.createElement('p');
+const pipeline = document.getElementById('ai-pipeline-modal');
+const pBar = document.getElementById('ai-progress-bar');
+const logsEl = document.getElementById('ai-logs');
+1413:             pipeline.classList.remove('hidden');
+<!-- MISSING LINE 1413 -->
+pBar.style.width = '0%';
+logsEl.innerHTML = '';
+1417:             // Load and build logs using selected references and their custom prompts for Nano Banana Pro
+await new Promise(r => setTimeout(r, 800));
+const references = await srDb.getReferences();
+const selectedRefsObjs = selectedRefs.map(id => references.find(r => r.id === id)).filter(Boolean);
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+const photosList = [];
+1423:             // N main photos
+<!-- MISSING LINE 1423 -->
+for (let i = 0; i < qty; i++) {
+const mockUrl = UNSPLASH_MOCK_PORTRAITS[Math.floor(Math.random() * UNSPLASH_MOCK_PORTRAITS.length)];
+photosList.push({
+id: 'img_' + i + '_' + Date.now(),
+url: mockUrl,
+variationType: 'normal'
+});
+}
+1433:             // 10 variation photos
+<!-- MISSING LINE 1433 -->
+const varTypes = ['pose', 'expression', 'environment', 'lighting'];
+for (let i = 0; i < 10; i++) {
+const mockUrl = UNSPLASH_MOCK_PORTRAITS[Math.floor(Math.random() * UNSPLASH_MOCK_PORTRAITS.length)];
+photosList.push({
+id: 'img_var_' + i + '_' + Date.now(),
+url: mockUrl,
+variationType: varTypes[i % varTypes.length]
+});
+}
+1444:             const referencesData = selectedRefsObjs.map(r => ({ name: r.name, url: r.url }));
+<!-- MISSING LINE 1444 -->
+1446:             const book = {
+<!-- MISSING LINE 1446 -->
+clientId: selectedClientId,
+title: title,
+pricePerPhoto: price,
+list.innerHTML = `
+<div class="bg-neutral-50 border border-neutral-200 rounded-2xl p-6 text-center text-neutral-500">
+<p class="text-xs">Nenhum book criado para este cliente. Comece criando um novo book de fotos!</p>
+</div>
+`;
+return;
+}
+1458:             for (const b of books) {
+1459:             // Hide simulation and load details
+const isPaid = b.paymentStatus === 'paid';
+const selectedCount = b.selectedPhotoIds ? b.selectedPhotoIds.length : 0;
+1462:                 // Get the thumbnails for references used in this book
+loadStats();
+const usedRefs = (b.referencesUsed || []).map(refId => refs.find(r => r.id === refId)).filter(Boolean);
+let refsMarkup = '';
+if (usedRefs.length > 0) {
+refsMarkup = `
+<div class="flex -space-x-2 overflow-hidden shrink-0 mr-2">
+${usedRefs.slice(0, 3).map(ur => `
+<img class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" src="${ur.url}" alt="${ur.name}" title="${ur.name}"/>
+`).join('')}
+${usedRefs.length > 3 ? `
+<div class="inline-flex items-center justify-center h-8 w-8 rounded-full ring-2 ring-white bg-neutral-200 text-
+<!-- MISSING LINE 1473 -->
+<!-- MISSING LINE 1474 -->
+<!-- MISSING LINE 1475 -->
+<!-- MISSING LINE 1476 -->
+<!-- MISSING LINE 1477 -->
+<!-- MISSING LINE 1478 -->
+<!-- MISSING LINE 1479 -->
+<!-- MISSING LINE 1480 -->
+<!-- MISSING LINE 1481 -->
+<!-- MISSING LINE 1482 -->
+<!-- MISSING LINE 1483 -->
+<!-- MISSING LINE 1484 -->
+<!-- MISSING LINE 1485 -->
+<!-- MISSING LINE 1486 -->
+<!-- MISSING LINE 1487 -->
+<!-- MISSING LINE 1488 -->
+<!-- MISSING LINE 1489 -->
+<!-- MISSING LINE 1490 -->
+<!-- MISSING LINE 1491 -->
+<!-- MISSING LINE 1492 -->
+<!-- MISSING LINE 1493 -->
+<!-- MISSING LINE 1494 -->
+<!-- MISSING LINE 1495 -->
+<!-- MISSING LINE 1496 -->
+${isPaid ? 'Comprado (' + selectedCount + ' fotos)' : 'Aguardando Seleção'}
+</span>
+<i data-lucide="eye" class="w-4 h-4 text-neutral-400"></i>
+</div>
+`;
+list.appendChild(card);
+}
+lucide.createIcons();
+}
+1507:         async function openNewBookModal() {
+<!-- MISSING LINE 1507 -->
+const config = await srDb.getSettings();
+document.getElementById('new-book-form').reset();
+document.getElementById('book-price').value = config.pricePerPhoto;
+1512:             // Reset selected references
+previewsContainer.classList.remove('hidden');
+currentBookSelectedRefs = [];
+document.getElementById('book-refs-btn-text').textContent = 'Selecionar Referências (0 selecionadas)';
+const previewsContainer = document.getElementById('selected-refs-previews');
+previewsContainer.innerHTML = '';
+previewsContainer.classList.add('hidden');
+1519:             document.getElementById('new-book-modal').classList.remove('hidden');
+1520:         async function handleNewBook(e) {
+}
+1522:         async function openRefSelectorModal() {
+const title = document.getElementById('book-title').value;
+const refs = await srDb.getReferences();
+const grid = document.getElementById('selector-refs-grid');
+grid.innerHTML = '';
+document.getElementById('ref-selector-search').value = '';
+1528:             selectedRefsInModal = [...currentBookSelectedRefs];
+<!-- MISSING LINE 1528 -->
+1530:             if (refs.length === 0) {
+<!-- MISSING LINE 1530 -->
+const pipeline = document.getElementById('ai-pipeline-modal');
+const pBar = document.getElementById('ai-progress-bar');
+const logsEl = document.getElementById('ai-logs');
+1535:             pipeline.classList.remove('hidden');
+<!-- MISSING LINE 1535 -->
+pBar.style.width = '0%';
+logsEl.innerHTML = '';
+1539:             // Load and build logs using selected references and their custom prompts for Nano Banana Pro
+<!-- MISSING LINE 1539 -->
+const references = await srDb.getReferences();
+const selectedRefsObjs = selectedRefs.map(id => references.find(r => r.id === id)).filter(Bool
+1543:             const logs = [
+<!-- MISSING LINE 1543 -->
+"🍌 Inicializando pipeline de Confecção no motor Nano Banana Pro...",
+"📸 Analisando fotos de rosto enviadas pelo cliente..."
+];
+1548:             selectedRefsObjs.forEach(refObj => {
+<!-- MISSING LINE 1548 -->
+const promptVal = refObj.prompt || "Professional realistic portrait styling prompt";
+logs.push(`📝 Carregando prompt da referência [${refObj.name}]: "${promptVal}"`);
+<!-- MISSING LINE 1551 -->
+<!-- MISSING LINE 1552 -->
+<!-- MISSING LINE 1553 -->
+<!-- MISSING LINE 1554 -->
+<!-- MISSING LINE 1555 -->
+<!-- MISSING LINE 1556 -->
+<!-- MISSING LINE 1557 -->
+<!-- MISSING LINE 1558 -->
+<!-- MISSING LINE 1559 -->
+<!-- MISSING LINE 1560 -->
+<!-- MISSING LINE 1561 -->
+<!-- MISSING LINE 1562 -->
+<!-- MISSING LINE 1563 -->
+<!-- MISSING LINE 1564 -->
+<!-- MISSING LINE 1565 -->
+<!-- MISSING LINE 1566 -->
+<!-- MISSING LINE 1567 -->
+<!-- MISSING LINE 1568 -->
+<!-- MISSING LINE 1569 -->
+<!-- MISSING LINE 1570 -->
+<!-- MISSING LINE 1571 -->
+<!-- MISSING LINE 1572 -->
+<!-- MISSING LINE 1573 -->
+<!-- MISSING LINE 1574 -->
+<!-- MISSING LINE 1575 -->
+<!-- MISSING LINE 1576 -->
+<!-- MISSING LINE 1577 -->
+<!-- MISSING LINE 1578 -->
+<!-- MISSING LINE 1579 -->
+const pBar = document.getElementById('ai-progress-bar');
+const logsEl = document.getElementById('ai-logs');
+1583:             pipeline.classList.remove('hidden');
+<!-- MISSING LINE 1583 -->
+pBar.style.width = '0%';
+logsEl.innerHTML = '';
+1587:             // Load and build logs using selected references and their custom prompts for Nano Banana Pro
+<!-- MISSING LINE 1587 -->
+const references = await srDb.getReferences();
+const selectedRefsObjs = selectedRefs.map(id => references.find(r => r.id === id)).filter(Boolean);
+1591:             const logs = [
+<!-- MISSING LINE 1591 -->
+"🍌 Inicializando pipeline de Confecção no motor Nano Banana Pro...",
+"📸 Analisando fotos de rosto enviadas pelo cliente..."
+];
+1596:             selectedRefsObjs.forEach(refObj => {
+<!-- MISSING LINE 1596 -->
+const promptVal = refObj.prompt || "Professional realistic portrait styling prompt";
+logs.push(`📝 Carregando prompt da referência [${refObj.name}]: "${promptVal}"`);
+});
+1601:             logs.push(
+<!-- MISSING LINE 1601 -->
+"🧬 Mapeando características biométricas e traços faciais...",
+"📐 Alinhando proporções e pose base com as referências selecionadas...",
+"🎨 Renderizando faces com motor Nano Banana Pro e ControlNet...",
+"⚡ Pose & Expression: Criando 10 variações adicionais com expressões faciais e corporais...",
+"🌤️ Lighting & Environment: Gerando variações de ambiente e iluminação pelo Nano Banana Pro...",
+"💎 Executando Upscale 4K para nitidez de retrato profissional com Nano Banana Pro...",
+"✅ Book de fotos confeccionado com sucesso!"
+);
+1611:             for (let i = 0; i < logs.length; i++) {
+};
+const logLine = document.createElement('p');
+logLine.textContent = logs[i];
+logsEl.appendChild(logLine);
+logsEl.scrollTop = logsEl.scrollHeight;
+1617:                 const percent = Math.min(((i + 1) / logs.length) * 100, 100);
+loadClientBooks(selectedClientId);
+pBar.style.width = `${percent}%`;
+1620:                 // delay
+1621:         // ==========================================
+<!-- MISSING LINE 1621 -->
+// BOOK VIEWER (admin inspect details of client book)
+// ==========================================
+let currentViewingBookId = null;
+1626:         async function openBookViewer(bookId) {
+<!-- MISSING LINE 1626 -->
+currentViewingBookId = bookId;
+const book = await srDb.getBookById(bookId);
+const clients = await srDb.getClients();
+}
+}
+}
+1634:         async function confirmReferenceSelection() {
+<!-- MISSING LINE 1634 -->
+currentBookSelectedRefs = [...selectedRefsInModal];
+1637:             const btnText = document.getElementById('book-refs-btn-text');
+<!-- MISSING LINE 1637 -->
+btnText.textContent = `Selecionar Referências (${currentBookSelectedRefs.length} selecionadas)`;
+1640:             const previewsContainer = document.getElementById('selected-refs-previews');
+const badge = document.getElementById('view-book-status-badge');
+previewsContainer.innerHTML = '';
+1643:             if (currentBookSelectedRefs.length > 0) {
+badge.className = "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold mt-1 bg-emerald-50 text-emerald-700 border border-emerald-200";
+const refs = await srDb.getReferences();
+const selectedObjects = refs.filter(r => currentBookSelectedRefs.includes(r.id));
+1647:                 selectedObjects.forEach(r => {
+badge.textContent = "Pendente";
+previewsContainer.innerHTML += `
+<div class="relative w-12 h-12 rounded-lg overflow-hidden border border-neutral-200 shrink-0 group" title="${r.name}">
+<img src="${r.url}" class="w-full h-full object-cover"/>
+</div>
+`;
+});
+previewsContainer.classList.remove('hidden');
+} else {
+previewsContainer.classList.add('hidden');
+}
+1659:             closeModal('ref-selector-modal');
+1660:             if (usedRefs.length > 0) {
+}
+1662:         async function handleNewBook(e) {
+<!-- MISSING LINE 1662 -->
+e.preventDefault();
+const title = document.getElementById('book-title').value;
+const price = parseFloat(document.getElementById('book-price').value);
+const qty = parseInt(document.getElementById('book-qty').value);
+1668:             const selectedRefs = [...currentBookSelectedRefs];
+<p class="font-bold text-neutral-800 truncate">${ur.name}</p>
+1670:             closeModal('new-book-modal');
+</div>
+1672:             // Show AI progress wizard overlay
+`;
+const pipeline = document.getElementById('ai-pipeline-modal');
+const pBar = document.getElementById('ai-progress-bar');
+const logsEl = document.getElementById('ai-logs');
+1677:             pipeline.classList.remove('hidden');
+1678:             // Copy public link setting
+pBar.style.width = '0%';
+logsEl.innerHTML = '';
+1681:             // Load and build logs using selected references and their custom prompts for NanoBanana Pro
+"📸 Analisando fotos de rosto enviadas pelo cliente..."
+const references = await srDb.getReferences();
+const selectedRefsObjs = selectedRefs.map(id => references.find(r => r.id === id)).filter(Boolean);
+1685:             const logs = [
+const promptVal = refObj.prompt || "Professional realistic portrait styling prompt";
+"🍌 Inicializando pipeline de Confecção no motor NanoBanana Pro...",
+"📸 Analisando fotos de rosto enviadas pelo cliente..."
+];
+1690:             selectedRefsObjs.forEach(refObj => {
+"🧬 Mapeando características biométricas e traços faciais...",
+const promptVal = refObj.prompt || "Professional realistic portrait styling prompt";
+logs.push(`📝 Carregando prompt da referência [${refObj.name}]: "${promptVal}"`);
+});
+1695:             logs.push(
+"💎 Executando Upscale 4K para nitidez de retrato profissional com NanoBanana Pro...",
+"🧬 Mapeando características biométricas e traços faciais...",
+"📐 Alinhando proporções e pose base com as referências selecionadas...",
+"🎨 Renderizando faces com motor NanoBanana Pro e ControlNet...",
+"⚡ Pose & Expression: Criando 10 variações adicionais com expressões faciais e corporais...",
+"🌤️ Lighting & Environment: Gerando variações de ambiente e iluminação pelo NanoBanana Pro...",
+"💎 Executando Upscale 4K para nitidez de retrato profissional com NanoBanana Pro...",
+"✅ Book de fotos confec
+logsEl.scrollTop = logsEl.scrollHeight;
+1705:                 const percent = Math.min(((i + 1) / logs.length) * 100, 100);
+<!-- MISSING LINE 1705 -->
+pBar.style.width = `${percent}%`;
+1708:                 // delay
+<!-- MISSING LINE 1708 -->
+await new Promise(r => setTimeout(r, 800));
+}
+1712:             // Generate Photos list with Mock Unsplash Portraits
+<!-- MISSING LINE 1712 -->
+const photosList = [];
+1715:             // N main photos
+<!-- MISSING LINE 1715 -->
+for (let i = 0; i < qty; i++) {
+const mockUrl = UNSPLASH_MOCK_PORTRAITS[Math.floor(Math.random() * UNSPLASH_MOCK_PORTRAITS.length)];
+photosList.push({
+id: 'img_' + i + '_' + Date.now(),
+url: mockUrl,
+variationType: 'normal'
+});
+}
+photosList.push({
+id: 'img_' + i + '_' + Date.now(),
+url: mockUrl,
+variationType: 'normal'
+});
+}
+1731:             // 10 variation photos
+url: mockUrl,
+const varTypes = ['pose', 'expression', 'environment', 'lighting'];
+for (let i = 0; i < 10; i++) {
+const mockUrl = UNSPLASH_MOCK_PORTRAITS[Math.floor(Math.random() * UNSPLASH_MOCK_PORTRAITS.length)];
+photosList.push({
+id: 'img_var_' + i + '_' + Date.now(),
+url: mockUrl,
+variationType: varTypes[i % varTypes.length]
+});
+}
+1742:             const referencesData = selectedRefsObjs.map(r => ({ name: r.name, url: r.url }));
+referencesUsed: selectedRefs,
+1744:             const book = {
+photos: photosList,
+clientId: selectedClientId,
+title: title,
+pricePerPhoto: price,
+referencesUsed: selectedRefs,
+referencesData: referencesData,
+photos: photosList,
+paymentStatus: 'pending',
+selectedPhotoIds: []
+};
+1755:             await srDb.saveBook(book);
+}
+1757:             // Hide simulation and load details
+<!-- MISSING LINE 1757 -->
+pipeline.classList.add('hidden');
+loadClientBooks(selectedClientId);
+loadStats();
+}
+1763:         // ==========================================
+currentViewingBookId = bookId;
+// BOOK VIEWER (admin inspect details of client book)
+// ==========================================
+const client = clients.find(c => c.id === book.clientId);
+1768:             if (!book) return;
+<!-- MISSING LINE 1768 -->
+1770:             document.getElementById('view-book-title').textContent = book.title;
+}
+document.getElementById('view-book-details').textContent = `${book.photos.length} fotos confeccionadas • Valor da foto: R$ ${book.pricePerPhoto.toFixed(2)}`;
+1773:             // Selection status details
+reader.readAsDataURL(file);
+const isPaid = book.paymentStatus === 'paid';
+const selectedCount = book.selectedPhotoIds ? book.selectedPhotoIds.length : 0;
+const badge = document.getElementById('view-book-status-badge');
+1778:             if (isPaid) {
+// SYSTEM HELPERS
+badge.className = "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold mt-1 bg-emerald-50 text-emerald-700 border border-emerald-200";
+badge.textContent = "Pago";
+} else {
+badge.className = "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold mt-1 bg-amber-50 text-amber-700 border border-amber-200";
+badge.textContent = "Pendente";
+}
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+</body>
+const amount = selectedCount * book.pricePerPhoto;
+document.getElementById('view-book-amount').textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount);
+1790:             // Render references used in details viewer
+}
+1792:             document.getElementById('view-book-selected-count').textContent = `${selectedCount} selecionadas`;
+const usedRefs = (book.referencesUsed || []).map(refId => refs.find(r => r.id === refId)).filter(Boolean);
+const amount = selectedCount * book.pricePerPhoto;
+document.getElementById('view-book-amount').textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount);
+1796:             // Render references used in details viewer
+if (file) {
+const refs = await srDb.getReferences();
+const usedRefs = (book.referencesUsed || []).map(refId => refs.find(r => r.id === refId)).filter(Boolean);
+const refsSection = document.getElementById('view-book-refs-section');
+const refsContainer = document.getElementById('view-book-refs-container');
+1802:             if (usedRefs.length > 0) {
+<truncated 221 bytes>
+refsSection.classList.remove('hidden');
+refsContainer.innerHTML = '';
+usedRefs.forEach(ur => {
+refsContainer.innerHTML += `
+<div class="flex items-center gap-2 bg-neutral-100 border border-neutral-200 rounded-xl p-1.5 pr-3 text-xs">
+<img src="${ur.url}" class="h-8 w-8 rounded-lg object-cover border border-neutral-200 shrink-0" alt="${ur.name}"/>
+<div class="min-w-0">
+<p class="font-bold text-neutral-800 truncate">${ur.name}</p>
+<p class="text-[9px] text-neutral-400 font-medium uppercase tracking-wide">${ur.category}</p>
+</div>
+</div>
+`;
+});
+} else {
+refsSection.classList.add('hidden');
+}
+1820:             // Copy public link setting
+const folderPath = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+const clientLink = `${folderPath}/book.html#data=${compactHash}`;
+1823:                 navigator.clipboard.writeText(clientLink).then(() => {
+<!-- MISSING LINE 1823 -->
+alert('Link do Cliente copiado com sucesso! Compartilhe via WhatsApp.');
+}).catch(() => {
+alert('Falha ao copiar link automaticamente. Copie manualmente da barra.');
+});
+};
+1830:             // Delete Book
+// Delete Book
+const deleteBtn = document.getElementById('view-book-delete');
+deleteBtn.onclick = async () => {
+if (confirm('Tem certeza que deseja excluir permanentemente este book?')) {
+await srDb.deleteBook(book.id);
+closeModal('book-view-modal');
+loadClientBooks(selectedClientId);
+loadStats();
+}
+};
+1841:             // Grid rendering
+<!-- MISSING LINE 1841 -->
+const grid = document.getElementById('view-book-photos-grid');
+grid.innerHTML = '';
+1845:             book.photos.forEach((photo, idx) => {
+<!-- MISSING LINE 1845 -->
+const isSelected = book.selectedPhotoIds && book.selectedPhotoIds.includes(photo.id);
+const el = document.createElement('div');
+el.className = `relative rounded-2xl overflow-hidden border bg-neutral-50 aspect-[3/4] shadow-sm flex flex-col group ${isSelected ? 'ring-2 ring-emerald-500 border-emerald-500' : 'border-neutral-200'}`;
+1850:                 let tagMarkup = '';
+<!-- MISSING LINE 1850 -->
+if (photo.variationType && photo.variationType !== 'normal') {
+tagMarkup = `
+<span class="absolute top-2 left-2 bg-indigo-600 text-white text-[9px] uppercase font-bold px-1.5 py-0.5 rounded backdrop-blur-sm z-10">
+Variação: ${photo.
+<!-- MISSING LINE 1855 -->
+<!-- MISSING LINE 1856 -->
+<!-- MISSING LINE 1857 -->
+1859:                 el.innerHTML = `
+<!-- MISSING LINE 1859 -->
+${tagMarkup}
+<img src="${photo.url}" class="h-full w-full object-cover"/>
+1863:                     ${isSelected ? `
+<!-- MISSING LINE 1863 -->
+<div class="absolute bottom-2 right-2 h-6 w-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow">
+<i data-lucide="check" class="w-3.5 h-3.5"></i>
+</div>
+` : ''}
+1869:                     <!-- Admin can upload files to replace placeholders -->
+<!-- MISSING LINE 1869 -->
+<label class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-150 cursor-pointer text-white text-xs font-semibold gap-1.5">
+<i data-lucide="upload" class="w-4 h-4"></i> Subir Real
+<input type="file" accept="image/*" class="hidden" onchange="replaceBookPhoto('${book.id}', '${photo.id}', event)"/>
+</label>
+`;
+grid.appendChild(el);
+});
+1878:             document.getElementById('book-view-modal').classList.remove('hidden');
+<!-- MISSING LINE 1878 -->
+lucide.createIcons();
+}
+1882:         async function replaceBookPhoto(bookId, photoId, event) {
+<!-- MISSING LINE 1882 -->
+const file = event.target.files[0];
+if (file) {
+const reader = new FileReader();
+reader.onload = async (e) => {
+const base64 = e.target.result;
+const config = await srDb.getSettings();
+let finalUrl = base64;
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

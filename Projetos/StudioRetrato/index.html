@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+    <meta name="description" content="Retratos executivos de alto padrão com direção visual artística e curadoria humana. Sem estúdio, sem deslocamento. Resultado editorial de excelência em até 5 dias. Para empresários, executivos e equipes corporativas." />
+    <title>Studio Retrato — Retratos Executivos &amp; Posicionamento de Imagem</title>
+    <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+    
+    <!-- Meta Pixel Code (Replace YOUR_PIXEL_ID with actual Pixel ID) -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', 'YOUR_PIXEL_ID');
+      fbq('track', 'PageView');
+      // Track CTA clicks: fbq('track', 'Lead');
+      // Track form submissions: fbq('track', 'CompleteRegistration');
+    </script>
+    <!-- End Meta Pixel Code -->
+
+    <!-- Fonts Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+              serif: ['"Instrument Serif"', 'serif'],
+              body: ['"Outfit"', 'sans-serif'],
+              geist: ['"Outfit"', 'sans-serif'],
+              aeonika: ['"Plus Jakarta Sans"', 'sans-serif'],
+              ffpqr: ['"Plus Jakarta Sans"', 'sans-serif'],
+              bytalion: ['"Plus Jakarta Sans"', 'sans-serif'],
+              italiana: ['"Instrument Serif"', 'serif'],
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Custom styling to ensure scrollbar and custom font behavior -->
+    <style>
+      .font-geist { font-family: 'Outfit', sans-serif !important; }
+      .font-sans { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+      .font-serif { font-family: 'Instrument Serif', serif !important; }
+      .font-italiana { font-family: 'Instrument Serif', serif !important; }
+      svg {
+        stroke-width: 1.25px !important;
+      }
+      body {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        min-height: 100vh !important;
+        min-height: 100dvh !important;
+      }
+
+      /* ── Toast Animations ─────────────────────────────────── */
+      @keyframes toast-slide-in {
+        from { opacity: 0; transform: translateY(-16px) scale(0.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      @keyframes toast-slide-out {
+        from { opacity: 1; transform: translateY(0) scale(1); }
+        to { opacity: 0; transform: translateY(-16px) scale(0.96); }
+      }
+      .toast-enter { animation: toast-slide-in 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards; }
+      .toast-exit { animation: toast-slide-out 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards; }
+
+      /* ── Confirm Dialog Animations ────────────────────────── */
+      @keyframes confirm-overlay-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes confirm-dialog-in {
+        from { opacity: 0; transform: translateY(24px) scale(0.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .confirm-overlay-enter { animation: confirm-overlay-in 0.2s ease-out forwards; }
+      .confirm-dialog-enter { animation: confirm-dialog-in 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards; }
+
+      /* ── Fade-in animation ────────────────────────────────── */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+
+      /* ── Scale-up animation ───────────────────────────────── */
+      @keyframes scaleUp {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-scaleUp { animation: scaleUp 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards; }
+
+      /* ── Modal sheet slide-up (mobile) ────────────────────── */
+      @keyframes sheet-slide-up {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+      }
+      @media (max-width: 767px) {
+        .modal-sheet { animation: sheet-slide-up 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards; }
+      }
+
+      /* ── Safe area padding for iPhone notch ───────────────── */
+      @supports(padding: env(safe-area-inset-bottom)) {
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-top { padding-top: env(safe-area-inset-top); }
+      }
+
+      /* ── Prevent iOS zoom on input focus (16px min) ────────── */
+      @media screen and (max-width: 767px) {
+        input, select, textarea {
+          font-size: 16px !important;
+        }
+      }
+
+      @keyframes bounce-x {
+        0%, 100% { transform: translateX(0); }
+        50% { transform: translateX(4px); }
+      }
+      .animate-bounce-horizontal {
+        animation: bounce-x 1s infinite;
+      }
+      @keyframes fluid-movement {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .btn-texture {
+        background-image: url('/assets/button_texture.jpg') !important;
+        background-size: 220% 220% !important;
+        background-position: 0% 50% !important;
+        animation: fluid-movement 8s ease-in-out infinite !important;
+        color: #ffffff !important;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.35) !important;
+        border-top-color: rgba(255, 255, 255, 0.55) !important;
+        border-bottom-color: rgba(0, 0, 0, 0.4) !important;
+        box-shadow: 
+          0 1px 0 rgba(255, 255, 255, 0.35) inset,
+          0 -1.5px 0 rgba(0, 0, 0, 0.3) inset,
+          0 10px 25px -5px rgba(59, 130, 246, 0.3), 
+          0 8px 16px -6px rgba(0, 0, 0, 0.15) !important;
+      }
+      .btn-texture::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.15);
+        transition: opacity 0.3s;
+        z-index: 1;
+      }
+      .btn-texture:hover::before {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      .btn-texture > * {
+        position: relative;
+        z-index: 2;
+      }
+      @keyframes float-y-1 {
+        0%, 100% { transform: translateY(0px) rotate(-1.5deg); }
+        50% { transform: translateY(-8px) rotate(-2deg); }
+      }
+      @keyframes float-y-2 {
+        0%, 100% { transform: translateY(0px) rotate(1deg); }
+        50% { transform: translateY(-6px) rotate(1.5deg); }
+      }
+      @keyframes float-y-3 {
+        0%, 100% { transform: translateY(0px) rotate(-1deg); }
+        50% { transform: translateY(-10px) rotate(-0.5deg); }
+      }
+      @keyframes float-y-4 {
+        0%, 100% { transform: translateY(0px) rotate(2deg); }
+        50% { transform: translateY(-7px) rotate(2.5deg); }
+      }
+      .animate-float-1 { animation: float-y-1 7s ease-in-out infinite; }
+      .animate-float-2 { animation: float-y-2 6s ease-in-out infinite; }
+      .animate-float-3 { animation: float-y-3 8s ease-in-out infinite; }
+      .animate-float-4 { animation: float-y-4 6.5s ease-in-out infinite; }
+    </style>
+  </head>
+  <body class="antialiased bg-neutral-50 text-neutral-900" style="font-family: 'Outfit', ui-sans-serif, system-ui">
+    <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"/></noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
