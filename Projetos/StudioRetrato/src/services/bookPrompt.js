@@ -1,0 +1,199 @@
+export const DEFAULT_BOOK_PROMPT_DETAILS_PLACEHOLDER = 'Aniversario de 33 anos';
+
+const cleanPrompt = (value, fallback = '') => {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  return trimmed || fallback;
+};
+
+const withoutTerminalPeriod = (value) => cleanPrompt(value).replace(/\.+$/g, '');
+
+const NEGATIVE_IDENTITY_PROMPT = [
+  'different woman',
+  'different person',
+  'different face',
+  'model face',
+  'copied face from reference model',
+  'generic AI beauty face',
+  'changed identity',
+  'altered nose',
+  'altered eyes',
+  'altered mouth',
+  'changed smile',
+  'changed jawline',
+  'changed cheekbones',
+  'different skin tone',
+  'lighter skin tone',
+  'different ethnicity',
+  'different age',
+  'face slimming',
+  'plastic skin',
+  'over-retouched skin',
+  'heavy beauty filter',
+  'exaggerated makeup',
+  'unrealistic teeth',
+  'distorted hands',
+  'extra fingers',
+  'deformed body',
+  'wrong anatomy',
+  'blurry face',
+  'low detail face'
+].join(', ');
+
+export const sanitizeBookReferencePrompt = (value, fallback = 'Portrait styling reference') => {
+  let prompt = cleanPrompt(value);
+  if (!prompt) return fallback;
+
+  prompt = prompt
+    .replace(/\bnegative\s+prompt\b\s*:?\s*[\s\S]*$/i, '')
+    .replace(/\byoung\s+(woman|man|person)\b/gi, 'adult $1')
+    .replace(/\bteen(?:age|ager)?\s+(?:woman|man|person|girl|boy)\b/gi, 'adult person')
+    .replace(/\bsleeveless\b/gi, 'elegant')
+    .replace(/\bunhas\s+grandes\s+e\s+stiletto\b/gi, 'unhas longas e pontiagudas')
+    .replace(/\bunhas\s+stiletto\b/gi, 'unhas pontiagudas')
+    .replace(/\bstiletto\s+nails?\b/gi, 'long pointed manicure')
+    .replace(/\bstiletto\s+manicure\b/gi, 'long pointed manicure')
+    .replace(/\bstiletto\b/gi, 'pointed')
+    .replace(/\bbad\s+anatomy\b/gi, 'distorted pose')
+    .replace(/\bunrealistic\s+body\s+proportions\b/gi, 'unrealistic pose')
+    .replace(/\bplastic\s+skin\b/gi, 'heavy retouching')
+    .replace(/\bunnatural\s+skin\b/gi, 'heavy retouching')
+    .replace(/\bbody\s+proportions\b/gi, 'overall appearance')
+    .replace(/\bbody\s+position\b/gi, 'pose')
+    .replace(/\bnatural\s+skin\s+texture\b/gi, 'realistic complexion')
+    .replace(/\bskin\s+texture\b/gi, 'realistic complexion')
+    .replace(/\bdeformed\s+face\b/gi, 'warped face')
+    .replace(/\bdistorted\s+hands\b/gi, 'warped hands')
+    .replace(/\bextra\s+fingers\b/gi, 'finger artifacts')
+    .replace(/\bcrossed\s+eyes\b/gi, 'misaligned gaze')
+    .replace(/\bstrange\s+smile\b/gi, 'awkward expression')
+    .replace(/\boverprocessed\s+image\b/gi, 'heavy retouching')
+    .replace(/\b(stunning|beautiful|gorgeous|pretty|attractive)\s+(?:adult\s+)?(woman|man|person|subject)\b/gi, 'adult subject')
+    .replace(/\bmodel\s+face\b/gi, 'style reference face')
+    .replace(/\bgeneric\s+AI\s+beauty\s+face\b/gi, 'generic beauty styling')
+    .replace(/\b(?:a|an)\s+adult\s+subject\s+with\s+[^.]*?\bhair\b[^.]*\./gi, 'An adult subject with client-compatible hairstyling.')
+    .replace(/\b(?:she|he|they)\s+has\s+[^.]*?\b(?:smile|complexion|gaze|face|eyes|nose|mouth|jawline|cheekbones)\b[^.]*\.?/gi, 'The subject has a natural camera-facing expression.')
+    .replace(/\b(?:woman|man|person|subject)\s+with\s+(?:long|short|medium-length|voluminous|brunette|blonde|auburn|brown|black|red|gray|grey|silver|highlighted|wavy|straight|curly|textured|soft|golden|dark|light|natural|loose|polished|styled|hair|featuring|in|and|,|\s)+hair\b/gi, 'subject with client-compatible hairstyling')
+    .replace(/\bglowing\s+complexion\b/gi, 'soft professional skin lighting')
+    .replace(/\bwarm,\s*inviting\s+smile\b/gi, 'natural camera-facing smile')
+    .replace(/\bgentle\s+gaze\s+directed\s+at\s+the\s+camera\b/gi, 'camera-facing gaze')
+    .replace(/\bA\s+adult\s+subject\b/g, 'An adult subject')
+    .replace(/\bShe\b/g, 'The subject')
+    .replace(/\bHe\b/g, 'The subject')
+    .replace(/\.{2,}/g, '.')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.])/g, '$1')
+    .trim();
+
+  return prompt || fallback;
+};
+
+export const sanitizeClientSupportDescription = (value, fallback = '') => {
+  const description = cleanPrompt(value);
+  if (!description) return fallback;
+
+  const blockedContext = /\b(selfie|mirror|phone|bag|purse|belt|watch|shirt|top|blouse|jeans|denim|pants|trousers|skirt|shorts|dress|jacket|coat|outfit|clothing|wearing|tucked|sleeve|sleeved|background|environment|room|wall|studio|standing|seated|sitting|leaning|holding|posing)\b/i;
+  const parts = description
+    .replace(/\bnegative\s+prompt\b\s*:?\s*[\s\S]*$/i, '')
+    .split(/[.;\n]+/)
+    .map(part => part.trim())
+    .filter(Boolean)
+    .filter(part => !blockedContext.test(part));
+
+  const cleaned = parts.join('. ')
+    .replace(/\.{2,}/g, '.')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.])/g, '$1')
+    .trim();
+
+  return cleaned || fallback;
+};
+
+const getBirthdayOverride = (promptDetails = '') => {
+  const details = cleanPrompt(promptDetails);
+  if (!details) return '';
+
+  const portugueseMatch = details.match(/\banivers[aá]rio(?:\s+de)?\s+\d+\s+anos?\b/i);
+  if (portugueseMatch) return portugueseMatch[0];
+
+  const englishMatch = details.match(/\b\d+(?:st|nd|rd|th)\s+birthday\b/i);
+  if (englishMatch) return englishMatch[0];
+
+  return '';
+};
+
+export const applyPromptDetailsOverrides = (referencePrompt = '', promptDetails = '') => {
+  const reference = sanitizeBookReferencePrompt(referencePrompt, 'Portrait pose');
+  const birthdayOverride = getBirthdayOverride(promptDetails);
+
+  if (!birthdayOverride) return reference;
+
+  const withBirthdayOverride = reference
+    .replace(/\banivers[aá]rio\s+de\s+\d+\s+anos?\b/gi, birthdayOverride)
+    .replace(/\b\d+\s*(?:anos?)?\s*(?:de\s+)?anivers[aá]rio\b/gi, birthdayOverride)
+    .replace(/\b\d+(?:st|nd|rd|th)\s+birthday\b/gi, birthdayOverride)
+    .replace(/\bbirthday\s+(?:of\s+)?\d+\s*(?:years?\s*old|yo|anos?)?\b/gi, birthdayOverride);
+
+  return sanitizeBookReferencePrompt(withBirthdayOverride, 'Portrait pose');
+};
+
+export const buildBookGenerationPrompt = ({
+  referenceName = '',
+  referencePrompt = '',
+  promptDetails = '',
+  clientDescription = ''
+} = {}) => {
+  const normalizedReferencePrompt = applyPromptDetailsOverrides(referencePrompt, promptDetails);
+  const additionalDetails = sanitizeBookReferencePrompt(promptDetails, '');
+  const identityDescription = sanitizeClientSupportDescription(clientDescription);
+  const selectedReference = cleanPrompt(referenceName);
+
+  return [
+    'IDENTITY LOCK:',
+    'Use the uploaded client face reference images as the primary identity source. The final image must look like the same person from the client photos. Preserve facial structure, eye shape, nose shape, mouth shape, natural smile style, cheek structure, jawline, skin tone, hairline, hair color, highlighted hair details and apparent age.',
+    identityDescription ? `Client face support notes: ${withoutTerminalPeriod(identityDescription)}.` : '',
+    '',
+    'CLIENT BODY / HAIR SUPPORT:',
+    'Use full-body client reference images only as secondary support for approximate body proportions, skin tone, hair length and general silhouette. Do not preserve casual clothing, bags, belts, watches, phones, mirror-selfie framing, room details or background from the client support photos unless explicitly requested in the additional prompt.',
+    '',
+    'STYLE / POSE / SCENE REFERENCE:',
+    'Use the selected reference prompt, and any selected style/pose reference image included with the task, only for pose, outfit mood, scene composition, lighting direction, color palette, props and atmosphere. Do not use the face, facial features, ethnicity, identity, apparent age or body proportions from the selected style reference.',
+    selectedReference ? `Selected reference name: ${withoutTerminalPeriod(selectedReference)}.` : '',
+    `Scene/style prompt: ${withoutTerminalPeriod(normalizedReferencePrompt)}.`,
+    additionalDetails ? `Additional prompt override: ${withoutTerminalPeriod(additionalDetails)}.` : '',
+    'If the selected reference prompt conflicts with the additional prompt about birthday age or anniversary number, the additional prompt wins.',
+    '',
+    'CAMERA / QUALITY:',
+    'Photorealistic professional portrait, realistic complexion, natural skin texture, natural retouching, realistic lighting, sharp focus on the client face, premium editorial style, high-resolution details, cinematic depth of field, elegant studio photography.',
+    '',
+    'IMPORTANT:',
+    'The face must remain recognizably the same as the client reference photos. Identity fidelity is more important than matching the style reference model. The style reference may influence only pose, clothing mood, setting, props, lighting, color palette and composition.',
+    `NEGATIVE PROMPT: ${NEGATIVE_IDENTITY_PROMPT}.`
+  ].filter(Boolean).join('\n');
+};
+
+export const buildBookMasterPrompt = ({
+  references = [],
+  promptDetails = '',
+  clientDescription = ''
+} = {}) => {
+  const additionalDetails = sanitizeBookReferencePrompt(promptDetails, '');
+  const identityDescription = sanitizeClientSupportDescription(clientDescription, '');
+  const header = [
+    'IDENTITY LOCK: use uploaded client face reference photos as the primary identity source for every generated image. Preserve the same person, facial structure, eye shape, nose shape, mouth shape, natural smile style, cheek structure, jawline, skin tone, hairline, hair color and apparent age.',
+    identityDescription ? `Client face support notes: ${identityDescription}.` : '',
+    'CLIENT BODY / HAIR SUPPORT: use full-body client photos only for approximate body proportions, skin tone, hair length and general silhouette. Do not preserve casual outfit, accessories, phone, mirror-selfie framing or background from those photos.',
+    'STYLE / POSE / SCENE REFERENCE: each selected reference image or prompt must influence only pose, outfit mood, scene composition, lighting direction, color palette, props and atmosphere. Never copy the model face, facial features, ethnicity, identity, apparent age or body proportions from a style reference.',
+    'If a reference prompt conflicts with the additional prompt about birthday age or anniversary number, the additional prompt wins.',
+    additionalDetails ? `Additional prompt override for all images: ${additionalDetails}.` : '',
+    `NEGATIVE PROMPT FOR ALL IMAGES: ${NEGATIVE_IDENTITY_PROMPT}.`
+  ].filter(Boolean).join('\n');
+
+  const referencePrompts = references.map((reference, index) => {
+    const prompt = applyPromptDetailsOverrides(reference.prompt, promptDetails);
+    const name = cleanPrompt(reference.name);
+    return `Referencia ${index + 1}${name ? ` (${name})` : ''}: ${prompt}`;
+  }).join('\n');
+
+  return `${header}\n${referencePrompts}`.trim();
+};

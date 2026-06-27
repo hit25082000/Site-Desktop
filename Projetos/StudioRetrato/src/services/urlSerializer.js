@@ -15,10 +15,14 @@ export function encodeBookData(book, clientName) {
       cN: clientName || book.clientName || 'Cliente',
       t: book.title,
       p: book.pricePerPhoto,
+      pp: book.packagePrice,
+      pph: book.packagePhotos,
+      ep: book.extraPhotoPrice,
       ph: minifiedPhotos,
       pay: book.paymentStatus || 'pending',
       sel: book.selectedPhotoIds || [],
-      rD: book.referencesData || []
+      rD: book.referencesData || [],
+      pD: book.promptDetails || ''
     };
 
     const jsonString = JSON.stringify(payload);
@@ -64,6 +68,9 @@ export function decodeBookData(hash) {
       clientName: payload.cN,
       title: payload.t,
       pricePerPhoto: payload.p,
+      packagePrice: payload.pp ?? null,
+      packagePhotos: payload.pph ?? null,
+      extraPhotoPrice: payload.ep ?? null,
       photos: (payload.ph || []).map(p => ({
         id: p.id,
         url: p.url,
@@ -71,7 +78,8 @@ export function decodeBookData(hash) {
       })),
       paymentStatus: payload.pay,
       selectedPhotoIds: payload.sel || [],
-      referencesData: payload.rD || []
+      referencesData: payload.rD || [],
+      promptDetails: payload.pD || ''
     };
   } catch (e) {
     console.error('Error decoding book data:', e);

@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { encodeBookData } from '../services/urlSerializer';
 import * as kieAi from '../services/kieAi';
+import {
+  DEFAULT_BOOK_PROMPT_DETAILS_PLACEHOLDER,
+  buildBookGenerationPrompt,
+  buildBookMasterPrompt,
+  sanitizeBookReferencePrompt
+} from '../services/bookPrompt';
 import { useUI } from '../components/UIProvider';
 import { 
   Users, 
@@ -93,17 +99,126 @@ const UNSPLASH_MOCK_PORTRAITS = [
   "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?q=80&w=600"
 ];
 
+const GEMINI_IMAGE_PROMPT_MODEL = 'gemini-3.1-flash-lite';
+const GEMINI_FACE_ANALYSIS_TIMEOUT_MS = 15000;
+const GEMINI_PROMPT_EXTRACTION_TIMEOUT_MS = 25000;
+const GEMINI_IMAGE_PROMPT_TEXT = `You are an expert AI image prompt extractor specialized in premium, photorealistic photo shoots.
+
+Your task is to analyze the uploaded reference image and extract a clean, high-quality image generation prompt optimized for ChatGPT Images and for later use as a pose/style reference in identity-preserving portraits.
+
+Focus only on what is visually useful for recreating the image style and for making it easy to place a real client's identity into the final image. Do not over-explain. Do not describe your reasoning. Do not add unnecessary theory.
+Use neutral adult wording for people in reference images.
+Return only positive visual instructions. Do not include any separate avoidance section.
+Do not describe the reference person's identity. Do not lock the model's face, facial features, ethnicity, skin tone, apparent age beyond adult, smile shape, eye shape, nose, mouth, jawline, cheekbones or beauty traits into the prompt.
+Describe the subject generically as "the client", "the subject", or "an adult subject". The prompt must be reusable with a different client's face.
+Prefer reference-friendly portraits: the subject should face the camera or be in a very slight three-quarter angle, both eyes visible, face unobstructed, looking toward the camera, with a simple natural pose that can accept another person's identity.
+If the uploaded image has a difficult angle, extreme pose, hidden face, profile view, back view, heavy occlusion, cropped face, dramatic expression, or complex hand placement, simplify it into a clean frontal or slight three-quarter professional portrait while preserving the outfit mood, scene, lighting and atmosphere.
+
+Analyze the image using these categories:
+
+1. Main subject
+
+* Generic adult subject type when visually useful
+* Pose, body angle, gaze direction and expression direction only
+* Pose and body position
+* Hair styling direction only when it is central to the look; do not lock hair color or identity traits
+* Makeup style only as styling, not as identity
+* Outfit, accessories and visible styling
+* Hands, arms and visible pose
+* Overall styling direction
+
+2. Scene and background
+
+* Location or studio setup
+* Background color and texture
+* Props and decorative elements
+* Object placement
+* Depth and visual layering
+* Color palette
+* Overall mood
+
+3. Lighting
+
+* Main light direction
+* Light softness or hardness
+* Color temperature
+* Shadows
+* Highlights
+* Rim light or fill light
+* Cinematic or studio lighting style
+
+4. Camera and composition
+
+* Framing
+* Camera angle
+* Lens style
+* Depth of field
+* Focus point
+* Perspective
+* Editorial, fashion, commercial, birthday, corporate, lifestyle or portrait style
+
+5. Realistic details
+
+* Realistic complexion
+* Hair realism
+* Fabric texture
+* Reflections
+* Balloons, cake, candles, confetti, jewelry, furniture or other visible materials
+* Natural imperfections that improve realism
+
+Now generate the final output in this exact format:
+
+Write one complete English prompt ready to paste into ChatGPT Images.
+Return only the final prompt as plain text.
+Do not include any label, heading, bullet list, markdown, code block, or prefix such as "PROMPT:".
+The prompt must be natural, visual and specific. It should describe the final image as a professional photorealistic photo shoot.
+The prompt must be useful as a reusable portrait reference: clear visible face area, easy client identity replacement, natural posture, visible face, direct camera connection.
+
+Use this structure inside the prompt:
+
+* Generic subject and styling
+* Outfit and styling
+* Pose and expression
+* Scene and background
+* Lighting
+* Camera and composition
+* Textures and details
+* Final quality
+
+The prompt must include phrases such as:
+photorealistic, professional studio photography, realistic complexion, realistic lighting, sharp focus, premium editorial style, high-resolution, cinematic depth of field.
+
+Rules:
+
+* Do not invent major elements that are not present in the image.
+* You may add small professional photography details only when they improve realism.
+* Preserve the original visual style.
+* Prioritize photorealism, premium quality and commercial usability.
+* Do not use phrases like "stunning woman", "beautiful face", "model face", "glowing complexion", "warm inviting smile" or "gentle gaze" as identity traits.
+* If a smile or gaze is important, describe only the direction, such as "natural camera-facing smile" or "looking toward the camera".
+* Do not describe the model's face shape, nose, eyes, mouth, jawline, cheekbones, ethnicity, skin tone or apparent age beyond adult.
+* Avoid vague words.
+* Prefer "front-facing" or "slight three-quarter angle" over profile, back-facing, overhead, low-angle, or heavily turned poses.
+* Keep the face clear, centered, visible and unobstructed, with both eyes visible whenever the subject is a person.
+* Keep hands, arms and body language simple unless the original reference clearly requires a specific gesture.
+* Do not ask for exaggerated facial changes, surreal beauty, heavy retouching or stylized face proportions.
+* Avoid Midjourney-style parameters.
+* Do not include aspect ratio, seed, model names or technical commands unless explicitly requested.
+* Keep all wording suitable for general-audience studio portraits.
+* Keep the result clean and ready to copy.`;
+
+const GEMINI_CLIENT_IDENTITY_PROMPT_TEXT = `You are analyzing a real client's reference photo for identity support in an identity-preserving portrait workflow.
+
+Return only concise English notes about stable client identity traits that can help preserve the same person. Focus on facial structure, eye shape, nose shape, mouth shape, natural smile style, cheek structure, jawline, skin tone, hairline, hair color, highlighted hair details, hair length and apparent adult age range.
+
+Do not describe clothing, outfit, accessories, bag, belt, watch, phone, mirror selfie setup, pose, room, background, lighting style, camera style, beauty ranking or editorial mood.
+
+Do not make the client look like a model. Do not add generic beauty traits.
+
+Return one short plain-text sentence. No label, no bullets, no markdown.`;
+
 // ── Reference Card ─────────────────────────────────────────────────────────
-function RefCard({ refData: r, categories, onDelete, onUpdateCategory, onUpdateOrder }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyPrompt = () => {
-    if (!r.prompt) return;
-    navigator.clipboard.writeText(r.prompt);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
+function RefCard({ refData: r, onDelete, onEdit }) {
   return (
     <div className="group bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm flex flex-col hover:shadow-md hover:border-neutral-300 transition-all duration-200">
 
@@ -128,6 +243,14 @@ function RefCard({ refData: r, categories, onDelete, onUpdateCategory, onUpdateO
           <Trash className="w-3.5 h-3.5" />
         </button>
 
+        <button
+          onClick={() => onEdit(r)}
+          className="absolute top-2.5 right-11 h-7 w-7 rounded-xl bg-white/90 hover:bg-indigo-50 text-indigo-500 hover:text-indigo-600 flex items-center justify-center shadow transition opacity-0 group-hover:opacity-100"
+          title="Editar referência"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+
         {/* Título + Ordem dentro da imagem — fundo do card */}
         <div className="absolute bottom-0 left-0 right-0 px-3 pb-3 pt-8">
           <div className="flex items-end justify-between gap-2">
@@ -146,60 +269,6 @@ function RefCard({ refData: r, categories, onDelete, onUpdateCategory, onUpdateO
             </span>
           </div>
         </div>
-      </div>
-
-      {/* ── Info compacta ─────────────────── */}
-      <div className="p-3 flex flex-col gap-2 font-geist">
-
-        {/* Prompt com botão copiar */}
-        <div className="bg-neutral-50 border border-neutral-100 rounded-xl p-2.5">
-          <div className="flex items-start gap-2">
-            <div className="flex-1 min-w-0">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">Prompt</span>
-              <p className="text-[11px] text-neutral-600 font-mono leading-relaxed line-clamp-2">
-                {r.prompt || <span className="italic text-neutral-300">Sem prompt</span>}
-              </p>
-            </div>
-            <button
-              onClick={handleCopyPrompt}
-              title={copied ? 'Copiado!' : 'Copiar prompt'}
-              className={`flex-shrink-0 mt-4 h-6 w-6 rounded-md flex items-center justify-center transition-all duration-200 ${
-                copied
-                  ? 'bg-emerald-100 text-emerald-600'
-                  : 'bg-white border border-neutral-200 text-neutral-400 hover:border-indigo-400 hover:text-indigo-600'
-              }`}
-            >
-              {copied ? <ClipboardCheck className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Controles empilhados */}
-        <div className="flex flex-col gap-2">
-          <div>
-            <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">Categoria</label>
-            <select
-              value={r.category || ''}
-              onChange={(e) => onUpdateCategory(r.id, e.target.value)}
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-lg px-2 py-1.5 text-[11px] font-geist text-neutral-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition"
-            >
-              <option value="">— sem categoria —</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.name}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">Ordem</label>
-            <input
-              type="number"
-              value={r.order}
-              onChange={(e) => onUpdateOrder(r.id, e.target.value)}
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-lg px-2 py-1.5 text-[11px] font-geist text-neutral-700 text-center focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition"
-            />
-          </div>
-        </div>
-
       </div>
     </div>
   );
@@ -254,9 +323,30 @@ const getVariationPrompt = (basePrompt, varType) => {
   }
 };
 
+const HIDDEN_LIBRARY_CATEGORY = 'Landpage';
+const isLandpageAsset = (ref) => typeof ref?.url === 'string' && ref.url.startsWith('assets/');
+
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 20000) => {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+};
+
 export default function Admin() {
   const navigate = useNavigate();
   const { toast, confirm } = useUI();
+  const modalShellClass = 'admin-mobile-modal fixed inset-0 bg-white flex flex-col md:bg-neutral-950/60 md:backdrop-blur-sm md:items-center md:justify-center md:p-4';
+  const modalPanelClass = 'admin-mobile-modal__panel relative flex h-full w-full flex-col bg-white shadow-2xl md:h-auto md:max-h-[90vh]';
+  const modalBodyClass = 'admin-mobile-modal__body flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8';
+  const modalFooterClass = 'admin-mobile-modal__footer shrink-0 border-t border-neutral-200 bg-white/95 px-4 py-4 backdrop-blur md:px-8';
   const [activeTab, setActiveTab] = useState('books'); // books, clients, references, settings
   const [settings, setSettings] = useState({
     pricePerPhoto: 30.00,
@@ -300,7 +390,7 @@ export default function Admin() {
     packagePrice: 50.00,
     packagePhotos: 2,
     extraPhotoPrice: 10.00,
-    qty: 5,
+    qty: 1,
     promptDetails: ''
   });
   const [selectedRefs, setSelectedRefs] = useState([]); // Array of reference IDs selected for new book
@@ -320,6 +410,11 @@ export default function Admin() {
   const [refPreviews, setRefPreviews] = useState([]);
   const [isExtractingPrompt, setIsExtractingPrompt] = useState(false);
   const [extractionLogs, setExtractionLogs] = useState([]);
+  const [showEditRefModal, setShowEditRefModal] = useState(false);
+  const [editingRef, setEditingRef] = useState(null);
+  const [editRefForm, setEditRefForm] = useState({ name: '', category: '', prompt: '' });
+  const [editRefFile, setEditRefFile] = useState(null);
+  const [editRefPreview, setEditRefPreview] = useState('');
 
   // IA Pipeline Modal State
   const [showPipelineModal, setShowPipelineModal] = useState(false);
@@ -680,18 +775,78 @@ export default function Admin() {
     }
   };
 
-  const handleDeleteCategory = async (id) => {
+  const extractStoragePathFromPublicUrl = (url) => {
+    if (!url) return null;
+    const marker = '/studioretrato-assets/';
+    const markerIndex = url.indexOf(marker);
+    if (markerIndex === -1) return null;
+    return url.slice(markerIndex + marker.length);
+  };
+
+  const deleteReferenceAssetsFromStorage = async (refsToDelete) => {
+    const storagePaths = refsToDelete
+      .map((ref) => extractStoragePathFromPublicUrl(ref.url))
+      .filter(Boolean);
+
+    if (storagePaths.length === 0) return;
+
+    const { error } = await supabase.storage
+      .from('studioretrato-assets')
+      .remove(storagePaths);
+
+    if (error) {
+      console.warn('Failed to delete reference assets from Storage:', error);
+    }
+  };
+
+  const handleDeleteCategory = async (category) => {
+    if (!category) return;
+    const refsInCategory = references.filter((ref) => ref.category === category.name);
+    const referencesLabel = refsInCategory.length === 1 ? 'referência' : 'referências';
+
     const confirmed = await confirm({
       title: 'Excluir Categoria?',
-      message: 'As referências vinculadas a esta categoria continuarão existindo.',
+      message: refsInCategory.length > 0
+        ? `Esta ação excluirá a categoria "${category.name}" e ${refsInCategory.length} ${referencesLabel} vinculadas a ela.`
+        : `Esta ação excluirá a categoria "${category.name}".`,
       confirmLabel: 'Excluir',
       destructive: true
     });
-    if (confirmed) {
-      const { error } = await supabase.from('categories').delete().eq('id', id);
-      if (error) { toast.error('Erro ao excluir categoria: ' + error.message); return; }
-      else fetchDashboardData();
+
+    if (!confirmed) return;
+
+    if (refsInCategory.length > 0) {
+      const refIds = refsInCategory.map((ref) => ref.id);
+      const { error: refsDeleteError } = await supabase
+        .from('references')
+        .delete()
+        .in('id', refIds);
+
+      if (refsDeleteError) {
+        toast.error('Erro ao excluir referências da categoria: ' + refsDeleteError.message);
+        return;
+      }
+
+      await deleteReferenceAssetsFromStorage(refsInCategory);
+
+      setSelectedRefs((prev) => prev.filter((refId) => !refIds.includes(refId)));
     }
+
+    const { error } = await supabase.from('categories').delete().eq('id', category.id);
+    if (error) {
+      toast.error('Erro ao excluir categoria: ' + error.message);
+      return;
+    }
+
+    if (refFilter === category.name) {
+      setRefFilter('Todos');
+    }
+
+    if (wizardCategoryFilter === category.name) {
+      setWizardCategoryFilter('Todos');
+    }
+
+    fetchDashboardData();
   };
 
   const handleQuickCreateCategory = async (name) => {
@@ -709,8 +864,10 @@ export default function Admin() {
     const idExists = categories.some(c => c.id === catId);
     if (idExists) {
       toast.error(`A categoria com ID '${catId}' já existe.`);
-      setWizardCategoryFilter(catId);
-      return catId;
+      setWizardCategoryFilter(catName);
+      setShowQuickCreateCat(false);
+      setQuickCatName('');
+      return catName;
     }
 
     const nameExists = categories.some(c => c.name.toLowerCase() === catName.toLowerCase());
@@ -718,8 +875,10 @@ export default function Admin() {
       const existing = categories.find(c => c.name.toLowerCase() === catName.toLowerCase());
       toast.error(`A categoria '${catName}' já existe.`);
       if (existing) {
-        setWizardCategoryFilter(existing.id);
-        return existing.id;
+        setWizardCategoryFilter(existing.name);
+        setShowQuickCreateCat(false);
+        setQuickCatName('');
+        return existing.name;
       }
       return null;
     }
@@ -734,10 +893,10 @@ export default function Admin() {
     } else {
       const { data: cats } = await supabase.from('categories').select('*');
       setCategories(cats || []);
-      setWizardCategoryFilter(catId);
+      setWizardCategoryFilter(catName);
       setShowQuickCreateCat(false);
       setQuickCatName('');
-      return catId;
+      return catName;
     }
   };
 
@@ -769,7 +928,7 @@ export default function Admin() {
         
         const publicUrl = await uploadToStorage(file, storagePath);
         
-        let promptText = importPosePrompt.trim() || 'Portrait pose reference';
+        let promptText = sanitizeBookReferencePrompt(importPosePrompt, 'Portrait pose reference');
         if (extractImportPromptsWithGemini && settings.geminiApiKey) {
           setImportProgressLogs(prev => [...prev, `[${stepNum}/${importPoseFiles.length}] 🧠 Analisando pose com Gemini Vision...`]);
           try {
@@ -782,14 +941,14 @@ export default function Admin() {
             const mimeType = file.type || 'image/jpeg';
             
             const response = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiApiKey}`,
+              `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_PROMPT_MODEL}:generateContent?key=${settings.geminiApiKey}`,
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   contents: [{
                     parts: [
-                      { text: 'Describe style, pose, background, details of this face portrait for an AI Image Generator prompt. Keep it highly detailed but concise, maximum 45 words. Example: "A professional business headshot, studio soft lighting, blurred office background, wearing dark blazer, highly realistic face details, f/1.8"' },
+                      { text: GEMINI_IMAGE_PROMPT_TEXT },
                       { inlineData: { mimeType, data: base64Data } }
                     ]
                   }]
@@ -800,7 +959,7 @@ export default function Admin() {
             const json = await response.json();
             const textResult = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
             if (textResult) {
-              promptText = textResult;
+              promptText = sanitizeBookReferencePrompt(textResult, 'Portrait pose reference');
               setImportProgressLogs(prev => [...prev, `[${stepNum}/${importPoseFiles.length}] 📝 Prompt extraído: "${promptText.substring(0, 40)}..."`]);
             } else {
               console.warn('Gemini extraction did not return content, using default prompt');
@@ -852,13 +1011,12 @@ export default function Admin() {
   // ----------------------------------------------------
   const handleRefFileChange = (e) => {
     const files = Array.from(e.target.files);
-    setRefFiles(files);
+    if (files.length === 0) return;
 
-    const previews = files.map(file => URL.createObjectURL(file));
-    setRefPreviews(previews);
+    setRefFiles(prev => [...prev, ...files]);
+    setRefPreviews(prev => [...prev, ...files.map(file => URL.createObjectURL(file))]);
 
-    if (files.length === 1 && !refForm.name) {
-      // Auto fill name with filename without extension
+    if (files.length === 1 && refFiles.length === 0 && !refForm.name) {
       const name = files[0].name.replace(/\.[^/.]+$/, "");
       setRefForm(prev => ({ ...prev, name }));
     }
@@ -890,20 +1048,21 @@ export default function Admin() {
         });
       }
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiApiKey}`,
+      const response = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_PROMPT_MODEL}:generateContent?key=${settings.geminiApiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{
               parts: [
-                { text: 'Describe the main physical features of the person in this photo for an AI Image Generator prompt. Be very brief, focusing only on gender/age, hair type/color, skin tone/ethnicity, and facial details (like glasses or beard if any). Do NOT describe clothing, background, or lighting. Example output: "A photo of a 30-year-old woman with long brown wavy hair, light brown skin, brown eyes"' },
+                { text: GEMINI_CLIENT_IDENTITY_PROMPT_TEXT },
                 { inlineData: { mimeType, data: base64Data } }
               ]
             }]
           })
-        }
+        },
+        GEMINI_FACE_ANALYSIS_TIMEOUT_MS
       );
 
       const json = await response.json();
@@ -914,10 +1073,69 @@ export default function Admin() {
     }
   };
 
-  // Call Gemini API to analyze uploaded face references and suggest prompts
-  const extractPromptsWithGemini = async () => {
-    if (refFiles.length === 0) {
-      toast.error('Faça o upload de ao menos uma imagem de referência.');
+  const extractPromptFromImageRaw = async (fileOrUrl) => {
+    if (!fileOrUrl) {
+      toast.error('Selecione uma imagem de referência.');
+      return '';
+    }
+    if (!settings.geminiApiKey) {
+      toast.error('Configure a chave da API do Gemini nas configurações antes de extrair prompts.');
+      return '';
+    }
+
+    try {
+      let base64Data = '';
+      let mimeType = 'image/jpeg';
+
+      if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+        mimeType = fileOrUrl.type || 'image/jpeg';
+        const reader = new FileReader();
+        base64Data = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(fileOrUrl);
+        });
+      } else {
+        const res = await fetch(fileOrUrl);
+        const blob = await res.blob();
+        mimeType = blob.type || 'image/jpeg';
+        base64Data = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      const response = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_PROMPT_MODEL}:generateContent?key=${settings.geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: GEMINI_IMAGE_PROMPT_TEXT },
+                { inlineData: { mimeType, data: base64Data } }
+              ]
+            }]
+          })
+        },
+        GEMINI_PROMPT_EXTRACTION_TIMEOUT_MS
+      );
+
+      const json = await response.json();
+      const textResult = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (!textResult) throw new Error(json.error?.message || 'Falha ao analisar imagem.');
+      return sanitizeBookReferencePrompt(textResult);
+
+    } catch (err) {
+      console.error('Gemini extraction error:', err);
+      return '';
+    }
+  };
+
+  const extractPromptFromImage = async (fileOrUrl, onPrompt, setLogs) => {
+    if (!fileOrUrl) {
+      toast.error('Selecione uma imagem de referência.');
       return;
     }
     if (!settings.geminiApiKey) {
@@ -926,52 +1144,44 @@ export default function Admin() {
     }
 
     setIsExtractingPrompt(true);
-    setExtractionLogs(['[IA] Inicializando extração...', '[IA] Codificando imagem em Base64...']);
+    setLogs(['[IA] Inicializando extração...', '[IA] Codificando imagem em Base64...']);
 
     try {
-      const file = refFiles[0];
-      const reader = new FileReader();
-
-      const base64Promise = new Promise((resolve) => {
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.readAsDataURL(file);
-      });
-
-      const base64Data = await base64Promise;
-      setExtractionLogs(prev => [...prev, '[IA] Conectando ao Google Gemini Vision...', '[IA] Analisando pose, iluminação e vestuário do retrato...']);
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: 'Describe style, pose, background, details of this face portrait for an AI Image Generator prompt. Keep it highly detailed but concise, maximum 45 words. Example: "A professional business headshot, studio soft lighting, blurred office background, wearing dark blazer, highly realistic face details, f/1.8"' },
-                { inlineData: { mimeType: file.type || 'image/jpeg', data: base64Data } }
-              ]
-            }]
-          })
-        }
-      );
-
-      const json = await response.json();
-      const textResult = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-
+      setLogs(prev => [...prev, '[IA] Conectando ao Google Gemini Vision...', '[IA] Analisando pose, iluminação e vestuário do retrato...']);
+      const textResult = await extractPromptFromImageRaw(fileOrUrl);
       if (textResult) {
-        setRefForm(prev => ({ ...prev, prompt: textResult }));
-        setExtractionLogs(prev => [...prev, '[IA] Prompt extraído com sucesso!', `[Prompt]: "${textResult}"`]);
+        onPrompt(textResult);
+        setLogs(prev => [...prev, '[IA] Prompt extraído com sucesso!', `[Prompt]: "${textResult}"`]);
       } else {
-        throw new Error(json.error?.message || 'Falha ao analisar imagem.');
+        throw new Error('Falha ao analisar imagem.');
       }
-
     } catch (err) {
-      console.error('Gemini extraction error:', err);
-      setExtractionLogs(prev => [...prev, `[ERRO]: ${err.message}`]);
+      setLogs(prev => [...prev, `[ERRO]: ${err.message}`]);
     } finally {
       setIsExtractingPrompt(false);
     }
+  };
+
+  // Call Gemini API to analyze uploaded face references and suggest prompts
+  const extractPromptsWithGemini = async () => {
+    if (refFiles.length === 0) {
+      toast.error('Faça o upload de ao menos uma imagem de referência.');
+      return;
+    }
+    await extractPromptFromImage(refFiles[0], (textResult) => {
+      setRefForm(prev => ({ ...prev, prompt: textResult }));
+    }, setExtractionLogs);
+  };
+
+  const extractEditPromptWithGemini = async () => {
+    const imageFile = editRefFile || editingRef?.url;
+    if (!imageFile) {
+      toast.error('Selecione uma imagem de referência.');
+      return;
+    }
+    await extractPromptFromImage(imageFile, (textResult) => {
+      setEditRefForm(prev => ({ ...prev, prompt: textResult }));
+    }, setExtractionLogs);
   };
 
   const handleCreateReference = async (e) => {
@@ -982,25 +1192,36 @@ export default function Admin() {
     }
 
     try {
-      const file = refFiles[0];
-      const id = 'ref_' + Date.now();
-      const storagePath = `references/${id}_${file.name}`;
-      
-      // 1. Upload to Supabase Storage
-      const publicUrl = await uploadToStorage(file, storagePath);
+      const baseOrder = references.length + 1;
+      const uploadJobs = refFiles.map(async (file, i) => {
+        const id = 'ref_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        const storagePath = `references/${id}_${file.name}`;
+        const publicUrl = await uploadToStorage(file, storagePath);
+        const defaultPrompt = file.name.replace(/\.[^/.]+$/, "") || 'Portrait styling reference';
+        const promptText = settings.geminiApiKey
+          ? (await extractPromptFromImageRaw(file)) || defaultPrompt
+          : defaultPrompt;
+        const referencePrompt = sanitizeBookReferencePrompt(
+          refFiles.length === 1 ? (refForm.prompt || defaultPrompt) : promptText,
+          defaultPrompt
+        );
 
-      // 2. Save record to references table
-      const { error: dbError } = await supabase
-        .from('references')
-        .insert([{
+        return {
           id,
-          name: refForm.name,
+          name: file.name.replace(/\.[^/.]+$/, ""),
           category: refForm.category,
           url: publicUrl,
-          prompt: refForm.prompt || 'Portrait styling reference',
+          prompt: referencePrompt,
           public: true,
-          order: references.length + 1
-        }]);
+          order: baseOrder + i
+        };
+      });
+
+      const records = (await Promise.allSettled(uploadJobs)).flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
+
+      const { error: dbError } = await supabase
+        .from('references')
+        .insert(records);
 
       if (dbError) throw dbError;
 
@@ -1034,7 +1255,7 @@ export default function Admin() {
 
       // 2. Try to delete from storage
       try {
-        const path = url.split('/studioretrato-assets/')[1];
+        const path = extractStoragePathFromPublicUrl(url);
         if (path) {
           await supabase.storage.from('studioretrato-assets').remove([path]);
         }
@@ -1042,7 +1263,99 @@ export default function Admin() {
         console.warn('Failed to delete asset from Storage:', e);
       }
 
+      setSelectedRefs((prev) => prev.filter((refId) => refId !== id));
+
+      const deletedRef = references.find((ref) => ref.id === id);
+      const deletedCategory = deletedRef?.category;
+
+      if (deletedCategory) {
+        const { count: remainingCount, error: remainingCountError } = await supabase
+          .from('references')
+          .select('id', { count: 'exact', head: true })
+          .eq('category', deletedCategory);
+
+        if (remainingCountError) {
+          console.warn('Failed to verify remaining references for category cleanup:', remainingCountError);
+        } else if (!remainingCount) {
+          const categoryToDelete = categories.find((category) => category.name === deletedCategory);
+          if (categoryToDelete) {
+            const { error: categoryDeleteError } = await supabase
+              .from('categories')
+              .delete()
+              .eq('id', categoryToDelete.id);
+
+            if (categoryDeleteError) {
+              console.warn('Failed to delete empty category after reference removal:', categoryDeleteError);
+            }
+          }
+        }
+      }
+
       fetchDashboardData();
+    }
+  };
+
+  const openEditReferenceModal = (ref) => {
+    setEditingRef(ref);
+    setEditRefForm({
+      name: ref.name || '',
+      category: ref.category || '',
+      prompt: ref.prompt || ''
+    });
+    setEditRefFile(null);
+    setEditRefPreview(ref.url || '');
+    setShowEditRefModal(true);
+  };
+
+  const closeEditReferenceModal = () => {
+    setShowEditRefModal(false);
+    setEditingRef(null);
+    setEditRefForm({ name: '', category: '', prompt: '' });
+    setEditRefFile(null);
+    setEditRefPreview('');
+  };
+
+  const handleEditReference = async (e) => {
+    e.preventDefault();
+    if (!editingRef) return;
+
+    try {
+      let nextUrl = editingRef.url;
+
+      if (editRefFile) {
+        const storagePath = `references/${editingRef.id}_${editRefFile.name}`;
+        nextUrl = await uploadToStorage(editRefFile, storagePath);
+      }
+
+      const payload = {
+        name: editRefForm.name.trim() || editingRef.name,
+        category: editRefForm.category,
+        prompt: sanitizeBookReferencePrompt(editRefForm.prompt, 'Portrait styling reference'),
+        url: nextUrl
+      };
+
+      const { error } = await supabase
+        .from('references')
+        .update(payload)
+        .eq('id', editingRef.id);
+
+      if (error) throw error;
+
+      if (editRefFile && editingRef.url && editingRef.url !== nextUrl) {
+        try {
+          const oldPath = extractStoragePathFromPublicUrl(editingRef.url);
+          if (oldPath) {
+            await supabase.storage.from('studioretrato-assets').remove([oldPath]);
+          }
+        } catch (storageErr) {
+          console.warn('Failed to remove previous reference asset:', storageErr);
+        }
+      }
+
+      closeEditReferenceModal();
+      fetchDashboardData();
+    } catch (err) {
+      toast.error('Erro ao editar referência: ' + err.message);
     }
   };
 
@@ -1150,6 +1463,10 @@ export default function Admin() {
         setPipelineLogs(prev => [...prev, '✅ Fotos de referência da cliente salvas com sucesso!']);
       }
 
+      if (clientPhotos.length === 0) {
+        throw new Error('Cadastre ou envie pelo menos uma foto de referência da cliente para gerar o book.');
+      }
+
       setPipelineProgress(30);
 
       // Step 0.5: Generate client description from face photo using Gemini
@@ -1160,6 +1477,8 @@ export default function Admin() {
         clientDescription = await describeClientFace(mainRefSource);
         if (clientDescription) {
           setPipelineLogs(prev => [...prev, `👤 Perfil facial detectado: "${clientDescription}"`]);
+        } else {
+          setPipelineLogs(prev => [...prev, '⚠️ Reconhecimento facial indisponível no momento. Continuando a geração com as fotos de referência.']);
         }
       }
 
@@ -1168,24 +1487,27 @@ export default function Admin() {
       const selectedRefsObjs = references.filter(r => selectedRefs.includes(r.id));
       setPipelineLogs(prev => [...prev, '📝 Estruturando prompts de cada referência selecionada...']);
 
-      // Build the Master Prompt (generic)
-      const promptHeader = `Por favor, utilize a foto da cliente em anexo como referência principal de rosto, fisionomia, expressões e corpo para manter total fidelidade e consistência de identidade. Recrie a cliente nas poses, roupas, iluminação e cenários apresentados nas fotos de referência anexadas. Mantenha os traços físicos e faciais idênticos aos da cliente em cada imagem gerada.`;
-      
-      let refPromptsList = "";
-      selectedRefsObjs.forEach((r, idx) => {
-        refPromptsList += `\nReferência ${idx + 1} (${r.name}): ${r.prompt || 'Portrait pose'}`;
+      const masterPrompt = buildBookMasterPrompt({
+        references: selectedRefsObjs,
+        promptDetails: bookForm.promptDetails,
+        clientDescription
       });
-
-      const masterPrompt = `${promptHeader}\n${refPromptsList}`;
 
       setPipelineProgress(70);
       setPipelineLogs(prev => [...prev, `🤖 Solicitando geração de ${selectedRefsObjs.length} retrato(s) ao Kie AI em background...`]);
 
       const generationPromises = selectedRefsObjs.map(async (r) => {
-        const refPrompt = `A professional high-end studio portrait of the client. Use the first image in the input list as reference for the pose, outfit, setting and style: ${r.prompt}.${bookForm.promptDetails ? ' Additional details: ' + bookForm.promptDetails : ''} Use the subsequent images in the input list as references for the client's face, body, physiognomy and expressions to keep exact identity. Client description: ${clientDescription || "A professional person"}. Photorealistic, high quality, studio lighting, detailed.`;
+        const referencePrompt = sanitizeBookReferencePrompt(r.prompt, 'Portrait pose');
+        const refPrompt = buildBookGenerationPrompt({
+          referenceName: r.name,
+          referencePrompt,
+          promptDetails: bookForm.promptDetails,
+          clientDescription
+        });
+        const inputUrls = [...clientPhotos, r.url].filter(Boolean);
         
         try {
-          const taskId = await kieAi.createGenerationTask(refPrompt, [r.url, ...clientPhotos]);
+          const taskId = await kieAi.createGenerationTask(refPrompt, inputUrls);
           setPipelineLogs(prev => [...prev, `✅ Tarefa criada para "${r.name}" (ID: ${taskId})`]);
           return {
             id: `img_gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -1195,6 +1517,8 @@ export default function Admin() {
             taskId,
             refId: r.id,
             refUrl: r.url,
+            referencePrompt,
+            promptDetails: bookForm.promptDetails || '',
             prompt: refPrompt
           };
         } catch (err) {
@@ -1206,6 +1530,8 @@ export default function Admin() {
             status: 'failed',
             refId: r.id,
             refUrl: r.url,
+            referencePrompt,
+            promptDetails: bookForm.promptDetails || '',
             prompt: refPrompt,
             error: err.message
           };
@@ -1218,7 +1544,12 @@ export default function Admin() {
       setPipelineLogs(prev => [...prev, '💾 Salvando informações do book na tabela PostgreSQL...']);
 
       // Format references data to save inside jsonb
-      const referencesData = selectedRefsObjs.map(r => ({ name: r.name, url: r.url, prompt: r.prompt }));
+      const referencesData = selectedRefsObjs.map(r => ({
+        id: r.id,
+        name: r.name,
+        url: r.url,
+        prompt: sanitizeBookReferencePrompt(r.prompt, 'Portrait pose')
+      }));
 
       // Insert book record in Supabase DB with initial photos array
       const { error: dbError } = await supabase
@@ -1414,18 +1745,51 @@ export default function Admin() {
 
   const handleMarkAsPaid = async (bookId) => {
     try {
+      const targetBook = activeViewBook?.id === bookId
+        ? activeViewBook
+        : books.find(b => b.id === bookId);
+
+      if (!targetBook) {
+        throw new Error('Book não encontrado para marcar como pago.');
+      }
+
+      const selectedIds = Array.isArray(targetBook.selected_photo_ids) ? targetBook.selected_photo_ids : [];
+      const hasPackage = targetBook.package_price !== null && targetBook.package_price !== undefined;
+      const packagePhotos = Number(targetBook.package_photos || 0);
+      const isAlreadyPartial = targetBook.payment_status === 'partial_paid';
+
+      const paidIds = hasPackage && !isAlreadyPartial && selectedIds.length > packagePhotos
+        ? selectedIds.slice(0, packagePhotos)
+        : selectedIds;
+
+      const updatedPhotos = Array.isArray(targetBook.photos)
+        ? targetBook.photos.map((photo) => selectedIds.includes(photo.id)
+          ? {
+              ...photo,
+              paymentStatus: paidIds.includes(photo.id) ? 'paid' : 'pending'
+            }
+          : photo)
+        : [];
+
+      const nextPaymentStatus = hasPackage && !isAlreadyPartial && selectedIds.length > packagePhotos
+        ? 'partial_paid'
+        : 'paid';
+
       const { error } = await supabase
         .from('books')
-        .update({ payment_status: 'paid' })
+        .update({
+          payment_status: nextPaymentStatus,
+          photos: updatedPhotos
+        })
         .eq('id', bookId);
-        
+          
       if (error) throw error;
       
-      setBooks(prev => prev.map(b => b.id === bookId ? { ...b, payment_status: 'paid' } : b));
+      setBooks(prev => prev.map(b => b.id === bookId ? { ...b, payment_status: nextPaymentStatus, photos: updatedPhotos } : b));
       if (activeViewBook && activeViewBook.id === bookId) {
-        setActiveViewBook(prev => ({ ...prev, payment_status: 'paid' }));
+        setActiveViewBook(prev => ({ ...prev, payment_status: nextPaymentStatus, photos: updatedPhotos }));
       }
-      toast.success('Book marcado como pago com sucesso!');
+      toast.success(nextPaymentStatus === 'partial_paid' ? 'Pacote marcado como pago. Fotos adicionais continuam pendentes.' : 'Book marcado como pago com sucesso!');
     } catch (err) {
       toast.error('Erro ao marcar como pago: ' + err.message);
     }
@@ -1493,17 +1857,20 @@ export default function Admin() {
   const copyLinkToClipboard = (bk) => {
     const link = getClientLink(bk);
     navigator.clipboard.writeText(link);
+    window.open(link, '_blank', 'noopener,noreferrer');
     toast.success('Link copiado para a área de transferência!');
   };
 
   // Group references by category for layout grouping
   const groupRefsByCategory = () => {
     const groups = {};
-    categories.forEach(cat => {
-      groups[cat.name] = references.filter(r => r.category === cat.name);
+    categories.filter((cat) => cat.name !== HIDDEN_LIBRARY_CATEGORY).forEach(cat => {
+      groups[cat.name] = references.filter(r => r.category === cat.name && !isLandpageAsset(r));
     });
     // Group references without valid category under 'Outros'
-    const otherRefs = references.filter(r => !r.category || !categories.some(c => c.name === r.category));
+    const otherRefs = references.filter(r =>
+      !isLandpageAsset(r) && r.category !== HIDDEN_LIBRARY_CATEGORY && (!r.category || !categories.some(c => c.name === r.category))
+    );
     if (otherRefs.length > 0) {
       groups['Sem Categoria'] = otherRefs;
     }
@@ -1514,7 +1881,13 @@ export default function Admin() {
 
   // Filtered references in the dashboard library tab
   const filteredLibraryRefs = references.filter(ref => {
-    return refFilter === 'Todos' || ref.category === refFilter;
+    return !isLandpageAsset(ref) && ref.category !== HIDDEN_LIBRARY_CATEGORY && (refFilter === 'Todos' || ref.category === refFilter);
+  });
+
+  const filteredWizardRefs = references.filter(ref => {
+    const matchesSearch = ref.name.toLowerCase().includes(refSearch.toLowerCase());
+    const matchesFilter = wizardCategoryFilter === 'Todos' || ref.category === wizardCategoryFilter;
+    return matchesSearch && matchesFilter && ref.category !== HIDDEN_LIBRARY_CATEGORY && !isLandpageAsset(ref);
   });
 
   return (
@@ -1646,7 +2019,7 @@ export default function Admin() {
       </nav>
 
       {/* Main Content Dashboard Area */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8">
+      <main className="admin-main-content flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-8">
         
         {/* HEADER BAR */}
         <div className="flex justify-between items-start md:items-center mb-6 md:mb-8 gap-3 md:gap-4 flex-wrap">
@@ -1737,61 +2110,71 @@ export default function Admin() {
             ) : (
               <>
                 {/* ── Mobile Cards (visible only on small screens) ── */}
-                <div className="md:hidden space-y-3">
+                <div className="grid gap-4 md:hidden">
                   {books.map((bk) => (
-                    <div key={bk.id} className="bg-neutral-50 border border-neutral-100 rounded-2xl p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
+                    <article key={bk.id} className="rounded-[1.75rem] border border-neutral-200 bg-neutral-50/60 p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <h4 className="font-semibold text-neutral-900 text-sm font-geist truncate">{bk.title}</h4>
-                          <p className="text-xs text-neutral-500 font-geist mt-0.5">{bk.client?.name || 'Deletado'}</p>
+                          <p className="text-xs text-neutral-400 uppercase tracking-[0.18em] font-semibold font-geist">Book</p>
+                          <h4 className="font-semibold text-neutral-900 text-base font-geist mt-1 break-words">{bk.title}</h4>
+                          <p className="text-sm text-neutral-500 font-geist mt-1 break-words">{bk.client?.name || 'Deletado'}</p>
                         </div>
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ${
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold flex-shrink-0 ${
                           bk.payment_status === 'paid'
                             ? 'bg-emerald-50 text-emerald-700'
                             : 'bg-amber-50 text-amber-800'
                         }`}>
-                          {bk.payment_status === 'paid' ? 'Pago' : 'Pendente'}
+                          {bk.payment_status === 'paid' ? 'Pago' : bk.payment_status === 'partial_paid' ? 'Pacote pago' : 'Pendente'}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-neutral-500 font-geist">
-                          {bk.photos?.length || 0} fotos
+
+                      <div className="mt-4 rounded-2xl bg-white border border-neutral-200 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-[11px] text-neutral-400 uppercase tracking-[0.18em] font-semibold font-geist">Retratos</p>
+                            <p className="text-sm text-neutral-700 font-geist mt-1">{bk.photos?.length || 0} fotos</p>
+                          </div>
                           {bk.photos?.some(p => p.status === 'generating') && (
-                            <span className="text-[10px] text-indigo-600 font-semibold ml-1.5 animate-pulse bg-indigo-50 px-1.5 py-0.5 rounded-full">
+                            <span className="text-[10px] text-indigo-600 font-semibold animate-pulse bg-indigo-50 px-2 py-1 rounded-full flex-shrink-0">
                               gerando...
                             </span>
                           )}
-                        </span>
-                        <div className="flex gap-1">
-                          {bk.payment_status !== 'paid' && (
-                            <button
-                              onClick={() => handleMarkAsPaid(bk.id)}
-                              className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-xl min-h-[40px] min-w-[40px] flex items-center justify-center"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => { setActiveViewBook(bk); setShowViewBookModal(true); }}
-                            className="p-2 hover:bg-neutral-100 text-neutral-600 rounded-xl min-h-[40px] min-w-[40px] flex items-center justify-center"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => copyLinkToClipboard(bk)}
-                            className="p-2 hover:bg-neutral-100 text-neutral-600 rounded-xl min-h-[40px] min-w-[40px] flex items-center justify-center"
-                          >
-                            <LinkIcon className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBook(bk.id)}
-                            className="p-2 hover:bg-rose-50 text-rose-600 rounded-xl min-h-[40px] min-w-[40px] flex items-center justify-center"
-                          >
-                            <Trash className="w-4 h-4" />
-                          </button>
                         </div>
                       </div>
-                    </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        {bk.payment_status !== 'paid' && (
+                          <button
+                            onClick={() => handleMarkAsPaid(bk.id)}
+                            className="inline-flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs px-3 py-3 rounded-2xl transition font-geist"
+                          >
+                            <Check className="w-4 h-4" />
+                            <span>Marcar Pago</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => { setActiveViewBook(bk); setShowViewBookModal(true); }}
+                          className="inline-flex items-center justify-center gap-1.5 bg-white hover:bg-neutral-100 text-neutral-700 font-semibold text-xs px-3 py-3 rounded-2xl transition border border-neutral-200 font-geist"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>Visualizar</span>
+                        </button>
+                        <button
+                          onClick={() => copyLinkToClipboard(bk)}
+                          className="inline-flex items-center justify-center gap-1.5 bg-white hover:bg-neutral-100 text-neutral-700 font-semibold text-xs px-3 py-3 rounded-2xl transition border border-neutral-200 font-geist"
+                        >
+                          <LinkIcon className="w-4 h-4" />
+                          <span>Copiar Link</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBook(bk.id)}
+                          className="inline-flex items-center justify-center gap-1.5 bg-white hover:bg-rose-50 text-rose-600 font-semibold text-xs px-3 py-3 rounded-2xl transition border border-neutral-200 font-geist"
+                        >
+                          <Trash className="w-4 h-4" />
+                          <span>Excluir</span>
+                        </button>
+                      </div>
+                    </article>
                   ))}
                 </div>
 
@@ -1826,7 +2209,7 @@ export default function Admin() {
                                 ? 'bg-emerald-50 text-emerald-700'
                                 : 'bg-amber-50 text-amber-800'
                             }`}>
-                              {bk.payment_status === 'paid' ? 'Pago' : 'Pendente'}
+                              {bk.payment_status === 'paid' ? 'Pago' : bk.payment_status === 'partial_paid' ? 'Pacote pago' : 'Pendente'}
                             </span>
                           </td>
                           <td className="py-4 px-4 text-right">
@@ -1886,77 +2269,148 @@ export default function Admin() {
                 Nenhum cliente cadastrado. Clique em "Novo Cliente" no topo.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-neutral-100 text-xs font-semibold text-neutral-400 uppercase tracking-wider font-geist">
-                      <th className="py-4 px-4">Nome</th>
-                      <th className="py-4 px-4">Telefone</th>
-                      <th className="py-4 px-4">E-mail</th>
-                      <th className="py-4 px-4 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100 text-sm font-geist">
-                    {clients.map((cli) => (
-                      <tr key={cli.id} className="hover:bg-neutral-50/50">
-                        <td className="py-4 px-4 font-semibold text-neutral-900">
-                          <div className="flex items-center gap-3">
-                            {cli.photo_url ? (
-                              <img src={parsePhotos(cli.photo_url)[0]} alt={cli.name} className="w-10 h-10 rounded-xl object-cover border border-neutral-200" />
-                            ) : (
-                              <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center border border-neutral-200 text-neutral-400 font-bold text-xs uppercase">
-                                {cli.name.substring(0, 2)}
-                              </div>
-                            )}
-                            <span>{cli.name}</span>
+              <>
+                <div className="grid gap-4 md:hidden">
+                  {clients.map((cli) => (
+                    <article key={cli.id} className="rounded-[1.75rem] border border-neutral-200 bg-neutral-50/60 p-4 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        {cli.photo_url ? (
+                          <img src={parsePhotos(cli.photo_url)[0]} alt={cli.name} className="w-14 h-14 rounded-2xl object-cover border border-neutral-200" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center border border-neutral-200 text-neutral-400 font-bold text-sm uppercase">
+                            {cli.name.substring(0, 2)}
                           </div>
-                        </td>
-                        <td className="py-4 px-4 text-neutral-600">{cli.phone || 'Sem número'}</td>
-                        <td className="py-4 px-4 text-neutral-600">{cli.email || 'Sem e-mail'}</td>
-                        <td className="py-4 px-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => {
-                                setBookForm({
-                                  title: '',
-                                  clientId: cli.id,
-                                  pricePerPhoto: '',
-                                  packagePrice: 50.00,
-                                  packagePhotos: 2,
-                                  extraPhotoPrice: 10.00,
-                                  qty: 5
-                                });
-                                setBookClientFiles([]);
-                                setBookClientPreviews([]);
-                                setSelectedRefs([]);
-                                setShowBookModal(true);
-                              }}
-                              className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs px-3 py-2 rounded-xl transition font-geist"
-                            >
-                              <Sparkles className="w-3.5 h-3.5" />
-                              <span>Gerar Book</span>
-                            </button>
-                            <button
-                              onClick={() => openEditClient(cli)}
-                              className="p-2 hover:bg-neutral-150 text-neutral-600 rounded-xl transition"
-                              title="Editar Informações"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClient(cli.id)}
-                              className="p-2 hover:bg-rose-50 text-rose-600 rounded-xl transition"
-                              title="Deletar Cliente"
-                            >
-                              <Trash className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-neutral-900 font-geist truncate">{cli.name}</p>
+                          <p className="text-xs text-neutral-400 uppercase tracking-[0.18em] font-semibold font-geist mt-1">Cliente</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        <div className="rounded-2xl bg-white border border-neutral-200 px-4 py-3">
+                          <p className="text-[11px] text-neutral-400 uppercase tracking-[0.18em] font-semibold font-geist">Telefone</p>
+                          <p className="text-sm text-neutral-700 font-geist mt-1 break-words">{cli.phone || 'Sem numero'}</p>
+                        </div>
+                        <div className="rounded-2xl bg-white border border-neutral-200 px-4 py-3">
+                          <p className="text-[11px] text-neutral-400 uppercase tracking-[0.18em] font-semibold font-geist">E-mail</p>
+                          <p className="text-sm text-neutral-700 font-geist mt-1 break-all">{cli.email || 'Sem e-mail'}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => {
+                            setBookForm({
+                              title: '',
+                              clientId: cli.id,
+                              pricePerPhoto: '',
+                              packagePrice: 50.00,
+                              packagePhotos: 2,
+                              extraPhotoPrice: 10.00,
+                              qty: 5
+                            });
+                            setBookClientFiles([]);
+                            setBookClientPreviews([]);
+                            setSelectedRefs([]);
+                            setShowBookModal(true);
+                          }}
+                          className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs px-3 py-3 rounded-2xl transition font-geist"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Gerar Book</span>
+                        </button>
+                        <button
+                          onClick={() => openEditClient(cli)}
+                          className="inline-flex items-center justify-center p-3 hover:bg-white text-neutral-600 rounded-2xl transition border border-neutral-200 bg-white"
+                          title="Editar Informações"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClient(cli.id)}
+                          className="inline-flex items-center justify-center p-3 hover:bg-rose-50 text-rose-600 rounded-2xl transition border border-neutral-200 bg-white"
+                          title="Deletar Cliente"
+                        >
+                          <Trash className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-neutral-100 text-xs font-semibold text-neutral-400 uppercase tracking-wider font-geist">
+                        <th className="py-4 px-4">Nome</th>
+                        <th className="py-4 px-4">Telefone</th>
+                        <th className="py-4 px-4">E-mail</th>
+                        <th className="py-4 px-4 text-right">Ações</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100 text-sm font-geist">
+                      {clients.map((cli) => (
+                        <tr key={cli.id} className="hover:bg-neutral-50/50">
+                          <td className="py-4 px-4 font-semibold text-neutral-900">
+                            <div className="flex items-center gap-3">
+                              {cli.photo_url ? (
+                                <img src={parsePhotos(cli.photo_url)[0]} alt={cli.name} className="w-10 h-10 rounded-xl object-cover border border-neutral-200" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center border border-neutral-200 text-neutral-400 font-bold text-xs uppercase">
+                                  {cli.name.substring(0, 2)}
+                                </div>
+                              )}
+                              <span>{cli.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-neutral-600">{cli.phone || 'Sem número'}</td>
+                          <td className="py-4 px-4 text-neutral-600">{cli.email || 'Sem e-mail'}</td>
+                          <td className="py-4 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setBookForm({
+                                    title: '',
+                                    clientId: cli.id,
+                                    pricePerPhoto: '',
+                                    packagePrice: 50.00,
+                                    packagePhotos: 2,
+                                    extraPhotoPrice: 10.00,
+                                    qty: 5
+                                  });
+                                  setBookClientFiles([]);
+                                  setBookClientPreviews([]);
+                                  setSelectedRefs([]);
+                                  setShowBookModal(true);
+                                }}
+                                className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs px-3 py-2 rounded-xl transition font-geist"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Gerar Book</span>
+                              </button>
+                              <button
+                                onClick={() => openEditClient(cli)}
+                                className="p-2 hover:bg-neutral-150 text-neutral-600 rounded-xl transition"
+                                title="Editar Informações"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClient(cli.id)}
+                                className="p-2 hover:bg-rose-50 text-rose-600 rounded-xl transition"
+                                title="Deletar Cliente"
+                              >
+                                <Trash className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -2000,6 +2454,45 @@ export default function Admin() {
                   })}
                 </div>
 
+                {categories.length > 0 && (
+                  <div className="bg-white border border-neutral-200/80 rounded-[2rem] p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <p className="text-xs text-neutral-400 font-geist uppercase tracking-wider font-semibold">
+                        Gerenciar Categorias
+                      </p>
+                      <span className="text-[11px] text-neutral-400 font-geist">
+                        Excluir uma categoria apaga as referências vinculadas.
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((category) => {
+                        const refsCount = references.filter((ref) => ref.category === category.name).length;
+                        return (
+                          <div
+                            key={category.id}
+                            className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-2"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-neutral-700 font-geist">{category.name}</span>
+                              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-500 ring-1 ring-neutral-200">
+                                {refsCount}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCategory(category)}
+                              className="h-6 w-6 rounded-full bg-white text-rose-500 transition hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center ring-1 ring-neutral-200"
+                              title={`Excluir categoria ${category.name}`}
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* References Grid Container */}
                 <div className="bg-white border border-neutral-200/80 rounded-[2.5rem] p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-5">
@@ -2018,10 +2511,8 @@ export default function Admin() {
                         <RefCard
                           key={ref.id}
                           refData={ref}
-                          categories={categories}
                           onDelete={handleDeleteReference}
-                          onUpdateCategory={updateRefCategory}
-                          onUpdateOrder={updateRefOrder}
+                          onEdit={openEditReferenceModal}
                         />
                       ))}
                     </div>
@@ -2036,8 +2527,8 @@ export default function Admin() {
             TAB CONTENT: SETTINGS
             ==================================================== */}
         {activeTab === 'settings' && (
-          <div className="max-w-2xl bg-white border border-neutral-200/80 rounded-[2.5rem] p-8 shadow-sm">
-            <form onSubmit={handleSaveSettings} className="space-y-6">
+          <div className="admin-settings-card max-w-2xl bg-white border border-neutral-200/80 rounded-[2.5rem] p-8 shadow-sm">
+            <form onSubmit={handleSaveSettings} className="admin-settings-form space-y-6">
               
               <div>
                 <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 font-geist">
@@ -2108,12 +2599,14 @@ export default function Admin() {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="group inline-flex items-center justify-center gap-3 shadow-indigo-600/20 transition duration-150 ease-out hover:-translate-y-0.5 text-base font-medium text-white font-geist bg-gradient-to-tr from-gray-900 to-black rounded-full py-3.5 px-8 shadow-lg"
-              >
-                <span>Salvar Configurações</span>
-              </button>
+              <div className="admin-inline-form-footer">
+                <button
+                  type="submit"
+                  className="group inline-flex items-center justify-center gap-3 shadow-indigo-600/20 transition duration-150 ease-out hover:-translate-y-0.5 text-base font-medium text-white font-geist bg-gradient-to-tr from-gray-900 to-black rounded-full py-3.5 px-8 shadow-lg"
+                >
+                  <span>Salvar Configurações</span>
+                </button>
+              </div>
 
             </form>
           </div>
@@ -2125,34 +2618,37 @@ export default function Admin() {
           MODAL: CRIAÇÃO DE CLIENTE
           ==================================================== */}
       {showClientModal && (
-        <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-neutral-200 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative animate-scaleUp">
-            <button 
-              onClick={() => {
-                setShowClientModal(false);
-                setClientModalStep(1);
-                if (openBookAfterClientCreate) {
-                  setShowBookModal(true);
-                  setOpenBookAfterClientCreate(false);
-                }
-              }}
-              className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-600 h-8 w-8 rounded-full bg-neutral-50 flex items-center justify-center transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-neutral-900 font-geist">Cadastrar Novo Cliente</h3>
-              <div className="flex items-center gap-2 mt-3">
-                <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${clientModalStep === 1 ? 'bg-indigo-600' : 'bg-neutral-200'}`}></span>
-                <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${clientModalStep === 2 ? 'bg-indigo-600' : 'bg-neutral-200'}`}></span>
+        <div className={`${modalShellClass} z-50`}>
+          <div className={`${modalPanelClass} md:max-w-md md:rounded-[2.5rem] md:border md:border-neutral-200 animate-scaleUp`}>
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Cadastrar Novo Cliente</h3>
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${clientModalStep === 1 ? 'bg-indigo-600' : 'bg-neutral-200'}`}></span>
+                    <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${clientModalStep === 2 ? 'bg-indigo-600' : 'bg-neutral-200'}`}></span>
+                  </div>
+                  <p className="text-xs text-neutral-400 mt-2 font-geist">
+                    {clientModalStep === 1 ? 'Passo 1 de 2: Informações básicas' : 'Passo 2 de 2: E-mail e fotos (Opcional)'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowClientModal(false);
+                    setClientModalStep(1);
+                    if (openBookAfterClientCreate) {
+                      setShowBookModal(true);
+                      setOpenBookAfterClientCreate(false);
+                    }
+                  }}
+                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <p className="text-xs text-neutral-400 mt-2 font-geist">
-                {clientModalStep === 1 ? 'Passo 1 de 2: Informações básicas' : 'Passo 2 de 2: E-mail e fotos (Opcional)'}
-              </p>
             </div>
 
-            <form 
+            <form
               onSubmit={(e) => {
                 e.preventDefault();
                 if (clientModalStep === 1) {
@@ -2162,9 +2658,10 @@ export default function Admin() {
                 } else {
                   handleCreateClient(e);
                 }
-              }} 
-              className="space-y-4"
+              }}
+              className="flex min-h-0 flex-1 flex-col"
             >
+              <div className={modalBodyClass}>
               {clientModalStep === 1 && (
                 <div className="space-y-4">
                   <div>
@@ -2188,14 +2685,6 @@ export default function Admin() {
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm font-geist text-neutral-900"
                     />
                   </div>
-                  <button
-                    type="button"
-                    disabled={!clientForm.name.trim()}
-                    onClick={() => setClientModalStep(2)}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-2xl text-sm transition shadow-lg font-geist disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span>Avançar</span>
-                  </button>
                 </div>
               )}
 
@@ -2268,23 +2757,54 @@ export default function Admin() {
                       className="hidden"
                     />
                   </div>
-                  <div className="flex gap-3">
+                </div>
+              )}
+              </div>
+
+              <div className={modalFooterClass}>
+                {clientModalStep === 1 ? (
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowClientModal(false);
+                        setClientModalStep(1);
+                        if (openBookAfterClientCreate) {
+                          setShowBookModal(true);
+                          setOpenBookAfterClientCreate(false);
+                        }
+                      }}
+                      className="px-5 py-3 border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-semibold rounded-2xl text-sm transition font-geist"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!clientForm.name.trim()}
+                      onClick={() => setClientModalStep(2)}
+                      className="px-5 py-3 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-2xl text-sm transition shadow-lg font-geist disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>Avançar</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
                     <button
                       type="button"
                       onClick={() => setClientModalStep(1)}
-                      className="flex-1 py-3 border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-semibold rounded-2xl text-sm transition font-geist"
+                      className="px-5 py-3 border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-semibold rounded-2xl text-sm transition font-geist"
                     >
                       Voltar
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-2xl text-sm transition shadow-lg font-geist"
+                      className="px-5 py-3 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-2xl text-sm transition shadow-lg font-geist"
                     >
                       Criar Cliente
                     </button>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </form>
           </div>
         </div>
@@ -2294,21 +2814,24 @@ export default function Admin() {
           MODAL: EDITAR CLIENTE
           ==================================================== */}
       {showEditClientModal && editingClient && (
-        <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-neutral-200 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative animate-scaleUp">
-            <button 
-              onClick={() => {
-                setShowEditClientModal(false);
-                setEditingClient(null);
-              }}
-              className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-600 h-8 w-8 rounded-full bg-neutral-50 flex items-center justify-center transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-neutral-900 font-geist">Editar Informações do Cliente</h3>
+        <div className={`${modalShellClass} z-50`}>
+          <div className={`${modalPanelClass} md:max-w-md md:rounded-[2.5rem] md:border md:border-neutral-200 animate-scaleUp`}>
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-xl font-bold text-neutral-900 font-geist">Editar Informações do Cliente</h3>
+                <button
+                  onClick={() => {
+                    setShowEditClientModal(false);
+                    setEditingClient(null);
+                  }}
+                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            <form onSubmit={handleEditClientSubmit} className="space-y-4">
+            <form onSubmit={handleEditClientSubmit} className="flex min-h-0 flex-1 flex-col">
+              <div className={`${modalBodyClass} space-y-4`}>
               <div>
                 <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 font-geist">Nome do Cliente</label>
                 <input
@@ -2398,12 +2921,27 @@ export default function Admin() {
                   className="hidden"
                 />
               </div>
-              <button
-                type="submit"
-                className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-2xl text-sm transition shadow-lg font-geist"
-              >
-                <span>Salvar Alterações</span>
-              </button>
+              </div>
+              <div className={modalFooterClass}>
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditClientModal(false);
+                      setEditingClient(null);
+                    }}
+                    className="px-5 py-3 border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-semibold rounded-2xl text-sm transition font-geist"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-3 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-2xl text-sm transition shadow-lg font-geist"
+                  >
+                    <span>Salvar Alterações</span>
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </div>
@@ -2416,22 +2954,25 @@ export default function Admin() {
         const currentIdToCheck = slugify(categoryForm.id);
         const isIdTaken = categories.some(c => c.id === currentIdToCheck);
         return (
-          <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white border border-neutral-200 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative">
-              <button 
-                onClick={() => {
-                  setShowCatModal(false);
-                  setCategoryForm({ id: '', name: '' });
-                  setIsIdManuallyEdited(false);
-                }}
-                className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-600 h-8 w-8 rounded-full bg-neutral-50 flex items-center justify-center transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-neutral-900 font-geist">Criar Nova Categoria</h3>
+          <div className={`${modalShellClass} z-50`}>
+            <div className={`${modalPanelClass} md:max-w-md md:rounded-[2.5rem] md:border md:border-neutral-200`}>
+              <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Criar Nova Categoria</h3>
+                  <button
+                    onClick={() => {
+                      setShowCatModal(false);
+                      setCategoryForm({ id: '', name: '' });
+                      setIsIdManuallyEdited(false);
+                    }}
+                    className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <form onSubmit={handleCreateCategory} className="space-y-4">
+              <form onSubmit={handleCreateCategory} className="flex min-h-0 flex-1 flex-col">
+                <div className={`${modalBodyClass} space-y-4`}>
                 <div>
                   <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 font-geist">Nome da Categoria (Exibição)</label>
                   <input
@@ -2481,13 +3022,29 @@ export default function Admin() {
                     </div>
                   )}
                 </div>
-                <button
-                  type="submit"
-                  disabled={isIdTaken}
-                  className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white font-medium py-3 rounded-2xl text-sm transition"
-                >
-                  <span>Criar Categoria</span>
-                </button>
+                </div>
+                <div className={modalFooterClass}>
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCatModal(false);
+                        setCategoryForm({ id: '', name: '' });
+                        setIsIdManuallyEdited(false);
+                      }}
+                      className="px-5 py-3 border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-semibold rounded-2xl text-sm transition font-geist"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isIdTaken}
+                      className="px-5 py-3 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white font-medium rounded-2xl text-sm transition"
+                    >
+                      <span>Criar Categoria</span>
+                    </button>
+                  </div>
+                </div>
               </form>
             </div>
           </div>
@@ -2498,44 +3055,85 @@ export default function Admin() {
           MODAL: ADICIONAR REFERÊNCIA (IA VISION BIND)
           ==================================================== */}
       {showRefModal && (
-        <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-neutral-200 rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button 
-              onClick={() => {
-                setRefFiles([]);
-                setRefPreviews([]);
-                setExtractionLogs([]);
-                setShowRefModal(false);
-              }}
-              className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-600 h-8 w-8 rounded-full bg-neutral-50 flex items-center justify-center transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-neutral-900 font-geist">Adicionar Nova Referência de Pose</h3>
-              <p className="text-xs text-neutral-400 mt-1 font-geist">Carregue uma imagem, selecione sua categoria e extraia o prompt ideal usando IA Vision</p>
+        <div className={`${modalShellClass} z-50`}>
+          <div className={`${modalPanelClass} md:max-w-lg md:rounded-[2.5rem] md:border md:border-neutral-200`}>
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Adicionar Nova Referência de Pose</h3>
+                  <p className="text-xs text-neutral-400 mt-1 font-geist">Carregue uma imagem, selecione sua categoria e extraia o prompt ideal usando IA Vision</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setRefFiles([]);
+                    setRefPreviews([]);
+                    setExtractionLogs([]);
+                    setShowRefModal(false);
+                  }}
+                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            
-            <form onSubmit={handleCreateReference} className="space-y-4 font-geist">
+
+            <form onSubmit={handleCreateReference} className="flex min-h-0 flex-1 flex-col font-geist">
+              <div className={`${modalBodyClass} space-y-4`}>
               {/* File Upload Box */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Arquivo de Imagem</label>
                 <div className="border-2 border-dashed border-neutral-200 rounded-3xl p-6 text-center hover:border-indigo-600/50 cursor-pointer relative bg-neutral-50/50 transition">
                   <input
+                    id="ref-upload-input"
                     type="file"
-                    required
+                    multiple
                     accept="image/*"
                     onChange={handleRefFileChange}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                   {refPreviews.length > 0 ? (
-                    <div className="flex justify-center">
-                      <img src={refPreviews[0]} alt="Preview" className="h-40 rounded-2xl object-cover shadow" />
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1">
+                        {refPreviews.map((preview, index) => (
+                          <div key={index} className="relative h-24 rounded-2xl overflow-hidden border border-neutral-200 bg-white">
+                            <img src={preview} alt={`Preview ${index + 1}`} className="h-full w-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRefFiles(prev => prev.filter((_, idx) => idx !== index));
+                                setRefPreviews(prev => prev.filter((_, idx) => idx !== index));
+                              }}
+                              className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition flex items-center justify-center text-white text-[10px] font-bold"
+                            >
+                              Remover
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById('ref-upload-input').click()}
+                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                        >
+                          Adicionar Mais
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRefFiles([]);
+                            setRefPreviews([]);
+                          }}
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-500 ml-auto"
+                        >
+                          Limpar Seleção
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <Upload className="w-8 h-8 text-neutral-400 mx-auto" />
-                      <p className="text-sm font-medium text-neutral-600">Arraste ou clique para carregar imagem</p>
+                      <p className="text-sm font-medium text-neutral-600">Arraste ou clique para carregar imagens</p>
                       <p className="text-xs text-neutral-400">PNG ou JPG até 10MB</p>
                     </div>
                   )}
@@ -2603,13 +3201,152 @@ export default function Admin() {
                   className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900 placeholder:text-neutral-400 resize-none"
                 />
               </div>
+              </div>
 
-              <button
-                type="submit"
-                className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-2xl text-sm transition shadow-lg"
-              >
-                <span>Salvar Referência</span>
-              </button>
+              <div className={modalFooterClass}>
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRefFiles([]);
+                      setRefPreviews([]);
+                      setExtractionLogs([]);
+                      setShowRefModal(false);
+                    }}
+                    className="px-5 py-3 border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-semibold rounded-2xl text-sm transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-3 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-2xl text-sm transition shadow-lg"
+                  >
+                    <span>Salvar Referência</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          MODAL: EDITAR REFERÊNCIA
+          ==================================================== */}
+      {showEditRefModal && editingRef && (
+        <div className={`${modalShellClass} z-50`}>
+          <div className={`${modalPanelClass} md:max-w-lg md:rounded-[2.5rem] md:border md:border-neutral-200`}>
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Editar Referência</h3>
+                  <p className="text-xs text-neutral-400 mt-1 font-geist">Atualize nome, categoria, prompt ou troque a imagem de referência.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeEditReferenceModal}
+                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleEditReference} className="flex min-h-0 flex-1 flex-col font-geist">
+              <div className={`${modalBodyClass} space-y-4`}>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Imagem Atual / Nova Imagem</label>
+                  <div className="border-2 border-dashed border-neutral-200 rounded-3xl p-4 text-center hover:border-indigo-600/50 cursor-pointer relative bg-neutral-50/50 transition">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setEditRefFile(file);
+                        setEditRefPreview(file ? URL.createObjectURL(file) : (editingRef.url || ''));
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    {editRefPreview ? (
+                      <div className="flex justify-center">
+                        <img src={editRefPreview} alt="Preview" className="h-40 rounded-2xl object-cover shadow" />
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="w-8 h-8 text-neutral-400 mx-auto" />
+                        <p className="text-sm font-medium text-neutral-600">Clique para trocar a imagem</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Título/Nome</label>
+                    <input
+                      type="text"
+                      required
+                      value={editRefForm.name}
+                      onChange={(e) => setEditRefForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Categoria</label>
+                    <select
+                      required
+                      value={editRefForm.category}
+                      onChange={(e) => setEditRefForm(prev => ({ ...prev, category: e.target.value }))}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                    >
+                      <option value="">Selecione...</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider">Prompt de Estilo</label>
+                    <button
+                      type="button"
+                      disabled={isExtractingPrompt || (!editRefFile && !editingRef?.url)}
+                      onClick={extractEditPromptWithGemini}
+                      className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-500 font-bold disabled:opacity-40"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                      <span>Extrair com IA</span>
+                    </button>
+                  </div>
+                  <textarea
+                    required
+                    rows="4"
+                    value={editRefForm.prompt}
+                    onChange={(e) => setEditRefForm(prev => ({ ...prev, prompt: e.target.value }))}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900 placeholder:text-neutral-400 resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className={modalFooterClass}>
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                  <button
+                    type="button"
+                    onClick={closeEditReferenceModal}
+                    className="px-5 py-3 border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-semibold rounded-2xl text-sm transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-3 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-2xl text-sm transition shadow-lg"
+                  >
+                    <span>Salvar Alterações</span>
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </div>
@@ -2619,50 +3356,51 @@ export default function Admin() {
           MODAL: GERAR NOVO BOOK COM IA PIPELINE
           ==================================================== */}
       {showBookModal && (
-        <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`bg-white border border-neutral-200 rounded-[2.5rem] p-8 w-full shadow-2xl relative max-h-[90vh] overflow-y-auto transition-all duration-300 ${
-            bookWizardStep === 3 ? 'max-w-4xl' : 'max-w-lg'
-          }`}>
-            <button 
-              onClick={() => {
-                setBookForm(prev => ({ ...prev, title: '', promptDetails: '' }));
-                setSelectedRefs([]);
-                setShowBookModal(false);
-              }}
-              className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-600 h-8 w-8 rounded-full bg-neutral-50 flex items-center justify-center transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-neutral-900 font-geist">Gerar Novo Book com IA</h3>
-              <p className="text-xs text-neutral-400 mt-1 font-geist">Configure o ensaio do cliente e selecione as poses do catálogo que o NanoBanana Pro usará como guia.</p>
-            </div>
+        <div className={`${modalShellClass} z-50`}>
+          <div className={`${modalPanelClass} md:max-w-5xl md:rounded-[2.5rem] md:border md:border-neutral-200`}>
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Gerar Novo Book com IA</h3>
+                  <p className="text-xs text-neutral-400 mt-1 font-geist">Configure o ensaio do cliente e selecione as poses do catálogo que o NanoBanana Pro usará como guia.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setBookForm(prev => ({ ...prev, title: '', promptDetails: '' }));
+                    setSelectedRefs([]);
+                    setShowBookModal(false);
+                  }}
+                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-            {/* Progress indicator */}
-            <div className="mb-6 border-b border-neutral-100 pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${bookWizardStep === 1 ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-500'}`}>1</span>
-                  <span className={`text-xs font-semibold ${bookWizardStep === 1 ? 'text-neutral-900' : 'text-neutral-400'}`}>Detalhes</span>
-                </div>
-                <div className="flex-1 h-px bg-neutral-200 mx-3"></div>
-                <div className="flex items-center gap-2">
-                  <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${bookWizardStep === 2 ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-500'}`}>2</span>
-                  <span className={`text-xs font-semibold ${bookWizardStep === 2 ? 'text-neutral-900' : 'text-neutral-400'}`}>Valores</span>
-                </div>
-                <div className="flex-1 h-px bg-neutral-200 mx-3"></div>
-                <div className="flex items-center gap-2">
-                  <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${bookWizardStep === 3 ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-500'}`}>3</span>
-                  <span className={`text-xs font-semibold ${bookWizardStep === 3 ? 'text-neutral-900' : 'text-neutral-400'}`}>Poses & Categorias</span>
+              <div className="mt-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${bookWizardStep === 1 ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-500'}`}>1</span>
+                    <span className={`text-xs font-semibold ${bookWizardStep === 1 ? 'text-neutral-900' : 'text-neutral-400'}`}>Detalhes</span>
+                  </div>
+                  <div className="flex-1 h-px bg-neutral-200"></div>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${bookWizardStep === 2 ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-500'}`}>2</span>
+                    <span className={`text-xs font-semibold ${bookWizardStep === 2 ? 'text-neutral-900' : 'text-neutral-400'}`}>Valores</span>
+                  </div>
+                  <div className="flex-1 h-px bg-neutral-200"></div>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${bookWizardStep === 3 ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-500'}`}>3</span>
+                    <span className={`text-xs font-semibold ${bookWizardStep === 3 ? 'text-neutral-900' : 'text-neutral-400'}`}>Poses & Categorias</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={handleCreateBook} className="space-y-4 font-geist">
+            <form onSubmit={handleCreateBook} className="flex min-h-0 flex-1 flex-col font-geist">
+              <div className={modalBodyClass}>
               {/* STEP 1: GENERAL INFO */}
               {bookWizardStep === 1 && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="mx-auto max-w-3xl space-y-4 animate-fadeIn pb-8">
                   <div>
                     <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Título do Book *</label>
                     <input
@@ -2822,7 +3560,7 @@ export default function Admin() {
                   <div>
                     <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 font-geist">Detalhes Adicionais do Prompt (IA)</label>
                     <textarea
-                      placeholder="Ex: Use golden hour lighting, office background, wearing a black suit, corporate portrait style..."
+                      placeholder={DEFAULT_BOOK_PROMPT_DETAILS_PLACEHOLDER}
                       value={bookForm.promptDetails}
                       onChange={(e) => setBookForm(prev => ({ ...prev, promptDetails: e.target.value }))}
                       rows="3"
@@ -2833,22 +3571,12 @@ export default function Admin() {
                     </p>
                   </div>
 
-                  <div className="flex justify-end pt-4">
-                    <button
-                      type="button"
-                      disabled={!bookForm.title.trim() || !bookForm.clientId}
-                      onClick={() => setBookWizardStep(2)}
-                      className="bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs px-6 py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Avançar
-                    </button>
-                  </div>
                 </div>
               )}
 
               {/* STEP 2: PRICING */}
               {bookWizardStep === 2 && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="mx-auto max-w-3xl space-y-4 animate-fadeIn pb-8">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Valor do pacote completo (R$)</label>
@@ -2901,63 +3629,42 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  <div className="flex justify-between pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setBookWizardStep(1)}
-                      className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-semibold text-xs px-6 py-3 rounded-xl transition"
-                    >
-                      Voltar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const validation = validatePricing();
-                        if (!validation.valid) {
-                          toast.error(validation.message);
-                        } else {
-                          setBookWizardStep(3);
-                        }
-                      }}
-                      className="bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs px-6 py-3 rounded-xl transition"
-                    >
-                      Avançar
-                    </button>
-                  </div>
                 </div>
               )}
 
               {/* STEP 3: CATEGORIES & POSES */}
               {bookWizardStep === 3 && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="mx-auto flex h-full max-w-6xl flex-col space-y-4 animate-fadeIn pb-8">
                   {/* Category Actions */}
                   <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-2">
                     {showQuickCreateCat ? (
-                      <div className="flex-1 flex gap-2 items-center bg-neutral-50 p-2.5 rounded-2xl border border-neutral-200 animate-fadeIn">
+                      <div className="flex-1 bg-neutral-50 p-3 rounded-2xl border border-neutral-200 animate-fadeIn">
                         <input
                           type="text"
                           placeholder="Nome da categoria (ex: Gestante)"
                           value={quickCatName}
                           onChange={(e) => setQuickCatName(e.target.value)}
-                          className="flex-1 bg-white border border-neutral-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-indigo-600 text-neutral-900"
+                          className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-indigo-600 text-neutral-900"
                         />
-                        <button
-                          type="button"
-                          onClick={() => handleQuickCreateCategory(quickCatName)}
-                          className="bg-indigo-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-indigo-500 transition shrink-0"
-                        >
-                          Salvar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowQuickCreateCat(false);
-                            setQuickCatName('');
-                          }}
-                          className="bg-neutral-200 text-neutral-600 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-neutral-300 transition shrink-0"
-                        >
-                          Cancelar
-                        </button>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleQuickCreateCategory(quickCatName)}
+                            className="bg-indigo-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-indigo-500 transition shrink-0"
+                          >
+                            Salvar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowQuickCreateCat(false);
+                              setQuickCatName('');
+                            }}
+                            className="bg-neutral-200 text-neutral-600 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-neutral-300 transition shrink-0"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex-1 flex flex-wrap gap-2 items-center">
@@ -2975,7 +3682,7 @@ export default function Admin() {
                         >
                           <option value="Todos">Todas as Categorias</option>
                           {categories.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
+                            <option key={c.id} value={c.name}>{c.name}</option>
                           ))}
                           <option value="create_new" className="text-indigo-600 font-bold">+ Criar Categoria...</option>
                         </select>
@@ -3024,26 +3731,19 @@ export default function Admin() {
                   </div>
 
                   {/* Grid layout for poses */}
-                  <div className="border border-neutral-100 rounded-3xl p-3 bg-neutral-50/50">
-                    {references.filter(ref => {
-                      const matchesSearch = ref.name.toLowerCase().includes(refSearch.toLowerCase());
-                      const matchesFilter = wizardCategoryFilter === 'Todos' || ref.category === wizardCategoryFilter;
-                      return matchesSearch && matchesFilter;
-                    }).length === 0 ? (
+                  <div className="flex-1 border border-neutral-100 rounded-3xl p-3 bg-neutral-50/50 min-h-[320px]">
+                    {filteredWizardRefs.length === 0 ? (
                       <div className="text-center py-12 text-neutral-400 text-xs font-geist">Nenhuma pose encontrada nesta categoria.</div>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto max-h-[35vh] pr-2">
-                        {references.filter(ref => {
-                          const matchesSearch = ref.name.toLowerCase().includes(refSearch.toLowerCase());
-                          const matchesFilter = wizardCategoryFilter === 'Todos' || ref.category === wizardCategoryFilter;
-                          return matchesSearch && matchesFilter;
-                        }).map(ref => {
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 overflow-y-auto h-full max-h-[calc(100vh-24rem)] pr-2">
+                        {filteredWizardRefs.map(ref => {
                           const isChecked = selectedRefs.includes(ref.id);
                           return (
                             <div 
                               key={ref.id}
                               onClick={() => toggleRefSelectorItem(ref.id)}
-                              className={`group relative aspect-[3/4] bg-white border rounded-2xl overflow-hidden cursor-pointer transition select-none ${
+                              style={{ aspectRatio: '3 / 4' }}
+                              className={`group relative min-h-[220px] bg-white border rounded-2xl overflow-hidden cursor-pointer transition select-none ${
                                 isChecked 
                                   ? 'border-indigo-600 ring-2 ring-indigo-600/10'
                                   : 'border-neutral-200 hover:border-neutral-300'
@@ -3067,15 +3767,76 @@ export default function Admin() {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+            </div>
 
-                  <div className="flex justify-between pt-4">
+            <div className={modalFooterClass}>
+              <div className="mx-auto flex max-w-6xl flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {bookWizardStep === 1 && <div />}
+
+                {bookWizardStep === 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setBookWizardStep(1)}
+                    className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-semibold text-xs px-6 py-3 rounded-xl transition"
+                  >
+                    Voltar
+                  </button>
+                )}
+
+                {bookWizardStep === 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setBookWizardStep(2)}
+                    className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-semibold text-xs px-6 py-3 rounded-xl transition"
+                  >
+                    Voltar
+                  </button>
+                )}
+
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookForm(prev => ({ ...prev, title: '', promptDetails: '' }));
+                      setSelectedRefs([]);
+                      setShowBookModal(false);
+                    }}
+                    className="bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-semibold text-xs px-6 py-3 rounded-xl transition"
+                  >
+                    Cancelar
+                  </button>
+
+                  {bookWizardStep === 1 && (
                     <button
                       type="button"
+                      disabled={!bookForm.title.trim() || !bookForm.clientId}
                       onClick={() => setBookWizardStep(2)}
-                      className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-semibold text-xs px-6 py-3 rounded-xl transition"
+                      className="bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs px-6 py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Voltar
+                      Avançar
                     </button>
+                  )}
+
+                  {bookWizardStep === 2 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const validation = validatePricing();
+                        if (!validation.valid) {
+                          toast.error(validation.message);
+                        } else {
+                          setBookWizardStep(3);
+                        }
+                      }}
+                      className="bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs px-6 py-3 rounded-xl transition"
+                    >
+                      Avançar
+                    </button>
+                  )}
+
+                  {bookWizardStep === 3 && (
                     <button
                       type="submit"
                       disabled={selectedRefs.length === 0}
@@ -3084,11 +3845,12 @@ export default function Admin() {
                       <Sparkles className="w-4 h-4 text-amber-400 fill-amber-400" />
                       <span>Gerar Retratos no NanoBanana Pro</span>
                     </button>
-                  </div>
+                  )}
                 </div>
-              )}
-            </form>
-          </div>
+              </div>
+            </div>
+          </form>
+        </div>
         </div>
       )}
 
@@ -3099,28 +3861,31 @@ export default function Admin() {
           MODAL: IMPORTAÇÃO DE POSES EM LOTE
           ==================================================== */}
       {showImportPoseModal && (
-        <div className="fixed inset-0 bg-neutral-950/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white border border-neutral-200 rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl relative max-h-[85vh] overflow-y-auto">
-            <button 
-              disabled={isImportingPoses}
-              onClick={() => {
-                setImportPoseFiles([]);
-                setImportPosePreviews([]);
-                setImportPosePrompt('');
-                setShowImportPoseModal(false);
-              }}
-              className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-600 h-8 w-8 rounded-full bg-neutral-50 flex items-center justify-center transition disabled:opacity-40"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-neutral-900 font-geist">Importar Poses em Lote</h3>
-              <p className="text-xs text-neutral-400 mt-1 font-geist">Adicione múltiplas fotos de referência diretamente ao catálogo de poses.</p>
+        <div className={`${modalShellClass} z-[60] md:bg-neutral-950/70`}>
+          <div className={`${modalPanelClass} md:max-w-lg md:rounded-[2.5rem] md:border md:border-neutral-200`}>
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Importar Poses em Lote</h3>
+                  <p className="text-xs text-neutral-400 mt-1 font-geist">Adicione múltiplas fotos de referência diretamente ao catálogo de poses.</p>
+                </div>
+                <button 
+                  disabled={isImportingPoses}
+                  onClick={() => {
+                    setImportPoseFiles([]);
+                    setImportPosePreviews([]);
+                    setImportPosePrompt('');
+                    setShowImportPoseModal(false);
+                  }}
+                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition disabled:opacity-40 shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {isImportingPoses ? (
-              <div className="space-y-4 font-geist">
+              <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 space-y-4 font-geist">
                 <div className="text-center py-6">
                   <Sparkles className="w-8 h-8 text-indigo-600 mx-auto animate-spin mb-3" />
                   <p className="text-sm font-semibold text-neutral-800">Processando Importação...</p>
@@ -3137,7 +3902,8 @@ export default function Admin() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleImportPosesSubmit} className="space-y-4 font-geist">
+              <form onSubmit={handleImportPosesSubmit} className="flex min-h-0 flex-1 flex-col font-geist">
+                <div className={`${modalBodyClass} space-y-4`}>
                 {/* Category Select */}
                 <div>
                   <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Categoria Destino *</label>
@@ -3149,7 +3915,7 @@ export default function Admin() {
                   >
                     <option value="">Selecione...</option>
                     {categories.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.name}>{c.name}</option>
                     ))}
                   </select>
                 </div>
@@ -3253,8 +4019,10 @@ export default function Admin() {
                     </label>
                   </div>
                 )}
+                </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className={modalFooterClass}>
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
                   <button
                     type="button"
                     onClick={() => {
@@ -3263,17 +4031,18 @@ export default function Admin() {
                       setImportPosePrompt('');
                       setShowImportPoseModal(false);
                     }}
-                    className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-semibold py-3 rounded-2xl text-xs transition"
+                    className="px-5 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-semibold rounded-2xl text-xs transition"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={importPoseFiles.length === 0}
-                    className="flex-1 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold py-3 rounded-2xl text-xs transition disabled:opacity-50"
+                    className="px-5 py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold rounded-2xl text-xs transition disabled:opacity-50"
                   >
                     Importar Poses
                   </button>
+                  </div>
                 </div>
               </form>
             )}
@@ -3285,8 +4054,8 @@ export default function Admin() {
           MODAL: IA PIPELINE PROGRESS LOGS
           ==================================================== */}
       {showPipelineModal && (
-        <div className="fixed inset-0 bg-neutral-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-white/10 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl text-white relative">
+        <div className="fixed inset-0 bg-neutral-950 z-50 flex flex-col md:bg-neutral-950/80 md:backdrop-blur-md md:items-center md:justify-center md:p-4">
+          <div className="bg-neutral-900 shadow-2xl text-white relative flex h-full w-full flex-col px-4 py-6 md:h-auto md:max-w-md md:rounded-[2.5rem] md:border md:border-white/10 md:p-8">
             
             <div className="text-center mb-6">
               <Sparkles className="w-10 h-10 text-indigo-400 mx-auto animate-spin mb-3" />
@@ -3319,8 +4088,8 @@ export default function Admin() {
           MODAL: CENTRAL DE CÓPIA (PROMPTS E REFERÊNCIAS)
           ==================================================== */}
       {showCopyCenterModal && copyCenterData && (
-        <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-neutral-200 rounded-[2.5rem] p-8 max-w-3xl w-full shadow-2xl relative max-h-[90vh] flex flex-col justify-between">
+        <div className="fixed inset-0 z-50 bg-white flex flex-col md:bg-neutral-950/60 md:backdrop-blur-sm md:items-center md:justify-center md:p-4">
+          <div className="bg-white shadow-2xl relative flex h-full w-full flex-col md:h-auto md:max-h-[90vh] md:max-w-3xl md:rounded-[2.5rem] md:border md:border-neutral-200 md:p-8">
             <button 
               onClick={() => {
                 setShowCopyCenterModal(false);
@@ -3546,8 +4315,8 @@ export default function Admin() {
           MODAL: DETALHES DO BOOK / SELEÇÃO DO CLIENTE
           ==================================================== */}
       {showViewBookModal && activeViewBook && (
-        <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-neutral-200 rounded-[2.5rem] p-8 max-w-2xl w-full shadow-2xl relative max-h-[85vh] flex flex-col justify-between">
+        <div className="fixed inset-0 z-50 bg-white flex flex-col md:bg-neutral-950/60 md:backdrop-blur-sm md:items-center md:justify-center md:p-4">
+          <div className="bg-white shadow-2xl relative flex h-full w-full flex-col md:h-auto md:max-h-[85vh] md:max-w-2xl md:rounded-[2.5rem] md:border md:border-neutral-200 md:p-8">
             <button 
               onClick={() => {
                 setActiveViewBook(null);
@@ -3570,7 +4339,7 @@ export default function Admin() {
                     ? 'bg-emerald-50 text-emerald-700'
                     : 'bg-amber-50 text-amber-800'
                 }`}>
-                  {activeViewBook.payment_status === 'paid' ? 'Pago' : 'Pendente'}
+                  {activeViewBook.payment_status === 'paid' ? 'Pago' : activeViewBook.payment_status === 'partial_paid' ? 'Pacote pago' : 'Pendente'}
                 </span>
                 {activeViewBook.payment_status !== 'paid' && (
                   <button
@@ -3767,6 +4536,7 @@ export default function Admin() {
                   const isSelected = activeViewBook.selected_photo_ids?.includes(ph.id);
                   const isGenerating = ph.status === 'generating';
                   const isFailed = ph.status === 'failed';
+                  const isPhotoPaid = ph.paymentStatus === 'paid';
 
                   if (isGenerating) {
                     return (
@@ -3807,7 +4577,7 @@ export default function Admin() {
 
                   return (
                     <div key={ph.id} className={`relative aspect-[3/4] bg-neutral-100 rounded-2xl overflow-hidden ring-2 flex flex-col justify-between group ${
-                      isSelected ? 'ring-emerald-500 shadow-emerald-500/10' : 'ring-transparent'
+                      isPhotoPaid ? 'ring-emerald-500 shadow-emerald-500/10' : isSelected ? 'ring-amber-500 shadow-amber-500/10' : 'ring-transparent'
                     }`}>
                       <img src={ph.url} alt={ph.variationType} className="absolute inset-0 w-full h-full object-cover" />
                       
@@ -3823,11 +4593,17 @@ export default function Admin() {
                         </button>
                         
                         {isSelected && (
-                          <div className="h-6 w-6 bg-emerald-500 text-white rounded-lg flex items-center justify-center shadow">
+                          <div className={`h-6 w-6 text-white rounded-lg flex items-center justify-center shadow ${isPhotoPaid ? 'bg-emerald-500' : 'bg-amber-500'}`}>
                             <Check className="w-3.5 h-3.5" />
                           </div>
                         )}
                       </div>
+
+                      {isSelected && (
+                        <div className={`absolute top-10 right-2 z-10 rounded-lg px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow ${isPhotoPaid ? 'bg-emerald-600' : 'bg-amber-500'}`}>
+                          {isPhotoPaid ? 'Pago' : 'A pagar'}
+                        </div>
+                      )}
 
                       {/* Translucent overlay at bottom for editing variation label */}
                       <div className="absolute bottom-0 inset-x-0 bg-black/70 backdrop-blur-sm p-1.5 flex items-center gap-1.5 z-10">

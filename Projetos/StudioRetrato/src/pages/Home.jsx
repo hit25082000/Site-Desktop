@@ -259,6 +259,7 @@ export default function Home() {
   const [activeRole, setActiveRole] = useState('executive');
   const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState(null);
+  const isLandpageAsset = (ref) => typeof ref?.url === 'string' && ref.url.startsWith('assets/');
 
   // Fetch references and seed if empty
   useEffect(() => {
@@ -298,6 +299,7 @@ export default function Home() {
     });
 
     return mergedRefs.filter(ref => {
+      if (isLandpageAsset(ref)) return false;
       if (catName === 'Fotos Executivas') {
         return ref.category === 'Executivo' || ref.category === 'Studio';
       }

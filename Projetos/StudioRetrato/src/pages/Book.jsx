@@ -3,6 +3,12 @@ import { useParams, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { decodeBookData } from '../services/urlSerializer';
 import * as kieAi from '../services/kieAi';
+import { buildBookGenerationPrompt, sanitizeBookReferencePrompt } from '../services/bookPrompt';
+import {
+  applyBookPaymentAction,
+  applyPhotoReplacement,
+  normalizeBookPricing
+} from '../services/bookAdminActions';
 import { 
   Camera, 
   Check, 
@@ -18,8 +24,14 @@ import {
   DownloadSimple,
   Copy,
   ShoppingCart,
-  Sparkle as Sparkles
+  Sparkle as Sparkles,
+  Plus,
+  Pencil,
+  UploadSimple as Upload
 } from '@phosphor-icons/react';
+
+const HIDDEN_LIBRARY_CATEGORY = 'Landpage';
+const isLandpageAsset = (ref) => typeof ref?.url === 'string' && ref.url.startsWith('assets/');
 
 const parsePhotos = (photoUrlField) => {
   if (!photoUrlField) return [];
@@ -33,6 +45,36 @@ const parsePhotos = (photoUrlField) => {
   }
   return [photoUrlField];
 };
+
+const getPaidPhotoIds = (photos = []) => photos
+  .filter((photo) => photo.paymentStatus === 'paid')
+  .map((photo) => photo.id);
+
+const hasPackagePricing = (book) => book?.packagePrice !== null && book?.packagePrice !== undefined;
+
+const calculateOutstandingPrice = (book, selectedPhotoIds) => {
+  if (!book) return 0;
+
+  const selectedCount = selectedPhotoIds.length;
+  const paidSelectedCount = getPaidPhotoIds(book.photos).filter((id) => selectedPhotoIds.includes(id)).length;
+
+  if (hasPackagePricing(book)) {
+    if (paidSelectedCount > 0) {
+      return Math.max(selectedCount - paidSelectedCount, 0) * Number(book.extraPhotoPrice || 0);
+    }
+
+    if (selectedCount <= book.packagePhotos) {
+      return Number(book.packagePrice);
+    }
+
+    return Number(book.packagePrice) + (selectedCount - book.packagePhotos) * Number(book.extraPhotoPrice || 0);
+  }
+
+  return Math.max(selectedCount - paidSelectedCount, 0) * Number(book.pricePerPhoto || 30.00);
+};
+
+const formatCurrency = (value) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
 
 export default function Book() {
   const { id } = useParams();
@@ -59,6 +101,35 @@ export default function Book() {
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
   const [settings, setSettings] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminModalMode, setAdminModalMode] = useState(null);
+  const [adminTargetPhotoId, setAdminTargetPhotoId] = useState(null);
+  const [adminPrompt, setAdminPrompt] = useState('');
+  const [adminVariationType, setAdminVariationType] = useState('');
+  const [adminFiles, setAdminFiles] = useState([]);
+  const [adminFilePreviews, setAdminFilePreviews] = useState([]);
+  const [adminSubmitting, setAdminSubmitting] = useState(false);
+  const [adminError, setAdminError] = useState(null);
+  const [adminBookModalMode, setAdminBookModalMode] = useState(null);
+  const [adminBookSubmitting, setAdminBookSubmitting] = useState(false);
+  const [adminBookError, setAdminBookError] = useState(null);
+  const [adminBookForm, setAdminBookForm] = useState({
+    title: '',
+    promptDetails: '',
+    pricePerPhoto: '',
+    packagePrice: '',
+    packagePhotos: '',
+    extraPhotoPrice: ''
+  });
+  const [categories, setCategories] = useState([]);
+  const [referenceLibrary, setReferenceLibrary] = useState([]);
+  const [referenceCategoryFilter, setReferenceCategoryFilter] = useState('Todos');
+  const [referenceSearch, setReferenceSearch] = useState('');
+  const [editingReferenceIds, setEditingReferenceIds] = useState([]);
+  const [modelActiveUrls, setModelActiveUrls] = useState([]);
+  const [modelFiles, setModelFiles] = useState([]);
+  const [modelFilePreviews, setModelFilePreviews] = useState([]);
+  const [adminRegenerating, setAdminRegenerating] = useState(false);
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
@@ -83,6 +154,580 @@ export default function Book() {
       window.open(url, '_blank');
     }
   };
+
+  const resetAdminFileSelection = () => {
+    adminFilePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setAdminFiles([]);
+    setAdminFilePreviews([]);
+  };
+
+  const resetModelFileSelection = () => {
+    modelFilePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setModelFiles([]);
+    setModelFilePreviews([]);
+  };
+
+  const closeAdminBookModal = () => {
+    if (adminBookSubmitting || adminRegenerating) return;
+    resetModelFileSelection();
+    setAdminBookModalMode(null);
+    setAdminBookError(null);
+  };
+
+  const closeAdminGenerationModal = () => {
+    if (adminSubmitting) return;
+    resetAdminFileSelection();
+    setAdminModalMode(null);
+    setAdminTargetPhotoId(null);
+    setAdminPrompt('');
+    setAdminVariationType('');
+    setAdminError(null);
+  };
+
+  const getEditablePhotoPrompt = (photo) => {
+    if (!photo) return '';
+    if (photo.prompt) return photo.prompt;
+
+    const matchedRef = book?.referencesData?.find(ref =>
+      photo.refId === ref.id || (ref.prompt && photo.referencePrompt?.includes(ref.prompt))
+    );
+    const referencePrompt = sanitizeBookReferencePrompt(
+      photo.referencePrompt || matchedRef?.prompt || '',
+      'Portrait pose'
+    );
+
+    return buildBookGenerationPrompt({
+      referenceName: matchedRef?.name || photo.variationType,
+      referencePrompt,
+      promptDetails: photo.promptDetails || book?.promptDetails || ''
+    });
+  };
+
+  const openAdminEditModal = (photo) => {
+    if (!isAdmin || !photo) return;
+    resetAdminFileSelection();
+    setAdminModalMode('edit');
+    setAdminTargetPhotoId(photo.id);
+    setAdminPrompt(getEditablePhotoPrompt(photo));
+    setAdminVariationType(photo.variationType || 'normal');
+    setAdminError(null);
+  };
+
+  const openAdminAddModal = () => {
+    if (!isAdmin) return;
+    resetAdminFileSelection();
+    setAdminModalMode('add');
+    setAdminTargetPhotoId(null);
+    setAdminPrompt('');
+    setAdminVariationType('Nova referência');
+    setAdminError(null);
+  };
+
+  const openAdminDetailsModal = () => {
+    if (!isAdmin || !book) return;
+    setAdminBookModalMode('details');
+    setAdminBookError(null);
+    setAdminBookForm({
+      title: book.title || '',
+      promptDetails: book.promptDetails || '',
+      pricePerPhoto: book.pricePerPhoto ?? '',
+      packagePrice: book.packagePrice ?? '',
+      packagePhotos: book.packagePhotos ?? '',
+      extraPhotoPrice: book.extraPhotoPrice ?? ''
+    });
+  };
+
+  const openAdminReferencesModal = () => {
+    if (!isAdmin || !book) return;
+    resetModelFileSelection();
+    setAdminBookModalMode('references');
+    setAdminBookError(null);
+    setReferenceSearch('');
+    setEditingReferenceIds((book.referencesData || [])
+      .map((ref) => ref.id || referenceLibrary.find((item) => item.url === ref.url)?.id)
+      .filter(Boolean));
+    setModelActiveUrls(book.clientPhotos || []);
+  };
+
+  const openAdminPaymentModal = () => {
+    if (!isAdmin || !book) return;
+    setAdminBookModalMode('payment');
+    setAdminBookError(null);
+  };
+
+  const handleAdminFilesChange = (files) => {
+    const nextFiles = Array.from(files || []).filter((file) => file.type.startsWith('image/'));
+    adminFilePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setAdminFiles(nextFiles);
+    setAdminFilePreviews(nextFiles.map((file) => URL.createObjectURL(file)));
+  };
+
+  const handleModelFilesChange = (files) => {
+    const nextFiles = Array.from(files || []).filter((file) => file.type.startsWith('image/'));
+    modelFilePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setModelFiles(nextFiles);
+    setModelFilePreviews(nextFiles.map((file) => URL.createObjectURL(file)));
+  };
+
+  const uploadAdminFileToStorage = async (file, path) => {
+    const { error } = await supabase.storage
+      .from('studioretrato-assets')
+      .upload(path, file, {
+        contentType: file.type || 'image/jpeg',
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('studioretrato-assets')
+      .getPublicUrl(path);
+
+    return publicUrl;
+  };
+
+  const uploadAdminInputFiles = async (photoId) => {
+    const uploadedUrls = [];
+
+    for (let i = 0; i < adminFiles.length; i++) {
+      const file = adminFiles[i];
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `books/${book.id}/admin-inputs/${photoId}_${i}_${Date.now()}_${safeName}`;
+      uploadedUrls.push(await uploadAdminFileToStorage(file, storagePath));
+    }
+
+    return uploadedUrls;
+  };
+
+  const uploadModelFilesToClient = async () => {
+    const uploadedUrls = [];
+
+    for (let i = 0; i < modelFiles.length; i++) {
+      const file = modelFiles[i];
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `clients/${book.clientId}_book_model_${i}_${Date.now()}_${safeName}`;
+      uploadedUrls.push(await uploadAdminFileToStorage(file, storagePath));
+    }
+
+    return uploadedUrls;
+  };
+
+  const saveAdminBookDetails = async (event) => {
+    event.preventDefault();
+    if (!book || !isAdmin) return;
+
+    const title = adminBookForm.title.trim();
+    if (!title) {
+      setAdminBookError('Informe o título do book.');
+      return;
+    }
+
+    const pricingResult = normalizeBookPricing(adminBookForm);
+    if (!pricingResult.valid) {
+      setAdminBookError(pricingResult.error);
+      return;
+    }
+
+    setAdminBookSubmitting(true);
+    setAdminBookError(null);
+
+    try {
+      const payload = {
+        title,
+        prompt_details: adminBookForm.promptDetails.trim() || null,
+        ...pricingResult.dbPayload
+      };
+
+      const { error: dbError } = await supabase
+        .from('books')
+        .update(payload)
+        .eq('id', book.id);
+
+      if (dbError) throw dbError;
+
+      setBook(prev => ({
+        ...prev,
+        title,
+        promptDetails: adminBookForm.promptDetails.trim(),
+        ...pricingResult.pricing
+      }));
+      setAdminBookModalMode(null);
+    } catch (err) {
+      setAdminBookError(err.message || 'Não foi possível salvar o book.');
+    } finally {
+      setAdminBookSubmitting(false);
+    }
+  };
+
+  const toggleEditingReference = (refId) => {
+    setEditingReferenceIds(prev =>
+      prev.includes(refId) ? prev.filter((id) => id !== refId) : [...prev, refId]
+    );
+  };
+
+  const toggleModelActiveUrl = (url) => {
+    setModelActiveUrls(prev =>
+      prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]
+    );
+  };
+
+  const saveAdminReferences = async (event) => {
+    event.preventDefault();
+    if (!book || !isAdmin) return;
+
+    const selectedRefs = referenceLibrary.filter((ref) => editingReferenceIds.includes(ref.id));
+    if (selectedRefs.length === 0) {
+      setAdminBookError('Selecione ao menos uma referência de pose/estilo.');
+      return;
+    }
+
+    setAdminBookSubmitting(true);
+    setAdminBookError(null);
+
+    try {
+      const uploadedUrls = await uploadModelFilesToClient();
+      const allClientPhotos = Array.from(new Set([...(book.clientPhotos || []), ...uploadedUrls]));
+      const activeUrls = Array.from(new Set([...modelActiveUrls, ...uploadedUrls])).filter(Boolean);
+
+      if (activeUrls.length === 0) {
+        throw new Error('Selecione ou envie ao menos uma imagem modelo da cliente.');
+      }
+
+      if (uploadedUrls.length > 0) {
+        const { error: clientError } = await supabase
+          .from('clients')
+          .update({ photo_url: JSON.stringify(allClientPhotos) })
+          .eq('id', book.clientId);
+
+        if (clientError) throw clientError;
+      }
+
+      const referencesData = selectedRefs.map((ref) => ({
+        id: ref.id,
+        name: ref.name,
+        category: ref.category,
+        url: ref.url,
+        prompt: sanitizeBookReferencePrompt(ref.prompt, 'Portrait pose')
+      }));
+      const referencesUsed = selectedRefs.map((ref) => ref.id);
+
+      const { error: bookError } = await supabase
+        .from('books')
+        .update({
+          references_used: referencesUsed,
+          references_data: referencesData
+        })
+        .eq('id', book.id);
+
+      if (bookError) throw bookError;
+
+      setBook(prev => ({
+        ...prev,
+        referencesUsed,
+        referencesData,
+        clientPhotos: allClientPhotos
+      }));
+      setModelActiveUrls(activeUrls);
+      resetModelFileSelection();
+      setAdminBookModalMode(null);
+    } catch (err) {
+      setAdminBookError(err.message || 'Não foi possível salvar referências.');
+    } finally {
+      setAdminBookSubmitting(false);
+    }
+  };
+
+  const runAdminPaymentAction = async (action) => {
+    if (!book || !isAdmin) return;
+
+    if (action === 'clear_paid' && !window.confirm('Remover marcação de pago deste book?')) return;
+    if (action === 'mark_all_paid' && !window.confirm('Marcar todas as imagens do book como pagas?')) return;
+
+    const result = applyBookPaymentAction(book, action);
+    if (result.error) {
+      setAdminBookError(result.error);
+      return;
+    }
+
+    setAdminBookSubmitting(true);
+    setAdminBookError(null);
+
+    try {
+      const { error: dbError } = await supabase
+        .from('books')
+        .update(result.dbPayload)
+        .eq('id', book.id);
+
+      if (dbError) throw dbError;
+
+      setBook(result.book);
+      setSelectedPhotoIds(result.book.selectedPhotoIds || []);
+    } catch (err) {
+      setAdminBookError(err.message || 'Não foi possível atualizar pagamento.');
+    } finally {
+      setAdminBookSubmitting(false);
+    }
+  };
+
+  const regenerateEntireBook = async () => {
+    if (!book || !isAdmin || adminRegenerating) return;
+
+    const references = book.referencesData || [];
+    const clientInputUrls = modelActiveUrls.length > 0 ? modelActiveUrls : (book.clientPhotos || []);
+
+    if (references.length === 0) {
+      alert('Selecione referências de pose/estilo antes de refazer o book.');
+      return;
+    }
+
+    if (clientInputUrls.length === 0) {
+      alert('Selecione ou envie ao menos uma imagem modelo da cliente.');
+      return;
+    }
+
+    const hasPaidPhotos = book.photos?.some((photo) => photo.paymentStatus === 'paid');
+    const confirmMessage = hasPaidPhotos
+      ? 'Este book tem fotos pagas. Refazer o book substituirá as imagens e removerá a marcação de pago. Continuar?'
+      : 'Refazer todo o book agora? As imagens atuais serão substituídas por novas gerações.';
+
+    if (!window.confirm(confirmMessage)) return;
+
+    setAdminRegenerating(true);
+
+    try {
+      const nextPhotos = await Promise.all(references.map(async (ref) => {
+        const photoId = `img_gen_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        const referencePrompt = sanitizeBookReferencePrompt(ref.prompt, 'Portrait pose');
+        const generationPrompt = buildBookGenerationPrompt({
+          referenceName: ref.name || ref.category,
+          referencePrompt,
+          promptDetails: book.promptDetails || ''
+        });
+        const inputUrls = [...clientInputUrls, ref.url].filter(Boolean);
+        const basePhoto = {
+          id: photoId,
+          url: '',
+          variationType: ref.category || ref.name || 'Referência',
+          refId: ref.id,
+          refUrl: ref.url,
+          referencePrompt,
+          promptDetails: book.promptDetails || '',
+          prompt: generationPrompt
+        };
+
+        try {
+          const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls);
+          return {
+            ...basePhoto,
+            status: 'generating',
+            taskId
+          };
+        } catch (err) {
+          return {
+            ...basePhoto,
+            status: 'failed',
+            error: err.message || 'Erro ao criar tarefa'
+          };
+        }
+      }));
+
+      const replacement = applyPhotoReplacement({
+        currentPhotos: book.photos || [],
+        nextPhotos,
+        selectedPhotoIds,
+        mode: 'replace'
+      });
+
+      const { error: dbError } = await supabase
+        .from('books')
+        .update({
+          photos: replacement.photos,
+          selected_photo_ids: replacement.selectedPhotoIds,
+          payment_status: 'pending'
+        })
+        .eq('id', book.id);
+
+      if (dbError) throw dbError;
+
+      setBook(prev => ({
+        ...prev,
+        photos: replacement.photos,
+        selectedPhotoIds: replacement.selectedPhotoIds,
+        paymentStatus: 'pending'
+      }));
+      setSelectedPhotoIds(replacement.selectedPhotoIds);
+    } catch (err) {
+      alert('Não foi possível refazer o book: ' + (err.message || 'erro desconhecido'));
+    } finally {
+      setAdminRegenerating(false);
+    }
+  };
+
+  const submitAdminGeneration = async (event) => {
+    event.preventDefault();
+    if (!book || !isAdmin) return;
+
+    const prompt = adminPrompt.trim();
+    if (!prompt) {
+      setAdminError('Informe o prompt para gerar a imagem.');
+      return;
+    }
+
+    const isEdit = adminModalMode === 'edit';
+    const targetPhoto = isEdit
+      ? book.photos.find((photo) => photo.id === adminTargetPhotoId)
+      : null;
+
+    if (isEdit && !targetPhoto) {
+      setAdminError('Imagem não encontrada neste book.');
+      return;
+    }
+
+    setAdminSubmitting(true);
+    setAdminError(null);
+
+    const photoId = isEdit ? targetPhoto.id : `img_gen_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const variationType = adminVariationType.trim() || targetPhoto?.variationType || 'normal';
+
+    try {
+      const uploadedInputUrls = await uploadAdminInputFiles(photoId);
+      const inputUrls = uploadedInputUrls.length > 0
+        ? uploadedInputUrls
+        : [
+            ...(targetPhoto?.url ? [targetPhoto.url] : []),
+            ...(book.clientPhotos || [])
+          ];
+
+      if (inputUrls.length === 0) {
+        throw new Error('Selecione ao menos uma imagem de entrada.');
+      }
+
+      const pendingPhoto = isEdit
+        ? {
+            ...targetPhoto,
+            status: 'generating',
+            taskId: null,
+            error: null,
+            prompt,
+            referencePrompt: prompt,
+            promptDetails: book.promptDetails || '',
+            variationType,
+            adminInputUrls: inputUrls
+          }
+        : {
+            id: photoId,
+            url: '',
+            variationType,
+            status: 'generating',
+            taskId: null,
+            prompt,
+            referencePrompt: prompt,
+            promptDetails: book.promptDetails || '',
+            adminInputUrls: inputUrls
+          };
+
+      const pendingPhotos = isEdit
+        ? book.photos.map((photo) => photo.id === photoId ? pendingPhoto : photo)
+        : [...book.photos, pendingPhoto];
+
+      setBook(prev => ({ ...prev, photos: pendingPhotos }));
+
+      const taskId = await kieAi.createGenerationTask(prompt, inputUrls);
+      const nextPhotos = pendingPhotos.map((photo) =>
+        photo.id === photoId ? { ...photo, taskId, status: 'generating', error: null } : photo
+      );
+
+      const { error: dbError } = await supabase
+        .from('books')
+        .update({ photos: nextPhotos })
+        .eq('id', book.id);
+
+      if (dbError) throw dbError;
+
+      setBook(prev => ({ ...prev, photos: nextPhotos }));
+      resetAdminFileSelection();
+      setAdminModalMode(null);
+      setAdminTargetPhotoId(null);
+      setAdminPrompt('');
+      setAdminVariationType('');
+    } catch (err) {
+      const failedPhoto = isEdit
+        ? {
+            ...targetPhoto,
+            status: 'failed',
+            taskId: null,
+            error: err.message || 'Erro ao reenviar imagem',
+            prompt,
+            referencePrompt: prompt,
+            variationType
+          }
+        : {
+            id: photoId,
+            url: '',
+            variationType,
+            status: 'failed',
+            error: err.message || 'Erro ao gerar imagem',
+            prompt,
+            referencePrompt: prompt,
+            promptDetails: book.promptDetails || ''
+          };
+
+      const failedPhotos = isEdit
+        ? book.photos.map((photo) => photo.id === photoId ? failedPhoto : photo)
+        : [...book.photos, failedPhoto];
+
+      await supabase
+        .from('books')
+        .update({ photos: failedPhotos })
+        .eq('id', book.id);
+
+      setBook(prev => ({ ...prev, photos: failedPhotos }));
+      setAdminError(err.message || 'Não foi possível iniciar a geração.');
+    } finally {
+      setAdminSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) setIsAdmin(!!session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAdmin(!!session);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const loadAdminReferenceData = async () => {
+      try {
+        const [{ data: categoryRows, error: categoryError }, { data: refRows, error: refError }] = await Promise.all([
+          supabase.from('categories').select('*').order('name', { ascending: true }),
+          supabase.from('references').select('*').order('order', { ascending: true })
+        ]);
+
+        if (categoryError) throw categoryError;
+        if (refError) throw refError;
+
+        setCategories((categoryRows || []).filter((category) => category.name !== HIDDEN_LIBRARY_CATEGORY));
+        setReferenceLibrary((refRows || []).filter((ref) => ref.category !== HIDDEN_LIBRARY_CATEGORY && !isLandpageAsset(ref)));
+      } catch (err) {
+        console.error('Error loading admin reference data:', err);
+      }
+    };
+
+    loadAdminReferenceData();
+  }, [isAdmin]);
 
   // Load Book Data
   useEffect(() => {
@@ -141,6 +786,8 @@ export default function Book() {
             photos: Array.isArray(data.photos) ? data.photos : [],
             paymentStatus: data.payment_status,
             selectedPhotoIds: Array.isArray(data.selected_photo_ids) ? data.selected_photo_ids : [],
+            promptDetails: data.prompt_details || '',
+            referencesUsed: Array.isArray(data.references_used) ? data.references_used : [],
             referencesData: Array.isArray(data.references_data) ? data.references_data : []
           };
           setBook(formattedBook);
@@ -173,7 +820,7 @@ export default function Book() {
     console.log(`[Kie AI Polling Customer] Iniciando monitoramento para ${generatingPhotos.length} foto(s)...`);
 
     const uploadToStorage = async (fileOrBlob, path) => {
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('studioretrato-assets')
         .upload(path, fileOrBlob, {
           contentType: 'image/jpeg',
@@ -271,46 +918,49 @@ export default function Book() {
     if (photoIndex === -1) return;
 
     const photo = book.photos[photoIndex];
-    
-    let poseUrl = photo.refUrl;
-    if (!poseUrl && book.referencesData) {
-      const matchedRef = book.referencesData.find(ref => 
-        photo.prompt.includes(ref.prompt) || photo.refId === ref.id
-      );
-      poseUrl = matchedRef?.url;
-    }
-
-    if (!poseUrl) {
-      alert('Não foi possível encontrar a pose de referência correspondente.');
-      return;
-    }
-
     const clientPhotos = book.clientPhotos || [];
     if (clientPhotos.length === 0) {
       alert('Nenhuma foto de referência da cliente encontrada para este book.');
       return;
     }
 
-    // Set to generating in state
-    const updatedPhotos = [...book.photos];
-    updatedPhotos[photoIndex] = {
-      ...photo,
+    const matchedRef = book.referencesData?.find(ref => 
+      photo.refId === ref.id || (ref.prompt && photo.prompt?.includes(ref.prompt))
+    );
+    const referencePrompt = sanitizeBookReferencePrompt(
+      photo.referencePrompt || matchedRef?.prompt || photo.prompt,
+      'Portrait pose'
+    );
+    const generationPrompt = buildBookGenerationPrompt({
+      referenceName: matchedRef?.name || photo.variationType,
+      referencePrompt,
+      promptDetails: photo.promptDetails || book.promptDetails || ''
+    });
+    const styleReferenceUrl = matchedRef?.url || photo.refUrl;
+    const inputUrls = styleReferenceUrl
+      ? [...clientPhotos, styleReferenceUrl]
+      : clientPhotos;
+
+    const pendingPhotos = book.photos.map((item, index) => index === photoIndex ? {
+      ...item,
       status: 'generating',
       error: null,
       taskId: null
-    };
+    } : item);
 
-    setBook(prev => ({ ...prev, photos: updatedPhotos }));
+    setBook(prev => ({ ...prev, photos: pendingPhotos }));
 
     try {
-      const taskId = await kieAi.createGenerationTask(photo.prompt, [poseUrl, ...clientPhotos]);
-      
-      updatedPhotos[photoIndex] = {
-        ...photo,
+      const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls);
+
+      const updatedPhotos = book.photos.map((item, index) => index === photoIndex ? {
+        ...item,
         status: 'generating',
         taskId,
-        error: null
-      };
+        error: null,
+        referencePrompt,
+        prompt: generationPrompt
+      } : item);
 
       const { error: dbError } = await supabase
         .from('books')
@@ -322,29 +972,32 @@ export default function Book() {
       setBook(prev => ({ ...prev, photos: updatedPhotos }));
     } catch (err) {
       console.error('Erro ao regenerar retrato:', err);
-      
-      updatedPhotos[photoIndex] = {
-        ...photo,
+
+      const failedPhotos = book.photos.map((item, index) => index === photoIndex ? {
+        ...item,
         status: 'failed',
         error: err.message || 'Erro ao recriar tarefa'
-      };
+      } : item);
 
       await supabase
         .from('books')
-        .update({ photos: updatedPhotos })
+        .update({ photos: failedPhotos })
         .eq('id', book.id);
 
-      setBook(prev => ({ ...prev, photos: updatedPhotos }));
+      setBook(prev => ({ ...prev, photos: failedPhotos }));
       alert('Não foi possível iniciar a regeneração: ' + err.message);
     }
   };
 
   // Toggle Photo Selection
   const togglePhotoSelection = async (photoId) => {
-    if (book?.paymentStatus === 'paid') return; // Cannot modify if already paid
+    if (!isAdmin && book?.paymentStatus === 'paid') return; // Cannot modify if already paid
 
     // Find the photo and check status
     const targetPhoto = book?.photos?.find(p => p.id === photoId);
+    if (!isAdmin && targetPhoto?.paymentStatus === 'paid') {
+      return;
+    }
     if (targetPhoto && (targetPhoto.status === 'generating' || targetPhoto.status === 'failed')) {
       return;
     }
@@ -377,13 +1030,13 @@ export default function Book() {
         .from('books')
         .update({ 
           selected_photo_ids: selectedPhotoIds,
-          payment_status: 'pending'
+          payment_status: isPackagePartiallyPaid ? 'partial_paid' : 'pending'
         })
         .eq('id', book.id);
       
       if (dbErr) throw dbErr;
 
-      setBook(prev => ({ ...prev, selectedPhotoIds, paymentStatus: 'pending' }));
+      setBook(prev => ({ ...prev, selectedPhotoIds, paymentStatus: isPackagePartiallyPaid ? 'partial_paid' : 'pending' }));
       setSelectionSubmitted(true);
       setShowCheckout(false);
     } catch (err) {
@@ -434,36 +1087,29 @@ export default function Book() {
     );
   }
 
-  const calculateTotalPrice = (selectedCount, pricePerPhoto, packagePrice, packagePhotos, extraPhotoPrice) => {
-    if (packagePrice !== undefined && packagePrice !== null && 
-        packagePhotos !== undefined && packagePhotos !== null && 
-        extraPhotoPrice !== undefined && extraPhotoPrice !== null) {
-      if (selectedCount <= packagePhotos) {
-        return Number(packagePrice);
-      } else {
-        return Number(packagePrice) + (selectedCount - packagePhotos) * Number(extraPhotoPrice);
-      }
-    }
-    const P = Number(pricePerPhoto || 30.00);
-    if (selectedCount < 5) {
-      return selectedCount * P;
-    } else if (selectedCount < 10) {
-      const package5Price = 5 * P * 0.8; // 20% discount on the first 5 photos
-      const additionalPhotosCount = selectedCount - 5;
-      return package5Price + (additionalPhotosCount * P);
-    } else {
-      const package10Price = 10 * P * 0.7; // 30% discount on the first 10 photos
-      const additionalPhotosCount = selectedCount - 10;
-      return package10Price + (additionalPhotosCount * P);
-    }
-  };
-
   const selectedCount = selectedPhotoIds.length;
-  const totalPrice = book ? calculateTotalPrice(selectedCount, book.pricePerPhoto, book.packagePrice, book.packagePhotos, book.extraPhotoPrice) : 0;
+  const paidPhotoIds = getPaidPhotoIds(book.photos);
+  const paidSelectedCount = paidPhotoIds.filter((photoId) => selectedPhotoIds.includes(photoId)).length;
+  const pendingSelectedCount = Math.max(selectedCount - paidSelectedCount, 0);
+  const totalPrice = calculateOutstandingPrice(book, selectedPhotoIds);
   const isPaid = book.paymentStatus === 'paid';
+  const isPackagePartiallyPaid = book.paymentStatus === 'partial_paid' || (hasPackagePricing(book) && paidSelectedCount > 0 && !isPaid);
+  const canFinalizeSelection = selectedCount > 0 && (!isPackagePartiallyPaid || pendingSelectedCount > 0);
+  const adminTargetPhoto = adminTargetPhotoId
+    ? book.photos.find((photo) => photo.id === adminTargetPhotoId)
+    : null;
+  const filteredAdminReferences = referenceLibrary.filter((ref) => {
+    const matchesCategory = referenceCategoryFilter === 'Todos' || ref.category === referenceCategoryFilter;
+    const search = referenceSearch.trim().toLowerCase();
+    const matchesSearch = !search ||
+      ref.name?.toLowerCase().includes(search) ||
+      ref.prompt?.toLowerCase().includes(search);
+
+    return matchesCategory && matchesSearch;
+  });
 
   return (
-    <div className="min-h-screen pb-32 sm:p-8 md:p-10 pt-6 pr-6 pl-6 relative">
+    <div className="min-h-screen pb-56 sm:p-8 md:p-10 pt-6 pr-6 pl-6 relative">
       {/* Background Aura */}
       <div className="fixed top-0 w-full h-screen -z-10 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50"></div>
 
@@ -480,7 +1126,7 @@ export default function Book() {
                 ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10'
                 : 'bg-amber-50 text-amber-800 ring-1 ring-amber-600/10 animate-pulse'
             }`}>
-              {isPaid ? '✅ Book Comprado' : '⚡ Aguardando Seleção'}
+              {isPaid ? '✅ Book Comprado' : isPackagePartiallyPaid ? '✅ Pacote Pago' : '⚡ Aguardando Seleção'}
             </span>
           </div>
         </div>
@@ -493,6 +1139,17 @@ export default function Book() {
             </h3>
             <p className="text-sm text-emerald-700/90 mt-2 font-geist leading-relaxed">
               Obrigado! O pagamento foi processado com sucesso. Suas {selectedCount} fotos selecionadas foram marcadas para download e envio em alta resolução pelo fotógrafo. Você já pode fechar esta página.
+            </p>
+          </div>
+        )}
+
+        {isPackagePartiallyPaid && (
+          <div className="bg-emerald-50 border border-emerald-200/80 rounded-3xl p-6 mb-8 text-neutral-900">
+            <h3 className="text-lg font-bold text-emerald-800 flex items-center gap-2">
+              <span>Pacote Pago</span>
+            </h3>
+            <p className="text-sm text-emerald-700/90 mt-2 font-geist leading-relaxed">
+              {paidSelectedCount} foto(s) do pacote foram liberadas. As {pendingSelectedCount} foto(s) adicionais continuam com valor a pagar.
             </p>
           </div>
         )}
@@ -547,21 +1204,50 @@ export default function Book() {
             ))}
           </div>
 
+          {/* Client Photos Section */}
+          {book.clientPhotos && book.clientPhotos.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-neutral-100">
+              <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider mb-3 font-geist">Fotos da Cliente</p>
+              <div className="flex flex-wrap gap-3">
+                {book.clientPhotos.map((url, idx) => (
+                  <div key={idx} className="bg-neutral-50 hover:bg-neutral-100 transition rounded-xl p-2 ring-1 ring-neutral-200/40">
+                    <img
+                      className="h-12 w-12 rounded-lg object-cover"
+                      src={url}
+                      alt={`Foto da cliente ${idx + 1}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* References Section */}
           {book.referencesData && book.referencesData.length > 0 && (
             <div className="mt-8 pt-6 border-t border-neutral-100">
               <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider mb-3 font-geist">Fotos de Referência Utilizadas</p>
               <div className="flex flex-wrap gap-3">
                 {book.referencesData.map((ref, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-neutral-50 hover:bg-neutral-100 transition rounded-xl p-2 pr-3 ring-1 ring-neutral-200/40">
+                  <div key={idx} className="flex items-center gap-2 bg-neutral-50 hover:bg-neutral-100 transition rounded-xl p-2 ring-1 ring-neutral-200/40">
                     <img 
                       className="h-8 w-8 rounded-lg object-cover" 
                       src={ref.url} 
                       alt={ref.name} 
                     />
-                    <span className="text-xs font-geist text-neutral-600 font-medium">{ref.name}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Additional Prompt Details */}
+          {book.promptDetails && (
+            <div className="mt-8 pt-6 border-t border-neutral-100">
+              <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider mb-3 font-geist">Prompt Adicional Utilizado</p>
+              <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-4">
+                <p className="text-sm text-neutral-700 font-geist leading-relaxed whitespace-pre-wrap">
+                  {book.promptDetails}
+                </p>
               </div>
             </div>
           )}
@@ -696,12 +1382,79 @@ export default function Book() {
           )}
         </div>
 
+        {isAdmin && (
+          <div className="bg-neutral-950 text-white border border-neutral-800 rounded-[2.2rem] p-4 sm:p-5 shadow-lg shadow-neutral-950/10 mb-8 font-geist">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/40 font-bold">Modo admin</p>
+                <h2 className="text-sm sm:text-base font-bold mt-0.5 text-white">Editar book público</h2>
+                <p className="text-[11px] text-white/45 mt-1 max-w-xl">
+                  Controles visíveis apenas para sessão autenticada.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <button
+                  type="button"
+                  onClick={regenerateEntireBook}
+                  disabled={adminRegenerating}
+                  className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-3 py-3 rounded-2xl text-[11px] sm:text-xs transition shadow-lg shadow-indigo-600/20"
+                >
+                  {adminRegenerating ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+                  ) : (
+                    <Sparkles className="w-4 h-4" weight="light" />
+                  )}
+                  <span>Refazer</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openAdminDetailsModal}
+                  className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-semibold px-3 py-3 rounded-2xl text-[11px] sm:text-xs transition"
+                >
+                  <Pencil className="w-4 h-4" weight="light" />
+                  <span>Dados</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openAdminReferencesModal}
+                  className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-semibold px-3 py-3 rounded-2xl text-[11px] sm:text-xs transition"
+                >
+                  <Camera className="w-4 h-4" weight="light" />
+                  <span>Refs</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openAdminPaymentModal}
+                  className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-semibold px-3 py-3 rounded-2xl text-[11px] sm:text-xs transition"
+                >
+                  <CreditCard className="w-4 h-4" weight="light" />
+                  <span>Pago</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openAdminAddModal}
+                  className="inline-flex items-center justify-center gap-2 bg-white text-neutral-950 hover:bg-neutral-100 font-semibold px-3 py-3 rounded-2xl text-[11px] sm:text-xs transition"
+                >
+                  <Plus className="w-4 h-4" weight="light" />
+                  <span>Imagem</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Photos Gallery */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
           {book.photos.map((photo, index) => {
             const isSelected = selectedPhotoIds.includes(photo.id);
             const isGenerating = photo.status === 'generating';
             const isFailed = photo.status === 'failed';
+            const isPhotoPaid = photo.paymentStatus === 'paid';
 
             if (isGenerating) {
               return (
@@ -736,11 +1489,12 @@ export default function Book() {
                       Não foi possível gerar este retrato.
                     </p>
                     <button
-                      onClick={() => handleRegeneratePhoto(photo.id)}
+                      type="button"
+                      onClick={() => isAdmin ? openAdminEditModal(photo) : handleRegeneratePhoto(photo.id)}
                       className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-xl text-[10px] transition shadow-sm"
                     >
-                      <Sparkles className="w-3 h-3" />
-                      <span>Regenerar</span>
+                      {isAdmin ? <Pencil className="w-3 h-3" weight="light" /> : <Sparkles className="w-3 h-3" />}
+                      <span>{isAdmin ? 'Ajustar prompt' : 'Regenerar'}</span>
                     </button>
                   </div>
                   <div className="bg-black/5 rounded-lg p-1.5 text-[9px] text-neutral-500 font-geist text-center uppercase tracking-wide font-semibold">
@@ -754,9 +1508,11 @@ export default function Book() {
               <div 
                 key={photo.id}
                 onClick={() => togglePhotoSelection(photo.id)}
-                onContextMenu={(e) => !isPaid && e.preventDefault()}
+                onContextMenu={(e) => !isPhotoPaid && e.preventDefault()}
                 className={`group relative aspect-[3/4] bg-white rounded-3xl overflow-hidden shadow-sm ring-1 cursor-pointer transition select-none ${
-                  isSelected 
+                  isPhotoPaid
+                    ? 'ring-emerald-500 shadow-emerald-500/10'
+                    : isSelected 
                     ? 'ring-indigo-600 shadow-indigo-600/10' 
                     : 'ring-neutral-200 hover:ring-neutral-300'
                 }`}
@@ -766,11 +1522,11 @@ export default function Book() {
                   src={photo.url} 
                   alt={photo.variationType} 
                   className="w-full h-full object-cover pointer-events-none"
-                  onContextMenu={(e) => !isPaid && e.preventDefault()}
+                  onContextMenu={(e) => !isPhotoPaid && e.preventDefault()}
                 />
 
                 {/* Anti-copy transparent overlay when unpaid */}
-                {!isPaid && (
+                {!isPhotoPaid && (
                   <div 
                     className="absolute inset-0 bg-transparent select-none z-10"
                     onContextMenu={(e) => e.preventDefault()}
@@ -785,10 +1541,30 @@ export default function Book() {
                   {photo.variationType}
                 </div>
 
+                {isPhotoPaid && (
+                  <div className="absolute top-4 left-4 bg-emerald-600 text-white text-[10px] px-2.5 py-1 rounded-lg font-geist font-bold uppercase">
+                    Pago
+                  </div>
+                )}
+
                 {/* Action Buttons Overlay */}
                 <div className="absolute top-4 right-4 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-20">
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAdminEditModal(photo);
+                      }}
+                      className="h-8 w-8 rounded-xl bg-neutral-950/90 text-white flex items-center justify-center shadow-md hover:bg-neutral-800 transition"
+                      title="Editar prompt e reenviar"
+                    >
+                      <Pencil className="w-4 h-4" weight="light" />
+                    </button>
+                  )}
+
                   {/* Download button if paid */}
-                  {isPaid && (
+                  {isPhotoPaid && (
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
@@ -813,7 +1589,7 @@ export default function Book() {
                   </button>
 
                   {/* Selection Checkbox indicator */}
-                  {!isPaid && (
+                  {!isPhotoPaid && (
                     <div className={`h-8 w-8 rounded-xl flex items-center justify-center shadow-md transition ${
                       isSelected 
                         ? 'bg-indigo-600 text-white' 
@@ -825,7 +1601,7 @@ export default function Book() {
                 </div>
 
                 {/* Selected Ring Border overlay */}
-                {isSelected && (
+                {isSelected && !isPhotoPaid && (
                   <div className="absolute inset-0 border-2 border-indigo-600 rounded-3xl pointer-events-none"></div>
                 )}
               </div>
@@ -847,6 +1623,11 @@ export default function Book() {
                 <h3 className="text-sm sm:text-base font-bold font-geist mt-0.5 whitespace-nowrap">
                   {selectedCount} de {book?.photos?.length || 0} fotos
                 </h3>
+                {isPackagePartiallyPaid && (
+                  <p className="text-[10px] text-white/45 font-geist mt-0.5">
+                    {paidSelectedCount} paga(s), {pendingSelectedCount} adicional(is)
+                  </p>
+                )}
               </div>
             </div>
 
@@ -860,9 +1641,9 @@ export default function Book() {
                       <span className="font-semibold text-white/90">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.packagePrice)}</span>
                     </div>
                     <div className="flex justify-between sm:justify-start sm:gap-2">
-                      <span>Fotos Extras ({selectedCount > book.packagePhotos ? selectedCount - book.packagePhotos : 0}):</span>
+                      <span>Fotos Extras ({isPackagePartiallyPaid ? pendingSelectedCount : selectedCount > book.packagePhotos ? selectedCount - book.packagePhotos : 0}):</span>
                       <span className="font-semibold text-white/90">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedCount > book.packagePhotos ? (selectedCount - book.packagePhotos) * book.extraPhotoPrice : 0)}
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(isPackagePartiallyPaid ? pendingSelectedCount * book.extraPhotoPrice : selectedCount > book.packagePhotos ? (selectedCount - book.packagePhotos) * book.extraPhotoPrice : 0)}
                       </span>
                     </div>
                   </>
@@ -886,7 +1667,7 @@ export default function Book() {
             {/* Right side: Total Price & Button */}
             <div className="flex items-center justify-between sm:justify-end gap-5 w-full sm:w-auto border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
               <div className="text-left sm:text-right">
-                <p className="text-[10px] uppercase tracking-wider text-white/40 font-bold font-geist">Valor Total</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/40 font-bold font-geist">{isPackagePartiallyPaid ? 'Valor a Pagar' : 'Valor Total'}</p>
                 <h3 className="text-lg sm:text-xl font-extrabold font-geist mt-0.5 text-indigo-400 whitespace-nowrap">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
                 </h3>
@@ -894,7 +1675,7 @@ export default function Book() {
 
               <button 
                 onClick={() => setShowCheckout(true)}
-                disabled={selectedCount === 0}
+                disabled={!canFinalizeSelection}
                 className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-2xl text-xs sm:text-sm transition shadow-lg shadow-indigo-600/20 whitespace-nowrap"
               >
                 <span>Finalizar Seleção</span>
@@ -906,11 +1687,477 @@ export default function Book() {
         )}
       </div>
 
+      {adminBookModalMode && (
+        <div className="admin-mobile-modal fixed inset-0 z-[60] bg-white flex flex-col md:bg-neutral-950/60 md:backdrop-blur-sm md:items-center md:justify-center md:p-4">
+          <div className={`admin-mobile-modal__panel relative flex h-full w-full flex-col bg-white shadow-2xl md:h-auto md:max-h-[90vh] ${adminBookModalMode === 'references' ? 'md:max-w-5xl' : 'md:max-w-2xl'} md:rounded-[2.5rem] md:border md:border-neutral-200 animate-scaleUp`}>
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold font-geist">
+                    Modo admin
+                  </p>
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist mt-1">
+                    {adminBookModalMode === 'details' && 'Editar dados do book'}
+                    {adminBookModalMode === 'references' && 'Editar referências e modelo'}
+                    {adminBookModalMode === 'payment' && 'Corrigir pagamento'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeAdminBookModal}
+                  disabled={adminBookSubmitting || adminRegenerating}
+                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0 disabled:opacity-40"
+                >
+                  <X className="w-4 h-4" weight="light" />
+                </button>
+              </div>
+            </div>
+
+            <div className="admin-mobile-modal__body flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+              {adminBookError && (
+                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-800 font-geist">
+                  <WarningCircle className="w-5 h-5 shrink-0 text-rose-600" weight="light" />
+                  <span>{adminBookError}</span>
+                </div>
+              )}
+
+              {adminBookModalMode === 'details' && (
+                <form id="admin-book-details-form" onSubmit={saveAdminBookDetails} className="space-y-5 font-geist">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                      Título
+                    </label>
+                    <input
+                      type="text"
+                      value={adminBookForm.title}
+                      onChange={(e) => setAdminBookForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                      Prompt adicional
+                    </label>
+                    <textarea
+                      value={adminBookForm.promptDetails}
+                      onChange={(e) => setAdminBookForm(prev => ({ ...prev, promptDetails: e.target.value }))}
+                      rows={4}
+                      className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900 resize-none leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                        Valor do pacote
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={adminBookForm.packagePrice}
+                        onChange={(e) => setAdminBookForm(prev => ({ ...prev, packagePrice: e.target.value }))}
+                        className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                        Fotos inclusas
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={adminBookForm.packagePhotos}
+                        onChange={(e) => setAdminBookForm(prev => ({ ...prev, packagePhotos: e.target.value }))}
+                        className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                        Foto extra
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={adminBookForm.extraPhotoPrice}
+                        onChange={(e) => setAdminBookForm(prev => ({ ...prev, extraPhotoPrice: e.target.value }))}
+                        className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                        Preço avulso
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={adminBookForm.pricePerPhoto}
+                        onChange={(e) => setAdminBookForm(prev => ({ ...prev, pricePerPhoto: e.target.value }))}
+                        className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
+                      />
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {adminBookModalMode === 'references' && (
+                <form id="admin-book-references-form" onSubmit={saveAdminReferences} className="space-y-6 font-geist">
+                  <section className="space-y-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Referências de pose/estilo</p>
+                        <p className="text-xs text-neutral-500 mt-1">{editingReferenceIds.length} selecionada(s)</p>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <select
+                          value={referenceCategoryFilter}
+                          onChange={(e) => setReferenceCategoryFilter(e.target.value)}
+                          className="bg-neutral-50 border border-neutral-200 rounded-xl py-2.5 px-3 focus:outline-none focus:border-indigo-600 text-xs text-neutral-900 font-medium"
+                        >
+                          <option value="Todos">Todas</option>
+                          {categories.map((category) => (
+                            <option key={category.id || category.name} value={category.name}>{category.name}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="search"
+                          placeholder="Buscar referência"
+                          value={referenceSearch}
+                          onChange={(e) => setReferenceSearch(e.target.value)}
+                          className="bg-neutral-50 border border-neutral-200 rounded-xl py-2.5 px-3 focus:outline-none focus:border-indigo-600 text-xs text-neutral-900"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-neutral-100 bg-neutral-50/60 p-3">
+                      {filteredAdminReferences.length === 0 ? (
+                        <div className="py-10 text-center text-xs text-neutral-400">
+                          Nenhuma referência encontrada.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[48vh] overflow-y-auto pr-1">
+                          {filteredAdminReferences.map((ref) => {
+                            const isChecked = editingReferenceIds.includes(ref.id);
+
+                            return (
+                              <button
+                                type="button"
+                                key={ref.id}
+                                onClick={() => toggleEditingReference(ref.id)}
+                                style={{ aspectRatio: '3 / 4' }}
+                                className={`group relative min-h-[220px] overflow-hidden rounded-2xl border bg-white text-left transition ${
+                                  isChecked ? 'border-indigo-600 ring-2 ring-indigo-600/10' : 'border-neutral-200 hover:border-neutral-300'
+                                }`}
+                              >
+                                <img src={ref.url} alt={ref.name} className="h-full w-full object-cover" />
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                                  <p className="truncate text-xs font-semibold text-white">{ref.name}</p>
+                                  <p className="mt-0.5 truncate text-[10px] text-white/65">{ref.category}</p>
+                                </div>
+                                <div className={`absolute top-3 right-3 h-7 w-7 rounded-xl flex items-center justify-center shadow-md transition ${
+                                  isChecked ? 'bg-indigo-600 text-white' : 'bg-white/90 text-neutral-400 group-hover:text-neutral-600'
+                                }`}>
+                                  <Check className="w-4 h-4" weight="light" />
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  <section className="space-y-3">
+                    <div>
+                      <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Imagens modelo da cliente</p>
+                      <p className="text-xs text-neutral-500 mt-1">Marque quais imagens entram na próxima geração.</p>
+                    </div>
+
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                      {(book.clientPhotos || []).map((url, index) => {
+                        const isChecked = modelActiveUrls.includes(url);
+
+                        return (
+                          <button
+                            type="button"
+                            key={url}
+                            onClick={() => toggleModelActiveUrl(url)}
+                            className={`relative aspect-square overflow-hidden rounded-2xl border transition ${
+                              isChecked ? 'border-indigo-600 ring-2 ring-indigo-600/10' : 'border-neutral-200'
+                            }`}
+                          >
+                            <img src={url} alt={`Modelo ${index + 1}`} className="h-full w-full object-cover" />
+                            <span className={`absolute top-2 right-2 h-6 w-6 rounded-lg flex items-center justify-center ${
+                              isChecked ? 'bg-indigo-600 text-white' : 'bg-white/90 text-neutral-400'
+                            }`}>
+                              <Check className="w-3.5 h-3.5" weight="light" />
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-neutral-300 bg-neutral-50/70 p-5 text-center transition hover:border-indigo-500 hover:bg-indigo-50/30">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => handleModelFilesChange(e.target.files)}
+                      />
+                      <Upload className="w-7 h-7 text-neutral-400 mb-2" weight="light" />
+                      <span className="text-sm font-semibold text-neutral-800">Adicionar imagens modelo</span>
+                      <span className="text-xs text-neutral-400 mt-1">
+                        {modelFiles.length > 0 ? `${modelFiles.length} arquivo(s) selecionado(s)` : 'JPG ou PNG'}
+                      </span>
+                    </label>
+
+                    {modelFilePreviews.length > 0 && (
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                        {modelFilePreviews.map((preview, index) => (
+                          <div key={preview} className="aspect-square overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
+                            <img src={preview} alt={`Nova modelo ${index + 1}`} className="h-full w-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </form>
+              )}
+
+              {adminBookModalMode === 'payment' && (
+                <div className="space-y-5 font-geist">
+                  <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5">
+                    <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Estado atual</p>
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                      <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                        <p className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold">Status</p>
+                        <p className="mt-1 font-semibold text-neutral-900">{isPaid ? 'Pago' : isPackagePartiallyPaid ? 'Pacote pago' : 'Pendente'}</p>
+                      </div>
+                      <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                        <p className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold">Selecionadas</p>
+                        <p className="mt-1 font-semibold text-neutral-900">{selectedCount}</p>
+                      </div>
+                      <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                        <p className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold">Total atual</p>
+                        <p className="mt-1 font-semibold text-indigo-600">{formatCurrency(totalPrice)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      disabled={adminBookSubmitting}
+                      onClick={() => runAdminPaymentAction('mark_selected_paid')}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                      <Check className="w-4 h-4" weight="light" />
+                      <span>Marcar seleção paga</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={adminBookSubmitting || !hasPackagePricing(book)}
+                      onClick={() => runAdminPaymentAction('mark_package_paid')}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-40"
+                    >
+                      <Check className="w-4 h-4" weight="light" />
+                      <span>Marcar pacote pago</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={adminBookSubmitting}
+                      onClick={() => runAdminPaymentAction('mark_all_paid')}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+                    >
+                      <Check className="w-4 h-4" weight="light" />
+                      <span>Marcar tudo pago</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={adminBookSubmitting}
+                      onClick={() => runAdminPaymentAction('clear_paid')}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+                    >
+                      <X className="w-4 h-4" weight="light" />
+                      <span>Remover pago</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="admin-mobile-modal__footer shrink-0 border-t border-neutral-200 bg-white/95 px-4 py-4 backdrop-blur md:px-8">
+              {adminBookModalMode === 'payment' ? (
+                <button
+                  type="button"
+                  onClick={closeAdminBookModal}
+                  disabled={adminBookSubmitting}
+                  className="w-full inline-flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3.5 rounded-2xl text-sm transition font-geist"
+                >
+                  Fechar
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  form={adminBookModalMode === 'details' ? 'admin-book-details-form' : 'admin-book-references-form'}
+                  disabled={adminBookSubmitting}
+                  className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20 font-geist"
+                >
+                  {adminBookSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+                      <span>Salvando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" weight="light" />
+                      <span>Salvar alterações</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {adminModalMode && (
+        <div className="admin-mobile-modal fixed inset-0 z-[60] bg-white flex flex-col md:bg-neutral-950/60 md:backdrop-blur-sm md:items-center md:justify-center md:p-4">
+          <div className="admin-mobile-modal__panel relative flex h-full w-full flex-col bg-white shadow-2xl md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-[2.5rem] md:border md:border-neutral-200 animate-scaleUp">
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold font-geist">
+                    {adminModalMode === 'edit' ? 'Reenvio da imagem' : 'Nova imagem'}
+                  </p>
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist mt-1">
+                    {adminModalMode === 'edit' ? 'Editar prompt' : 'Adicionar imagem'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeAdminGenerationModal}
+                  disabled={adminSubmitting}
+                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0 disabled:opacity-40"
+                >
+                  <X className="w-4 h-4" weight="light" />
+                </button>
+              </div>
+            </div>
+
+            <div className="admin-mobile-modal__body flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+              <form id="admin-generation-form" onSubmit={submitAdminGeneration} className="space-y-5 font-geist">
+                {adminError && (
+                  <div className="flex items-start gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-800">
+                    <WarningCircle className="w-5 h-5 shrink-0 text-rose-600" weight="light" />
+                    <span>{adminError}</span>
+                  </div>
+                )}
+
+                {adminModalMode === 'edit' && adminTargetPhoto?.url && (
+                  <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-3">
+                    <img
+                      src={adminTargetPhoto.url}
+                      alt={adminTargetPhoto.variationType || 'Imagem do book'}
+                      className="h-56 w-full rounded-2xl object-cover"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                    Nome da imagem
+                  </label>
+                  <input
+                    type="text"
+                    value={adminVariationType}
+                    onChange={(e) => setAdminVariationType(e.target.value)}
+                    placeholder="Ex: Editorial, corporativo, ajuste 1"
+                    className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900 placeholder:text-neutral-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                    Prompt
+                  </label>
+                  <textarea
+                    value={adminPrompt}
+                    onChange={(e) => setAdminPrompt(e.target.value)}
+                    rows={10}
+                    placeholder="Descreva o ajuste ou a nova imagem"
+                    className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900 placeholder:text-neutral-400 resize-none leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                    Imagens de entrada
+                  </label>
+                  <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-neutral-300 bg-neutral-50/70 p-6 text-center transition hover:border-indigo-500 hover:bg-indigo-50/30">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleAdminFilesChange(e.target.files)}
+                    />
+                    <Upload className="w-8 h-8 text-neutral-400 mb-3" weight="light" />
+                    <span className="text-sm font-semibold text-neutral-800">
+                      Selecionar imagens
+                    </span>
+                    <span className="text-xs text-neutral-400 mt-1">
+                      {adminFiles.length > 0 ? `${adminFiles.length} arquivo(s) selecionado(s)` : 'JPG ou PNG'}
+                    </span>
+                  </label>
+                </div>
+
+                {adminFilePreviews.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                    {adminFilePreviews.map((preview, index) => (
+                      <div key={preview} className="aspect-square overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
+                        <img
+                          src={preview}
+                          alt={`Entrada ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </form>
+            </div>
+
+            <div className="admin-mobile-modal__footer shrink-0 border-t border-neutral-200 bg-white/95 px-4 py-4 backdrop-blur md:px-8">
+              <button
+                type="submit"
+                form="admin-generation-form"
+                disabled={adminSubmitting}
+                className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20 font-geist"
+              >
+                {adminSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+                    <span>Enviando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" weight="light" />
+                    <span>{adminModalMode === 'edit' ? 'Reenviar imagem' : 'Gerar imagem'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* LIGHTBOX MODAL */}
       {lightboxIndex >= 0 && (
         <div 
           className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
-          onContextMenu={(e) => !isPaid && e.preventDefault()}
+          onContextMenu={(e) => book.photos[lightboxIndex]?.paymentStatus !== 'paid' && e.preventDefault()}
         >
           {/* Close button */}
           <button 
@@ -935,11 +2182,11 @@ export default function Book() {
               className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl select-none" 
               src={book.photos[lightboxIndex].url} 
               alt={book.photos[lightboxIndex].variationType} 
-              onContextMenu={(e) => !isPaid && e.preventDefault()}
+              onContextMenu={(e) => book.photos[lightboxIndex]?.paymentStatus !== 'paid' && e.preventDefault()}
             />
             
             {/* Anti-copy overlay inside lightbox */}
-            {!isPaid && (
+            {book.photos[lightboxIndex]?.paymentStatus !== 'paid' && (
               <div 
                 className="absolute inset-0 max-h-[80vh] bg-transparent select-none"
                 onContextMenu={(e) => e.preventDefault()}
@@ -950,7 +2197,7 @@ export default function Book() {
               <span className="text-xs tracking-wider uppercase font-geist font-bold text-white/50">
                 Variação: {book.photos[lightboxIndex].variationType} | {lightboxIndex + 1} de {book.photos.length}
               </span>
-              {isPaid && (
+              {book.photos[lightboxIndex]?.paymentStatus === 'paid' && (
                 <button
                   onClick={() => downloadPhoto(book.photos[lightboxIndex].url, `foto-${lightboxIndex + 1}.jpg`)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold font-geist shadow transition-colors"
@@ -975,22 +2222,24 @@ export default function Book() {
 
       {/* CHECKOUT / PAYMENT MODAL */}
       {showCheckout && (
-        <div className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-neutral-200 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative animate-scaleUp">
-            {/* Close button */}
-            <button 
-              onClick={() => setShowCheckout(false)}
-              className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-600 h-8 w-8 rounded-full bg-neutral-50 flex items-center justify-center transition"
-            >
-              <X className="w-4 h-4" weight="light" />
-            </button>
-
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-neutral-900 font-geist">Confirmar Seleção</h3>
-              <p className="text-sm text-neutral-500 mt-1 font-geist">Confirme sua seleção de fotos e realize o pagamento via PIX para concluir.</p>
+        <div className="fixed inset-0 z-50 bg-white flex flex-col md:bg-neutral-950/60 md:backdrop-blur-sm md:items-center md:justify-center md:p-4">
+          <div className="relative flex h-full w-full flex-col bg-white shadow-2xl md:h-auto md:max-h-[90vh] md:max-w-md md:rounded-[2.5rem] md:border md:border-neutral-200 animate-scaleUp">
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Confirmar Seleção</h3>
+                  <p className="text-sm text-neutral-500 mt-1 font-geist">Confirme sua seleção de fotos e realize o pagamento via PIX para concluir.</p>
+                </div>
+                <button 
+                  onClick={() => setShowCheckout(false)}
+                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
+                >
+                  <X className="w-4 h-4" weight="light" />
+                </button>
+              </div>
             </div>
 
-            {/* Price review */}
+            <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
             <div className="bg-neutral-50 rounded-2xl p-5 mb-6 ring-1 ring-neutral-200/50 space-y-3 font-geist">
               {book.packagePrice !== null && book.packagePrice !== undefined ? (
                 <>
@@ -1001,14 +2250,14 @@ export default function Book() {
                   <div className="flex justify-between text-sm text-neutral-600">
                     <span>Pacote ({book.packagePhotos} fotos inclusas):</span>
                     <span className="font-semibold text-neutral-800">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.packagePrice)}
+                      {isPackagePartiallyPaid ? 'Pago' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.packagePrice)}
                     </span>
                   </div>
-                  {selectedCount > book.packagePhotos && (
+                  {(isPackagePartiallyPaid ? pendingSelectedCount > 0 : selectedCount > book.packagePhotos) && (
                     <div className="text-xs space-y-1.5 border-t border-dashed border-neutral-200 pt-2 text-neutral-500">
                       <div className="flex justify-between font-medium">
-                        <span>{selectedCount - book.packagePhotos} foto(s) extra(s) (x {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.extraPhotoPrice)}):</span>
-                        <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((selectedCount - book.packagePhotos) * book.extraPhotoPrice)}</span>
+                        <span>{isPackagePartiallyPaid ? pendingSelectedCount : selectedCount - book.packagePhotos} foto(s) extra(s) (x {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.extraPhotoPrice)}):</span>
+                        <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((isPackagePartiallyPaid ? pendingSelectedCount : selectedCount - book.packagePhotos) * book.extraPhotoPrice)}</span>
                       </div>
                     </div>
                   )}
@@ -1064,14 +2313,14 @@ export default function Book() {
 
               <hr className="border-neutral-200" />
               <div className="flex justify-between text-base font-bold text-neutral-900">
-                <span>Valor Final:</span>
+                <span>{isPackagePartiallyPaid ? 'Valor a Pagar:' : 'Valor Final:'}</span>
                 <span className="text-indigo-600">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
                 </span>
               </div>
             </div>
 
-            <form onSubmit={handleCheckoutSubmit} className="space-y-5">
+            <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-5">
               {/* PIX Details */}
               {paymentMethod === 'pix' && (
                 <div className="space-y-4">
@@ -1094,9 +2343,13 @@ export default function Book() {
                   <p className="text-[10px] text-neutral-400 font-geist text-center">Efetue o PIX no aplicativo do seu banco e clique no botão abaixo para confirmar a seleção de fotos.</p>
                 </div>
               )}
+            </form>
+            </div>
 
+            <div className="shrink-0 border-t border-neutral-200 bg-white/95 px-4 py-4 backdrop-blur md:px-8">
               <button
                 type="submit"
+                form="checkout-form"
                 disabled={paymentLoading}
                 className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20"
               >
@@ -1112,7 +2365,7 @@ export default function Book() {
                   </>
                 )}
               </button>
-            </form>
+            </div>
           </div>
         </div>
       )}

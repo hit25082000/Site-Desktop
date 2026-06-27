@@ -5,15 +5,16 @@ const defaultCategories = [
   { id: 'cat_escritorio', name: 'Escritório' },
   { id: 'cat_marca_pessoal', name: 'Marca Pessoal' },
   { id: 'cat_equipes', name: 'Equipes' },
-  { id: 'cat_linkedin_site', name: 'LinkedIn' }
+  { id: 'cat_linkedin_site', name: 'LinkedIn' },
+  { id: 'cat_landpage', name: 'Landpage' }
 ];
 
 const defaultReferences = [
-  // Category: Executivo (Tab 1: Fotos Executivas)
+  // Category: Landpage assets
   { 
     id: 'ref_exec_1', 
     name: 'Retrato Executivo Editorial Premium', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_1.png', 
     prompt: 'Premium corporate executive headshot with classic studio lighting.', 
     public: true, 
@@ -22,7 +23,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_2', 
     name: 'Liderança Corporativa Clássica', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_2.png', 
     prompt: 'Classic executive leadership portrait.', 
     public: true, 
@@ -31,7 +32,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_3', 
     name: 'Retrato de Conselho Editorial', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_3.png', 
     prompt: 'Editorial board executive portrait.', 
     public: true, 
@@ -40,7 +41,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_4', 
     name: 'Especialista Corporate Vogue', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_5.png', 
     prompt: 'Sophisticated executive brand photoshoot.', 
     public: true, 
@@ -49,7 +50,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_5', 
     name: 'Posicionamento C-Level', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_9.png', 
     prompt: 'Corporate C-level executive portrait.', 
     public: true, 
@@ -58,7 +59,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_6', 
     name: 'Perfil Comercial Presidencial', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_10.png', 
     prompt: 'Presidential corporate portrait.', 
     public: true, 
@@ -67,7 +68,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_7', 
     name: 'Retrato Executivo Moderno', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_4.png', 
     prompt: 'Modern corporate executive portrait.', 
     public: true, 
@@ -76,7 +77,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_8', 
     name: 'Diretor de Tecnologia e Inovação', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_6.png', 
     prompt: 'Tech director executive portrait.', 
     public: true, 
@@ -85,7 +86,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_9', 
     name: 'Head de Operações Corporativas', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_8.png', 
     prompt: 'Head of operations executive portrait.', 
     public: true, 
@@ -94,7 +95,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_10', 
     name: 'Sócia-Diretora em Estúdio Editorial', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/portrait_executive.png', 
     prompt: 'Editorial boardroom female executive headshot.', 
     public: true, 
@@ -103,7 +104,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_11', 
     name: 'Conselheiro de Administração B2B', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_7.png', 
     prompt: 'B2B board advisor corporate portrait.', 
     public: true, 
@@ -112,7 +113,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_12', 
     name: 'VP de Finanças Corporativas', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_3.png', 
     prompt: 'Corporate VP finance professional portrait.', 
     public: true, 
@@ -121,7 +122,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_13', 
     name: 'Diretora Executiva de Operações', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_1.png', 
     prompt: 'COO female corporate portrait.', 
     public: true, 
@@ -130,7 +131,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_14', 
     name: 'Sócio Fundador Private Equity', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_5.png', 
     prompt: 'Private equity managing partner executive portrait.', 
     public: true, 
@@ -139,7 +140,7 @@ const defaultReferences = [
   { 
     id: 'ref_exec_15', 
     name: 'Executivo C-Level Sênior', 
-    category: 'Executivo', 
+    category: 'Landpage', 
     url: 'assets/ref_9.png', 
     prompt: 'Senior enterprise executive corporate headshot.', 
     public: true, 

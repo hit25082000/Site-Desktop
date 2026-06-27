@@ -4,6 +4,8 @@
  */
 
 const BASE_URL = 'https://api.kie.ai';
+const CREATE_TASK_TIMEOUT_MS = 30000;
+const STATUS_TIMEOUT_MS = 15000;
 
 const getHeaders = () => {
   const apiKey = import.meta.env.VITE_KIE_AI_API_KEY;
@@ -16,6 +18,20 @@ const getHeaders = () => {
   };
 };
 
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 20000) => {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+};
+
 /**
  * Initiates an image-to-image generation task on Kie AI using gpt-image-2-image-to-image.
  * @param {string} prompt - Prompt describing the target image style/pose (in English)
@@ -26,7 +42,7 @@ export async function createGenerationTask(prompt, inputUrls) {
   try {
     const headers = getHeaders();
     const urlsArray = Array.isArray(inputUrls) ? inputUrls : [inputUrls];
-    const response = await fetch(`${BASE_URL}/api/v1/jobs/createTask`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/api/v1/jobs/createTask`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -37,7 +53,7 @@ export async function createGenerationTask(prompt, inputUrls) {
           aspect_ratio: 'auto'
         }
       })
-    });
+    }, CREATE_TASK_TIMEOUT_MS);
 
     const json = await response.json();
 
@@ -64,12 +80,12 @@ export async function createGenerationTask(prompt, inputUrls) {
 export async function getTaskStatus(taskId) {
   try {
     const headers = getHeaders();
-    const response = await fetch(`${BASE_URL}/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/api/v1/jobs/recordInfo?taskId=${taskId}`, {
       method: 'GET',
       headers: {
         'Authorization': headers.Authorization
       }
-    });
+    }, STATUS_TIMEOUT_MS);
 
     const json = await response.json();
 
