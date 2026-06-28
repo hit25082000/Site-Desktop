@@ -37,7 +37,17 @@ const NEGATIVE_IDENTITY_PROMPT = [
   'deformed body',
   'wrong anatomy',
   'blurry face',
-  'low detail face'
+  'low detail face',
+  'changed body type',
+  'altered body proportions',
+  'slimmer waist than client',
+  'wider hips than client',
+  'smaller arms than client',
+  'longer legs than client',
+  'idealized body',
+  'editorial model body',
+  'body of the reference model',
+  'unrealistic silhouette'
 ].join(', ');
 
 export const sanitizeBookReferencePrompt = (value, fallback = 'Portrait styling reference') => {
@@ -48,6 +58,9 @@ export const sanitizeBookReferencePrompt = (value, fallback = 'Portrait styling 
     .replace(/\bnegative\s+prompt\b\s*:?\s*[\s\S]*$/i, '')
     .replace(/\byoung\s+(woman|man|person)\b/gi, 'adult $1')
     .replace(/\bteen(?:age|ager)?\s+(?:woman|man|person|girl|boy)\b/gi, 'adult person')
+    .replace(/\b(?:in\s+her|in\s+his|in\s+their)\s+(?:[2-7]0s|twenties|thirties|forties|fifties|sixties)\b/gi, 'adult')
+    .replace(/\b\d{2}\s*-\s*year\s*-\s*old\b/gi, 'adult')
+    .replace(/\b\d{2}\s*years?\s*old\b/gi, 'adult')
     .replace(/\bsleeveless\b/gi, 'elegant')
     .replace(/\bunhas\s+grandes\s+e\s+stiletto\b/gi, 'unhas longas e pontiagudas')
     .replace(/\bunhas\s+stiletto\b/gi, 'unhas pontiagudas')
@@ -67,6 +80,9 @@ export const sanitizeBookReferencePrompt = (value, fallback = 'Portrait styling 
     .replace(/\bextra\s+fingers\b/gi, 'finger artifacts')
     .replace(/\bcrossed\s+eyes\b/gi, 'misaligned gaze')
     .replace(/\bstrange\s+smile\b/gi, 'awkward expression')
+    .replace(/\b(?:subtle\s+|slight\s+|gentle\s+)?closed\s*-\s*mouth\s+smile\b/gi, 'her natural smile style as shown in the client reference photos')
+    .replace(/\b(?:broad|beaming|wide)\s+smile(?:\s+with\s+teeth)?\b/gi, 'her natural smile style as shown in the client reference photos')
+    .replace(/\bwarm,\s*inviting\s+smile\b/gi, 'her natural smile style as shown in the client reference photos')
     .replace(/\boverprocessed\s+image\b/gi, 'heavy retouching')
     .replace(/\b(stunning|beautiful|gorgeous|pretty|attractive)\s+(?:adult\s+)?(woman|man|person|subject)\b/gi, 'adult subject')
     .replace(/\bmodel\s+face\b/gi, 'style reference face')
@@ -75,8 +91,10 @@ export const sanitizeBookReferencePrompt = (value, fallback = 'Portrait styling 
     .replace(/\b(?:she|he|they)\s+has\s+[^.]*?\b(?:smile|complexion|gaze|face|eyes|nose|mouth|jawline|cheekbones)\b[^.]*\.?/gi, 'The subject has a natural camera-facing expression.')
     .replace(/\b(?:woman|man|person|subject)\s+with\s+(?:long|short|medium-length|voluminous|brunette|blonde|auburn|brown|black|red|gray|grey|silver|highlighted|wavy|straight|curly|textured|soft|golden|dark|light|natural|loose|polished|styled|hair|featuring|in|and|,|\s)+hair\b/gi, 'subject with client-compatible hairstyling')
     .replace(/\bglowing\s+complexion\b/gi, 'soft professional skin lighting')
-    .replace(/\bwarm,\s*inviting\s+smile\b/gi, 'natural camera-facing smile')
     .replace(/\bgentle\s+gaze\s+directed\s+at\s+the\s+camera\b/gi, 'camera-facing gaze')
+    .replace(/\bfitted\s+bodice\b/gi, 'tailored bodice adapted naturally to body shape')
+    .replace(/\bskin\s*-\s*tight\b/gi, 'tailored elegant')
+    .replace(/\bwaist\s*-\s*cinching\b/gi, 'flattering tailored')
     .replace(/\bA\s+adult\s+subject\b/g, 'An adult subject')
     .replace(/\bShe\b/g, 'The subject')
     .replace(/\bHe\b/g, 'The subject')
@@ -95,6 +113,10 @@ export const sanitizeClientSupportDescription = (value, fallback = '') => {
   const blockedContext = /\b(selfie|mirror|phone|bag|purse|belt|watch|shirt|top|blouse|jeans|denim|pants|trousers|skirt|shorts|dress|jacket|coat|outfit|clothing|wearing|tucked|sleeve|sleeved|background|environment|room|wall|studio|standing|seated|sitting|leaning|holding|posing)\b/i;
   const parts = description
     .replace(/\bnegative\s+prompt\b\s*:?\s*[\s\S]*$/i, '')
+    .replace(/\b(?:in\s+her|in\s+his|in\s+their)\s+(?:[2-7]0s|twenties|thirties|forties|fifties|sixties)\b/gi, '')
+    .replace(/\b\d{2}\s*-\s*year\s*-\s*old\b/gi, '')
+    .replace(/\b\d{2}\s*years?\s*old\b/gi, '')
+    .replace(/\b(?:subtle\s+|slight\s+|gentle\s+)?closed\s*-\s*mouth\s+smile\b/gi, 'natural smile style')
     .split(/[.;\n]+/)
     .map(part => part.trim())
     .filter(Boolean)
@@ -132,7 +154,10 @@ export const applyPromptDetailsOverrides = (referencePrompt = '', promptDetails 
     .replace(/\banivers[aá]rio\s+de\s+\d+\s+anos?\b/gi, birthdayOverride)
     .replace(/\b\d+\s*(?:anos?)?\s*(?:de\s+)?anivers[aá]rio\b/gi, birthdayOverride)
     .replace(/\b\d+(?:st|nd|rd|th)\s+birthday\b/gi, birthdayOverride)
-    .replace(/\bbirthday\s+(?:of\s+)?\d+\s*(?:years?\s*old|yo|anos?)?\b/gi, birthdayOverride);
+    .replace(/\bbirthday\s+(?:of\s+)?\d+\s*(?:years?\s*old|yo|anos?)?\b/gi, birthdayOverride)
+    .replace(/\b(?:in\s+her|in\s+his|in\s+their)\s+(?:[2-7]0s|twenties|thirties|forties|fifties|sixties)\b/gi, '')
+    .replace(/\b\d{2}\s*-\s*year\s*-\s*old\b/gi, '')
+    .replace(/\b\d{2}\s*years?\s*old\b/gi, '');
 
   return sanitizeBookReferencePrompt(withBirthdayOverride, 'Portrait pose');
 };
@@ -149,15 +174,20 @@ export const buildBookGenerationPrompt = ({
   const selectedReference = cleanPrompt(referenceName);
 
   return [
-    'IDENTITY LOCK:',
+    'IDENTITY LOCK (PRIMARY):',
     'Use the uploaded client face reference images as the primary identity source. The final image must look like the same person from the client photos. Preserve facial structure, eye shape, nose shape, mouth shape, natural smile style, cheek structure, jawline, skin tone, hairline, hair color, highlighted hair details and apparent age.',
     identityDescription ? `Client face support notes: ${withoutTerminalPeriod(identityDescription)}.` : '',
     '',
-    'CLIENT BODY / HAIR SUPPORT:',
-    'Use full-body client reference images only as secondary support for approximate body proportions, skin tone, hair length and general silhouette. Do not preserve casual clothing, bags, belts, watches, phones, mirror-selfie framing, room details or background from the client support photos unless explicitly requested in the additional prompt.',
+    'BODY LOCK (PRIMARY):',
+    'Use the uploaded client full-body reference images as the primary source for body shape, natural proportions and overall silhouette. Preserve the client’s real physique, including shoulder width, arm volume, waist shape, hip width, leg shape and overall body proportions. Do not replace, idealize or significantly alter the client’s body type. Do not use the body type, silhouette or body proportions of the style reference model. All outfits and clothing must be adapted naturally to the client’s real body proportions, without slimming, reshaping or idealizing her silhouette. Do not preserve casual clothing, bags, belts, watches, phones, mirror-selfie framing, room details or background from the client support photos unless explicitly requested.',
+    '',
+    'REFERENCE HIERARCHY:',
+    '1. Client Face = PRIMARY source for identity and facial features.',
+    '2. Client Body = PRIMARY source for body shape, real physique and natural proportions.',
+    '3. Style Reference Image/Prompt = SECONDARY source for pose, outfit mood, scene composition, lighting direction, color palette, props and atmosphere only. Never extract or adapt body shape or proportions from the style reference.',
     '',
     'STYLE / POSE / SCENE REFERENCE:',
-    'Use the selected reference prompt, and any selected style/pose reference image included with the task, only for pose, outfit mood, scene composition, lighting direction, color palette, props and atmosphere. Do not use the face, facial features, ethnicity, identity, apparent age or body proportions from the selected style reference.',
+    'Use the selected reference prompt, and any selected style/pose reference image included with the task, only for pose, outfit mood, scene composition, lighting direction, color palette, props and atmosphere. All clothing styles must be adapted to fit the client’s real body type without altering her physical proportions. Do not use the face, facial features, ethnicity, identity, apparent age, body type or body proportions from the selected style reference.',
     selectedReference ? `Selected reference name: ${withoutTerminalPeriod(selectedReference)}.` : '',
     `Scene/style prompt: ${withoutTerminalPeriod(normalizedReferencePrompt)}.`,
     additionalDetails ? `Additional prompt override: ${withoutTerminalPeriod(additionalDetails)}.` : '',
@@ -167,7 +197,7 @@ export const buildBookGenerationPrompt = ({
     'Photorealistic professional portrait, realistic complexion, natural skin texture, natural retouching, realistic lighting, sharp focus on the client face, premium editorial style, high-resolution details, cinematic depth of field, elegant studio photography.',
     '',
     'IMPORTANT:',
-    'The face must remain recognizably the same as the client reference photos. Identity fidelity is more important than matching the style reference model. The style reference may influence only pose, clothing mood, setting, props, lighting, color palette and composition.',
+    'Both face and body identity fidelity are more important than matching the style reference model. The face and real body proportions of the client must remain recognizably preserved. The style reference may influence only pose, clothing mood, setting, props, lighting, color palette and composition.',
     `NEGATIVE PROMPT: ${NEGATIVE_IDENTITY_PROMPT}.`
   ].filter(Boolean).join('\n');
 };
@@ -180,10 +210,11 @@ export const buildBookMasterPrompt = ({
   const additionalDetails = sanitizeBookReferencePrompt(promptDetails, '');
   const identityDescription = sanitizeClientSupportDescription(clientDescription, '');
   const header = [
-    'IDENTITY LOCK: use uploaded client face reference photos as the primary identity source for every generated image. Preserve the same person, facial structure, eye shape, nose shape, mouth shape, natural smile style, cheek structure, jawline, skin tone, hairline, hair color and apparent age.',
+    'IDENTITY LOCK (PRIMARY): use uploaded client face reference photos as the primary identity source for every generated image. Preserve the same person, facial structure, eye shape, nose shape, mouth shape, natural smile style, cheek structure, jawline, skin tone, hairline, hair color and apparent age.',
     identityDescription ? `Client face support notes: ${identityDescription}.` : '',
-    'CLIENT BODY / HAIR SUPPORT: use full-body client photos only for approximate body proportions, skin tone, hair length and general silhouette. Do not preserve casual outfit, accessories, phone, mirror-selfie framing or background from those photos.',
-    'STYLE / POSE / SCENE REFERENCE: each selected reference image or prompt must influence only pose, outfit mood, scene composition, lighting direction, color palette, props and atmosphere. Never copy the model face, facial features, ethnicity, identity, apparent age or body proportions from a style reference.',
+    'BODY LOCK (PRIMARY): use uploaded client full-body reference images as the primary source for body shape, natural proportions and overall silhouette. Preserve the client’s real physique, shoulder width, arm volume, waist shape, hip width, leg shape and overall body proportions. Do not replace, idealize or significantly alter the client’s body type. Do not use the body type, silhouette or body proportions of the style reference model. All outfits and clothing must be adapted naturally to the client’s real body proportions, without slimming, reshaping or idealizing her silhouette. Do not preserve casual outfit, accessories, phone, mirror-selfie framing or background from those photos.',
+    'REFERENCE HIERARCHY: Client Face = PRIMARY; Client Body = PRIMARY; Style Reference Image/Prompt = SECONDARY (pose, outfit, scene, lighting, props and atmosphere only).',
+    'STYLE / POSE / SCENE REFERENCE: each selected reference image or prompt must influence only pose, outfit mood, scene composition, lighting direction, color palette, props and atmosphere. All clothing styles must be adapted to fit the client’s real body type without altering her physical proportions. Never copy the model face, facial features, ethnicity, identity, apparent age, body shape or body proportions from a style reference.',
     'If a reference prompt conflicts with the additional prompt about birthday age or anniversary number, the additional prompt wins.',
     additionalDetails ? `Additional prompt override for all images: ${additionalDetails}.` : '',
     `NEGATIVE PROMPT FOR ALL IMAGES: ${NEGATIVE_IDENTITY_PROMPT}.`

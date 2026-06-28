@@ -444,7 +444,13 @@ export default function Book() {
     if (action === 'clear_paid' && !window.confirm('Remover marcação de pago deste book?')) return;
     if (action === 'mark_all_paid' && !window.confirm('Marcar todas as imagens do book como pagas?')) return;
 
-    const result = applyBookPaymentAction(book, action);
+    const bookWithCurrentSelection = {
+      ...book,
+      selectedPhotoIds,
+      selected_photo_ids: selectedPhotoIds
+    };
+
+    const result = applyBookPaymentAction(bookWithCurrentSelection, action);
     if (result.error) {
       setAdminBookError(result.error);
       return;
@@ -991,8 +997,6 @@ export default function Book() {
 
   // Toggle Photo Selection
   const togglePhotoSelection = async (photoId) => {
-    if (!isAdmin && book?.paymentStatus === 'paid') return; // Cannot modify if already paid
-
     // Find the photo and check status
     const targetPhoto = book?.photos?.find(p => p.id === photoId);
     if (!isAdmin && targetPhoto?.paymentStatus === 'paid') {
@@ -1007,6 +1011,7 @@ export default function Book() {
       : [...selectedPhotoIds, photoId];
     
     setSelectedPhotoIds(updated);
+    setBook(prev => prev ? { ...prev, selectedPhotoIds: updated, selected_photo_ids: updated } : prev);
 
     // Persist to Supabase DB in real-time
     try {
@@ -1092,8 +1097,10 @@ export default function Book() {
   const paidSelectedCount = paidPhotoIds.filter((photoId) => selectedPhotoIds.includes(photoId)).length;
   const pendingSelectedCount = Math.max(selectedCount - paidSelectedCount, 0);
   const totalPrice = calculateOutstandingPrice(book, selectedPhotoIds);
-  const isPaid = book.paymentStatus === 'paid';
-  const isPackagePartiallyPaid = book.paymentStatus === 'partial_paid' || (hasPackagePricing(book) && paidSelectedCount > 0 && !isPaid);
+  const validPhotos = book.photos?.filter((photo) => photo.status !== 'generating' && photo.status !== 'failed') || [];
+  const isAllPhotosPaid = validPhotos.length > 0 && validPhotos.every((photo) => photo.paymentStatus === 'paid');
+  const isPaid = isAllPhotosPaid;
+  const isPackagePartiallyPaid = (book.paymentStatus === 'partial_paid' || paidPhotoIds.length > 0) && !isAllPhotosPaid;
   const canFinalizeSelection = selectedCount > 0 && (!isPackagePartiallyPaid || pendingSelectedCount > 0);
   const adminTargetPhoto = adminTargetPhotoId
     ? book.photos.find((photo) => photo.id === adminTargetPhotoId)

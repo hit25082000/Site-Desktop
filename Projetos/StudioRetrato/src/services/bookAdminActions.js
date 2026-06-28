@@ -124,23 +124,17 @@ export const applyBookPaymentAction = (book = {}, action) => {
   const selectedPhotoIds = getBookSelectedPhotoIds(book);
   let paidIds;
   let nextSelectedPhotoIds = selectedPhotoIds;
-  let paymentStatus;
 
   if (action === 'mark_all_paid') {
     paidIds = photos
       .filter((photo) => photo.status !== 'generating' && photo.status !== 'failed')
       .map((photo) => photo.id);
     nextSelectedPhotoIds = paidIds;
-    paymentStatus = 'paid';
   } else if (action === 'mark_package_paid') {
     const packageCount = getPackagePhotos(book);
     paidIds = selectedPhotoIds.slice(0, packageCount);
-    paymentStatus = hasPackagePricing(book) && selectedPhotoIds.length > paidIds.length
-      ? 'partial_paid'
-      : 'paid';
   } else if (action === 'mark_selected_paid') {
     paidIds = selectedPhotoIds;
-    paymentStatus = 'paid';
   } else if (action === 'clear_paid') {
     const nextPhotos = photos.map(cleanPhotoPayment);
     const nextBook = {
@@ -181,6 +175,11 @@ export const applyBookPaymentAction = (book = {}, action) => {
       paymentStatus: paidSet.has(photo.id) ? 'paid' : 'pending'
     };
   });
+
+  const validPhotos = nextPhotos.filter((photo) => photo.status !== 'generating' && photo.status !== 'failed');
+  const allPhotosPaid = validPhotos.length > 0 && validPhotos.every((photo) => photo.paymentStatus === 'paid');
+  const hasSomePaid = nextPhotos.some((photo) => photo.paymentStatus === 'paid');
+  const paymentStatus = allPhotosPaid ? 'paid' : hasSomePaid ? 'partial_paid' : 'pending';
 
   const nextBook = {
     ...book,

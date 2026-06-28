@@ -1771,9 +1771,10 @@ export default function Admin() {
           : photo)
         : [];
 
-      const nextPaymentStatus = hasPackage && !isAlreadyPartial && selectedIds.length > packagePhotos
-        ? 'partial_paid'
-        : 'paid';
+      const validPhotos = updatedPhotos.filter((photo) => photo.status !== 'generating' && photo.status !== 'failed');
+      const allPhotosPaid = validPhotos.length > 0 && validPhotos.every((photo) => photo.paymentStatus === 'paid');
+      const hasSomePaid = updatedPhotos.some((photo) => photo.paymentStatus === 'paid');
+      const nextPaymentStatus = allPhotosPaid ? 'paid' : hasSomePaid ? 'partial_paid' : 'pending';
 
       const { error } = await supabase
         .from('books')
