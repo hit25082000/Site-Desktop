@@ -95,6 +95,19 @@ export const sanitizeBookReferencePrompt = (value, fallback = 'Portrait styling 
     .replace(/\bfitted\s+bodice\b/gi, 'tailored bodice adapted naturally to body shape')
     .replace(/\bskin\s*-\s*tight\b/gi, 'tailored elegant')
     .replace(/\bwaist\s*-\s*cinching\b/gi, 'flattering tailored')
+    /* Visual Simplification replacements */
+    .replace(/\bethereal\s+(?:natural\s+)?light(?:ing)?\b/gi, 'soft even studio lighting')
+    .replace(/\bcinematic\s+depth(?:\s+of\s+field|\s*-\s*of\s*-\s*field)?\b/gi, 'moderate depth of field')
+    .replace(/\b(?:wide\s+aperture|high\s*-\s*end\s+(?:portrait\s+)?lens|lens\s+compression|heavy\s+bokeh|dramatic\s+bokeh)\b/gi, 'professional portrait look')
+    .replace(/\bintricate\s+floral\s+(?:details|elements)\b/gi, 'simple pastel floral decor')
+    .replace(/\b(?:abundant\s+arrangements|abundant\s+decorations|elaborate\s+set\s+design)\b/gi, 'a few floral arrangements')
+    .replace(/\b(?:hanging\s+sheer\s+fabrics|layered\s+background\s+depth)\b/gi, 'soft neutral backdrop')
+    .replace(/\bglowing\s+taper\s+candles\b/gi, 'warm decorative candles')
+    .replace(/\b(?:detailed\s+skin\s+pores|subtle\s+skin\s+pores|skin\s+pores|hyperrealistic\s+micro\s*-\s*details)\b/gi, 'natural skin texture')
+    .replace(/\bpremium\s+editorial\s+complexity\b/gi, 'clean studio editorial style')
+    .replace(/\b(?:volumetric\s+light|glowing\s+highlights)\b/gi, 'soft warm light')
+    .replace(/\bcomplex\s+shadows\b/gi, 'gentle shadows')
+    .replace(/\bcomplex\s+fabric\s+texture\b/gi, 'clean fabric styling')
     .replace(/\bA\s+adult\s+subject\b/g, 'An adult subject')
     .replace(/\bShe\b/g, 'The subject')
     .replace(/\bHe\b/g, 'The subject')
@@ -194,7 +207,7 @@ export const buildBookGenerationPrompt = ({
     'If the selected reference prompt conflicts with the additional prompt about birthday age or anniversary number, the additional prompt wins.',
     '',
     'CAMERA / QUALITY:',
-    'Photorealistic professional portrait, realistic complexion, natural skin texture, natural retouching, realistic lighting, sharp focus on the client face, premium editorial style, high-resolution details, cinematic depth of field, elegant studio photography.',
+    'Photorealistic professional portrait, natural skin texture, natural retouching, soft even studio lighting, sharp focus on the client face, clean studio style, high-resolution details, moderate depth of field with background softly separated, elegant studio photography.',
     '',
     'IMPORTANT:',
     'Both face and body identity fidelity are more important than matching the style reference model. The face and real body proportions of the client must remain recognizably preserved. The style reference may influence only pose, clothing mood, setting, props, lighting, color palette and composition.',

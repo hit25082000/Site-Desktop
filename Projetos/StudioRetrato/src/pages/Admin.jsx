@@ -102,110 +102,38 @@ const UNSPLASH_MOCK_PORTRAITS = [
 const GEMINI_IMAGE_PROMPT_MODEL = 'gemini-3.1-flash-lite';
 const GEMINI_FACE_ANALYSIS_TIMEOUT_MS = 15000;
 const GEMINI_PROMPT_EXTRACTION_TIMEOUT_MS = 25000;
-const GEMINI_IMAGE_PROMPT_TEXT = `You are an expert AI image prompt extractor specialized in premium, photorealistic photo shoots.
+const GEMINI_IMAGE_PROMPT_TEXT = `You are an operational scene director for an AI photoshoot platform.
+Your task is to analyze the reference image and extract a simplified, reproducible, and highly controllable scene prompt.
 
-Your task is to analyze the uploaded reference image and extract a clean, high-quality image generation prompt optimized for ChatGPT Images and for later use as a pose/style reference in identity-preserving portraits.
+Do NOT act as an artistic descriptor. Stop asking "What exists in the image?" and start asking "What simple, reproducible elements do I need to reuse to generate a similar, controllable photo?"
 
-Focus only on what is visually useful for recreating the image style and for making it easy to place a real client's identity into the final image. Do not over-explain. Do not describe your reasoning. Do not add unnecessary theory.
-Use neutral adult wording for people in reference images.
-Return only positive visual instructions. Do not include any separate avoidance section.
-Do not describe the reference person's identity. Do not lock the model's face, facial features, ethnicity, skin tone, apparent age beyond adult, smile shape, eye shape, nose, mouth, jawline, cheekbones or beauty traits into the prompt.
-Describe the subject generically as "the client", "the subject", or "an adult subject". The prompt must be reusable with a different client's face.
-Prefer reference-friendly portraits: the subject should face the camera or be in a very slight three-quarter angle, both eyes visible, face unobstructed, looking toward the camera, with a simple natural pose that can accept another person's identity.
-If the uploaded image has a difficult angle, extreme pose, hidden face, profile view, back view, heavy occlusion, cropped face, dramatic expression, or complex hand placement, simplify it into a clean frontal or slight three-quarter professional portrait while preserving the outfit mood, scene, lighting and atmosphere.
+Extract only transferable operational elements:
+- General scene concept (e.g., romantic birthday studio portrait, professional corporate portrait)
+- Pose and camera framing (e.g., seated gracefully looking toward camera, medium portrait shot)
+- Outfit mood and garments (e.g., elegant dusty rose dress with delicate feminine styling)
+- Main props (e.g., a few pastel flowers, rose petals, warm decorative candles)
+- Simple background (e.g., clean neutral studio wall with soft romantic decor)
+- Simple lighting (e.g., soft even studio lighting with warm tone, low contrast, gentle shadows)
+- Simple depth of field (e.g., moderate depth of field, subject clearly in focus, background softly separated)
+- Color palette (e.g., dusty pink, cream, beige, warm neutrals)
+- Overall mood and clean studio style
 
-Analyze the image using these categories:
+STRICT BLACKLIST - DO NOT EXTRACT OR INCLUDE:
+- The reference model's identity, facial features, age, ethnicity, body type or specific hair color/type as identity. Always refer to the person generically as "the client" or "the subject".
+- Artistic jargon or buzzwords: cinematic depth of field, wide aperture, high-end portrait lens, ethereal natural light, volumetric light, glowing highlights, dramatic bokeh, lens compression.
+- Intricate micro-textures or excessive details: skin pores, hyperrealistic micro-details, complex shadows, intricate floral details, abundant decorations, elaborate set design, complex fabric textures, layered background depth.
 
-1. Main subject
+USE SIMPLE CONTROLLED REPLACEMENTS:
+- Instead of "ethereal natural light", use "soft even studio lighting".
+- Instead of "cinematic depth of field" or "wide aperture", use "moderate depth of field, subject clearly in focus, background softly separated".
+- Instead of "intricate floral details" or "abundant arrangements", use "simple pastel floral decor" or "a few floral arrangements".
+- Instead of "skin pores" or "hyperrealistic micro-details", use "natural skin texture".
+- Instead of "premium editorial complexity", use "clean studio editorial style".
 
-* Generic adult subject type when visually useful
-* Pose, body angle, gaze direction and expression direction only
-* Pose and body position
-* Hair styling direction only when it is central to the look; do not lock hair color or identity traits
-* Makeup style only as styling, not as identity
-* Outfit, accessories and visible styling
-* Hands, arms and visible pose
-* Overall styling direction
-
-2. Scene and background
-
-* Location or studio setup
-* Background color and texture
-* Props and decorative elements
-* Object placement
-* Depth and visual layering
-* Color palette
-* Overall mood
-
-3. Lighting
-
-* Main light direction
-* Light softness or hardness
-* Color temperature
-* Shadows
-* Highlights
-* Rim light or fill light
-* Cinematic or studio lighting style
-
-4. Camera and composition
-
-* Framing
-* Camera angle
-* Lens style
-* Depth of field
-* Focus point
-* Perspective
-* Editorial, fashion, commercial, birthday, corporate, lifestyle or portrait style
-
-5. Realistic details
-
-* Realistic complexion
-* Hair realism
-* Fabric texture
-* Reflections
-* Balloons, cake, candles, confetti, jewelry, furniture or other visible materials
-* Natural imperfections that improve realism
-
-Now generate the final output in this exact format:
-
-Write one complete English prompt ready to paste into ChatGPT Images.
-Return only the final prompt as plain text.
-Do not include any label, heading, bullet list, markdown, code block, or prefix such as "PROMPT:".
-The prompt must be natural, visual and specific. It should describe the final image as a professional photorealistic photo shoot.
-The prompt must be useful as a reusable portrait reference: clear visible face area, easy client identity replacement, natural posture, visible face, direct camera connection.
-
-Use this structure inside the prompt:
-
-* Generic subject and styling
-* Outfit and styling
-* Pose and expression
-* Scene and background
-* Lighting
-* Camera and composition
-* Textures and details
-* Final quality
-
-The prompt must include phrases such as:
-photorealistic, professional studio photography, realistic complexion, realistic lighting, sharp focus, premium editorial style, high-resolution, cinematic depth of field.
-
-Rules:
-
-* Do not invent major elements that are not present in the image.
-* You may add small professional photography details only when they improve realism.
-* Preserve the original visual style.
-* Prioritize photorealism, premium quality and commercial usability.
-* Do not use phrases like "stunning woman", "beautiful face", "model face", "glowing complexion", "warm inviting smile" or "gentle gaze" as identity traits.
-* If a smile or gaze is important, describe only the direction, such as "natural camera-facing smile" or "looking toward the camera".
-* Do not describe the model's face shape, nose, eyes, mouth, jawline, cheekbones, ethnicity, skin tone or apparent age beyond adult.
-* Avoid vague words.
-* Prefer "front-facing" or "slight three-quarter angle" over profile, back-facing, overhead, low-angle, or heavily turned poses.
-* Keep the face clear, centered, visible and unobstructed, with both eyes visible whenever the subject is a person.
-* Keep hands, arms and body language simple unless the original reference clearly requires a specific gesture.
-* Do not ask for exaggerated facial changes, surreal beauty, heavy retouching or stylized face proportions.
-* Avoid Midjourney-style parameters.
-* Do not include aspect ratio, seed, model names or technical commands unless explicitly requested.
-* Keep all wording suitable for general-audience studio portraits.
-* Keep the result clean and ready to copy.`;
+Output format:
+Return one clean, cohesive English prompt paragraph ready for AI image generation.
+Do not include markdown headers, labels, bullets, JSON wrappers or code blocks.
+Keep the total length between 70 and 120 words.`;
 
 const GEMINI_CLIENT_IDENTITY_PROMPT_TEXT = `You are analyzing a real client's reference photo for identity support in an identity-preserving portrait workflow.
 
