@@ -36,21 +36,24 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 20000) => {
  * Initiates an image-to-image generation task on Kie AI using gpt-image-2-image-to-image.
  * @param {string} prompt - Prompt describing the target image style/pose (in English)
  * @param {string|string[]} inputUrls - Public URL or array of public URLs of reference photos
+ * @param {{ model?: string, aspectRatio?: string }} [options]
  * @returns {Promise<string>} - The taskId returned by the API
  */
-export async function createGenerationTask(prompt, inputUrls) {
+export async function createGenerationTask(prompt, inputUrls, options = {}) {
   try {
     const headers = getHeaders();
     const urlsArray = Array.isArray(inputUrls) ? inputUrls : [inputUrls];
+    const model = options.model || 'gpt-image-2-image-to-image';
+    const aspectRatio = options.aspectRatio || '3:4';
     const response = await fetchWithTimeout(`${BASE_URL}/api/v1/jobs/createTask`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        model: 'gpt-image-2-image-to-image',
+        model,
         input: {
           prompt,
           input_urls: urlsArray,
-          aspect_ratio: 'auto'
+          aspect_ratio: aspectRatio
         }
       })
     }, CREATE_TASK_TIMEOUT_MS);

@@ -31,14 +31,15 @@ import {
 } from '@phosphor-icons/react';
 
 const HIDDEN_LIBRARY_CATEGORY = 'Landpage';
-const isLandpageAsset = (ref) => typeof ref?.url === 'string' && ref.url.startsWith('assets/');
+const STORAGE_URL_MARKER = '/studioretrato-assets/';
+const isStorageReference = (ref) => typeof ref?.url === 'string' && ref.url.includes(STORAGE_URL_MARKER);
 
 const parsePhotos = (photoUrlField) => {
   if (!photoUrlField) return [];
   try {
-    const trimmed = photoUrlField.trim();
+    const trimmed = typeof photoUrlField === 'string' ? photoUrlField.trim() : '';
     if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      return JSON.parse(trimmed);
+      return JSON.parse(trimmed).map((item) => typeof item === 'string' ? item : item?.url).filter(Boolean);
     }
   } catch (e) {
     console.error('Failed to parse photo_url field as array:', e);
@@ -46,17 +47,50 @@ const parsePhotos = (photoUrlField) => {
   return [photoUrlField];
 };
 
+const parseClientPhotoRefs = (photoUrlField) => {
+  if (!photoUrlField) return [];
+  try {
+    const trimmed = typeof photoUrlField === 'string' ? photoUrlField.trim() : '';
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      return JSON.parse(trimmed)
+        .map((item) => typeof item === 'string'
+          ? { url: item, role: 'face' }
+          : { url: item?.url, role: item?.role === 'body' ? 'body' : 'face' })
+        .filter((item) => item.url);
+    }
+  } catch (e) {
+    console.error('Failed to parse photo_url field as references:', e);
+  }
+  return typeof photoUrlField === 'string' ? [{ url: photoUrlField, role: 'face' }] : [];
+};
+
+const serializeClientPhotoRefs = (refs = []) => {
+  const normalized = refs
+    .map((item) => ({ url: item?.url, role: item?.role === 'body' ? 'body' : 'face' }))
+    .filter((item) => item.url);
+  return normalized.length > 0 ? JSON.stringify(normalized) : null;
+};
+
 const getPaidPhotoIds = (photos = []) => photos
   .filter((photo) => photo.paymentStatus === 'paid')
   .map((photo) => photo.id);
 
 const hasPackagePricing = (book) => book?.packagePrice !== null && book?.packagePrice !== undefined;
+const isPrepaidPackage = (book) => book?.packagePrice === 0 && Number(book?.packagePhotos || 0) > 0;
 
 const calculateOutstandingPrice = (book, selectedPhotoIds) => {
   if (!book) return 0;
 
   const selectedCount = selectedPhotoIds.length;
   const paidSelectedCount = getPaidPhotoIds(book.photos).filter((id) => selectedPhotoIds.includes(id)).length;
+
+  if (isPrepaidPackage(book)) {
+    if (paidSelectedCount > 0) {
+      return Math.max(selectedCount - paidSelectedCount, 0) * Number(book.extraPhotoPrice || 0);
+    }
+    const extraCount = Math.max(selectedCount - (book.packagePhotos || 0), 0);
+    return extraCount * Number(book.extraPhotoPrice || 0);
+  }
 
   if (hasPackagePricing(book)) {
     if (paidSelectedCount > 0) {
@@ -106,6 +140,7 @@ export default function Book() {
   const [adminTargetPhotoId, setAdminTargetPhotoId] = useState(null);
   const [adminPrompt, setAdminPrompt] = useState('');
   const [adminVariationType, setAdminVariationType] = useState('');
+  const [adminGenerationModel, setAdminGenerationModel] = useState('gpt-image-2-image-to-image');
   const [adminFiles, setAdminFiles] = useState([]);
   const [adminFilePreviews, setAdminFilePreviews] = useState([]);
   const [adminSubmitting, setAdminSubmitting] = useState(false);
@@ -181,6 +216,7 @@ export default function Book() {
     setAdminTargetPhotoId(null);
     setAdminPrompt('');
     setAdminVariationType('');
+    setAdminGenerationModel('gpt-image-2-image-to-image');
     setAdminError(null);
   };
 
@@ -210,6 +246,7 @@ export default function Book() {
     setAdminTargetPhotoId(photo.id);
     setAdminPrompt(getEditablePhotoPrompt(photo));
     setAdminVariationType(photo.variationType || 'normal');
+    setAdminGenerationModel('gpt-image-2-image-to-image');
     setAdminError(null);
   };
 
@@ -220,6 +257,7 @@ export default function Book() {
     setAdminTargetPhotoId(null);
     setAdminPrompt('');
     setAdminVariationType('Nova referência');
+    setAdminGenerationModel('gpt-image-2-image-to-image');
     setAdminError(null);
   };
 
@@ -387,7 +425,13 @@ export default function Book() {
 
     try {
       const uploadedUrls = await uploadModelFilesToClient();
-      const allClientPhotos = Array.from(new Set([...(book.clientPhotos || []), ...uploadedUrls]));
+      const existingRefs = book.clientPhotoRefs?.length
+        ? book.clientPhotoRefs
+        : (book.clientPhotos || []).map((url) => ({ url, role: 'face' }));
+      const uploadedRefs = uploadedUrls.map((url) => ({ url, role: 'face' }));
+      const allClientPhotoRefs = [...existingRefs, ...uploadedRefs]
+        .filter((item, index, arr) => arr.findIndex((candidate) => candidate.url === item.url) === index);
+      const allClientPhotos = allClientPhotoRefs.map((item) => item.url);
       const activeUrls = Array.from(new Set([...modelActiveUrls, ...uploadedUrls])).filter(Boolean);
 
       if (activeUrls.length === 0) {
@@ -397,7 +441,7 @@ export default function Book() {
       if (uploadedUrls.length > 0) {
         const { error: clientError } = await supabase
           .from('clients')
-          .update({ photo_url: JSON.stringify(allClientPhotos) })
+          .update({ photo_url: serializeClientPhotoRefs(allClientPhotoRefs) })
           .eq('id', book.clientId);
 
         if (clientError) throw clientError;
@@ -426,7 +470,8 @@ export default function Book() {
         ...prev,
         referencesUsed,
         referencesData,
-        clientPhotos: allClientPhotos
+        clientPhotos: allClientPhotos,
+        clientPhotoRefs: allClientPhotoRefs
       }));
       setModelActiveUrls(activeUrls);
       resetModelFileSelection();
@@ -523,7 +568,7 @@ export default function Book() {
         };
 
         try {
-          const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls);
+          const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls, { aspectRatio: '3:4' });
           return {
             ...basePhoto,
             status: 'generating',
@@ -639,7 +684,7 @@ export default function Book() {
 
       setBook(prev => ({ ...prev, photos: pendingPhotos }));
 
-      const taskId = await kieAi.createGenerationTask(prompt, inputUrls);
+      const taskId = await kieAi.createGenerationTask(prompt, inputUrls, { model: adminGenerationModel, aspectRatio: '3:4' });
       const nextPhotos = pendingPhotos.map((photo) =>
         photo.id === photoId ? { ...photo, taskId, status: 'generating', error: null } : photo
       );
@@ -657,6 +702,7 @@ export default function Book() {
       setAdminTargetPhotoId(null);
       setAdminPrompt('');
       setAdminVariationType('');
+      setAdminGenerationModel('gpt-image-2-image-to-image');
     } catch (err) {
       const failedPhoto = isEdit
         ? {
@@ -726,7 +772,7 @@ export default function Book() {
         if (refError) throw refError;
 
         setCategories((categoryRows || []).filter((category) => category.name !== HIDDEN_LIBRARY_CATEGORY));
-        setReferenceLibrary((refRows || []).filter((ref) => ref.category !== HIDDEN_LIBRARY_CATEGORY && !isLandpageAsset(ref)));
+        setReferenceLibrary((refRows || []).filter((ref) => ref.category !== HIDDEN_LIBRARY_CATEGORY && isStorageReference(ref)));
       } catch (err) {
         console.error('Error loading admin reference data:', err);
       }
@@ -784,6 +830,7 @@ export default function Book() {
             clientId: data.client_id,
             clientName: data.client?.name || 'Cliente',
             clientPhotos: parsePhotos(data.client?.photo_url),
+            clientPhotoRefs: parseClientPhotoRefs(data.client?.photo_url),
             title: data.title,
             pricePerPhoto: data.price_per_photo !== null && data.price_per_photo !== undefined ? Number(data.price_per_photo) : null,
             packagePrice: data.package_price !== null && data.package_price !== undefined ? Number(data.package_price) : null,
@@ -957,7 +1004,7 @@ export default function Book() {
     setBook(prev => ({ ...prev, photos: pendingPhotos }));
 
     try {
-      const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls);
+      const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls, { aspectRatio: '3:4' });
 
       const updatedPhotos = book.photos.map((item, index) => index === photoIndex ? {
         ...item,
@@ -1030,19 +1077,48 @@ export default function Book() {
     setPaymentLoading(true);
     
     try {
-      // Sync final selectedPhotoIds to Supabase and keep status pending for admin verification
+      const prepaid = isPrepaidPackage(book);
+      let nextPhotos = book?.photos || [];
+      let nextPaymentStatus = isPackagePartiallyPaid ? 'partial_paid' : 'pending';
+
+      if (prepaid) {
+        const packageCount = book.packagePhotos || 0;
+        const prepaidSelectedIds = new Set(selectedPhotoIds.slice(0, packageCount));
+        
+        nextPhotos = nextPhotos.map(photo => {
+          if (prepaidSelectedIds.has(photo.id)) {
+            return { ...photo, paymentStatus: 'paid' };
+          }
+          return photo;
+        });
+        
+        const hasPendingExtras = selectedPhotoIds.length > packageCount;
+        nextPaymentStatus = hasPendingExtras ? 'partial_paid' : 'paid';
+      }
+
       const { error: dbErr } = await supabase
         .from('books')
         .update({ 
           selected_photo_ids: selectedPhotoIds,
-          payment_status: isPackagePartiallyPaid ? 'partial_paid' : 'pending'
+          photos: nextPhotos,
+          payment_status: nextPaymentStatus
         })
         .eq('id', book.id);
       
       if (dbErr) throw dbErr;
 
-      setBook(prev => ({ ...prev, selectedPhotoIds, paymentStatus: isPackagePartiallyPaid ? 'partial_paid' : 'pending' }));
-      setSelectionSubmitted(true);
+      setBook(prev => ({ 
+        ...prev, 
+        selectedPhotoIds, 
+        photos: nextPhotos,
+        paymentStatus: nextPaymentStatus 
+      }));
+
+      if (prepaid && selectedPhotoIds.length <= (book.packagePhotos || 0)) {
+        setPaymentSuccess(true);
+      } else {
+        setSelectionSubmitted(true);
+      }
       setShowCheckout(false);
     } catch (err) {
       alert('Erro ao salvar seleção: ' + err.message);
@@ -1191,7 +1267,17 @@ export default function Book() {
               <p className="text-neutral-500 text-sm mt-1 font-geist">Cliente: <span className="font-semibold text-neutral-700">{book.clientName}</span></p>
             </div>
             
-            {!isPaid && (book.packagePrice !== null && book.packagePrice !== undefined ? (
+            {!isPaid && (isPrepaidPackage(book) ? (
+              <div className="bg-emerald-50 rounded-2xl p-4 ring-1 ring-emerald-200/50 text-right font-geist">
+                <span className="text-xs text-emerald-700 block font-medium">Pacote Já Pago</span>
+                <span className="text-xl font-bold text-emerald-900 block mt-0.5">
+                  Grátis (Incluso)
+                </span>
+                <span className="text-[10px] text-emerald-600 block font-bold mt-0.5">
+                  ({book.packagePhotos} fotos inclusas)
+                </span>
+              </div>
+            ) : book.packagePrice !== null && book.packagePrice !== undefined ? (
               <div className="bg-neutral-50 rounded-2xl p-4 ring-1 ring-neutral-200/50 text-right">
                 <span className="text-xs text-neutral-400 block font-geist font-medium">Valor do Pacote</span>
                 <span className="text-xl font-bold text-neutral-900 font-geist">
@@ -1215,11 +1301,11 @@ export default function Book() {
           {book.clientPhotos && book.clientPhotos.length > 0 && (
             <div className="mt-8 pt-6 border-t border-neutral-100">
               <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider mb-3 font-geist">Fotos da Cliente</p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-4">
                 {book.clientPhotos.map((url, idx) => (
-                  <div key={idx} className="bg-neutral-50 hover:bg-neutral-100 transition rounded-xl p-2 ring-1 ring-neutral-200/40">
+                  <div key={idx} className="bg-neutral-50 hover:bg-neutral-100 transition rounded-2xl p-2.5 ring-1 ring-neutral-200/40">
                     <img
-                      className="h-12 w-12 rounded-lg object-cover"
+                      className="h-20 w-20 rounded-xl object-cover sm:h-24 sm:w-24"
                       src={url}
                       alt={`Foto da cliente ${idx + 1}`}
                     />
@@ -1233,11 +1319,11 @@ export default function Book() {
           {book.referencesData && book.referencesData.length > 0 && (
             <div className="mt-8 pt-6 border-t border-neutral-100">
               <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider mb-3 font-geist">Fotos de Referência Utilizadas</p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-4">
                 {book.referencesData.map((ref, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-neutral-50 hover:bg-neutral-100 transition rounded-xl p-2 ring-1 ring-neutral-200/40">
+                  <div key={idx} className="flex items-center gap-3 bg-neutral-50 hover:bg-neutral-100 transition rounded-2xl p-2.5 ring-1 ring-neutral-200/40">
                     <img 
-                      className="h-8 w-8 rounded-lg object-cover" 
+                      className="h-20 w-20 rounded-xl object-cover sm:h-24 sm:w-24" 
                       src={ref.url} 
                       alt={ref.name} 
                     />
@@ -1262,7 +1348,66 @@ export default function Book() {
           {/* Tabela de Pacotes / Descontos */}
           {!isPaid && (
             <div className="mt-8 pt-6 border-t border-neutral-100 font-geist">
-              {book.packagePrice !== null && book.packagePrice !== undefined ? (
+              {isPrepaidPackage(book) ? (
+                <>
+                  <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider mb-4">🎁 Informações do seu Pacote Já Pago</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-2xl border bg-emerald-50/40 border-emerald-150 ring-1 ring-emerald-200">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-bold text-emerald-900">Fotos do Pacote</span>
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">{book.packagePhotos} Fotos</span>
+                      </div>
+                      <p className="text-lg font-extrabold text-emerald-700">Grátis</p>
+                      <p className="text-[10px] text-neutral-500 mt-1">Inclusas no pacote contratado sem custo adicional.</p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl border bg-neutral-50/50 border-neutral-200/50">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-bold text-neutral-700">Foto Extra</span>
+                        <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">Unidade</span>
+                      </div>
+                      <p className="text-lg font-extrabold text-neutral-900">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.extraPhotoPrice || 0)}
+                      </p>
+                      <p className="text-[10px] text-neutral-400 mt-1">Valor por cada foto selecionada além do pacote.</p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl border bg-neutral-950 text-white border-neutral-800">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-bold text-neutral-300">Sua Seleção</span>
+                        <span className="text-[10px] bg-neutral-800 text-neutral-300 px-2 py-0.5 rounded-full font-bold">{selectedCount} selecionada(s)</span>
+                      </div>
+                      <p className="text-lg font-extrabold text-indigo-400">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
+                      </p>
+                      <p className="text-[10px] text-neutral-400 mt-1">
+                        {selectedCount <= book.packagePhotos 
+                          ? `Totalmente coberto pelo pacote.` 
+                          : `${selectedCount - book.packagePhotos} foto(s) extra(s) (+ ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((selectedCount - book.packagePhotos) * book.extraPhotoPrice)})`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 p-3.5 bg-neutral-50/50 border border-neutral-200/40 rounded-2xl flex items-center justify-between text-xs text-neutral-600">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">Progresso:</span>
+                      <span className="font-extrabold text-indigo-600">{selectedCount}</span>
+                      <span>foto(s) selecionada(s).</span>
+                    </div>
+                    {selectedCount < book.packagePhotos ? (
+                      <p className="text-[10px] text-neutral-500 font-medium">
+                        Você pode selecionar mais <span className="font-bold text-emerald-600">{book.packagePhotos - selectedCount}</span> foto(s) gratuitamente.
+                      </p>
+                    ) : selectedCount === book.packagePhotos ? (
+                      <p className="text-[10px] text-emerald-600 font-bold">✨ Limite do pacote atingido! Fotos adicionais serão cobradas como foto extra.</p>
+                    ) : (
+                      <p className="text-[10px] text-amber-600 font-bold">
+                        ⚠️ Você adicionou {selectedCount - book.packagePhotos} foto(s) extra(s) (+ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((selectedCount - book.packagePhotos) * book.extraPhotoPrice)}).
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : book.packagePrice !== null && book.packagePrice !== undefined ? (
                 <>
                   <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider mb-4">🎁 Informações do seu Pacote Contratado</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1754,56 +1899,120 @@ export default function Book() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
-                        Valor do pacote
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={adminBookForm.packagePrice}
-                        onChange={(e) => setAdminBookForm(prev => ({ ...prev, packagePrice: e.target.value }))}
-                        className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
-                        Fotos inclusas
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={adminBookForm.packagePhotos}
-                        onChange={(e) => setAdminBookForm(prev => ({ ...prev, packagePhotos: e.target.value }))}
-                        className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
-                        Foto extra
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={adminBookForm.extraPhotoPrice}
-                        onChange={(e) => setAdminBookForm(prev => ({ ...prev, extraPhotoPrice: e.target.value }))}
-                        className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
-                        Preço avulso
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={adminBookForm.pricePerPhoto}
-                        onChange={(e) => setAdminBookForm(prev => ({ ...prev, pricePerPhoto: e.target.value }))}
-                        className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
-                      />
-                    </div>
-                  </div>
+                  {(() => {
+                    const isPrepaid = adminBookForm.packagePrice === 0 || adminBookForm.packagePrice === '0';
+                    const isPackage = !isPrepaid && adminBookForm.packagePrice !== '' && adminBookForm.packagePrice !== null;
+                    const isPerPhoto = !isPrepaid && !isPackage;
+
+                    return (
+                      <div className="space-y-4 pt-2 border-t border-neutral-100">
+                        <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                          Sistema de Pagamento do Book
+                        </label>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setAdminBookForm(prev => ({ ...prev, packagePrice: 0, extraPhotoPrice: prev.extraPhotoPrice || 10, pricePerPhoto: '', packagePhotos: prev.packagePhotos || 5 }))}
+                            className={`p-3.5 rounded-2xl border text-left transition ${
+                              isPrepaid ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/10' : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                            }`}
+                          >
+                            <span className="text-xs font-bold text-indigo-900 block">🎁 Pacote Já Pago</span>
+                            <span className="text-[10px] text-neutral-500 block mt-0.5">Fotos inclusas com trava para adicionais.</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setAdminBookForm(prev => ({ ...prev, packagePrice: prev.packagePrice === 0 || !prev.packagePrice ? 50 : prev.packagePrice, extraPhotoPrice: prev.extraPhotoPrice || 10, packagePhotos: prev.packagePhotos || 2, pricePerPhoto: '' }))}
+                            className={`p-3.5 rounded-2xl border text-left transition ${
+                              isPackage ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/10' : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                            }`}
+                          >
+                            <span className="text-xs font-bold text-neutral-900 block">📦 Pacote com Extras</span>
+                            <span className="text-[10px] text-neutral-500 block mt-0.5">Valor fixo do pacote + foto extra.</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setAdminBookForm(prev => ({ ...prev, pricePerPhoto: prev.pricePerPhoto || 30, packagePrice: '', packagePhotos: '', extraPhotoPrice: '' }))}
+                            className={`p-3.5 rounded-2xl border text-left transition ${
+                              isPerPhoto ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/10' : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                            }`}
+                          >
+                            <span className="text-xs font-bold text-neutral-900 block">🖼️ Foto Avulsa</span>
+                            <span className="text-[10px] text-neutral-500 block mt-0.5">Valor por foto com descontos.</span>
+                          </button>
+                        </div>
+
+                        {isPrepaid && (
+                          <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 space-y-2">
+                            <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Fotos inclusas no pacote</label>
+                            <input
+                              type="number"
+                              placeholder="Ex: 5"
+                              value={adminBookForm.packagePhotos}
+                              onChange={(e) => setAdminBookForm(prev => ({ ...prev, packagePhotos: e.target.value }))}
+                              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                            />
+                          </div>
+                        )}
+
+                        {isPackage && (
+                          <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">Valor do pacote (R$)</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="Ex: 50.00"
+                                  value={adminBookForm.packagePrice}
+                                  onChange={(e) => setAdminBookForm(prev => ({ ...prev, packagePrice: e.target.value }))}
+                                  className="w-full px-3 py-2.5 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">Fotos inclusas</label>
+                                <input
+                                  type="number"
+                                  placeholder="Ex: 2"
+                                  value={adminBookForm.packagePhotos}
+                                  onChange={(e) => setAdminBookForm(prev => ({ ...prev, packagePhotos: e.target.value }))}
+                                  className="w-full px-3 py-2.5 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">Foto extra (R$)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                placeholder="Ex: 10.00"
+                                value={adminBookForm.extraPhotoPrice}
+                                onChange={(e) => setAdminBookForm(prev => ({ ...prev, extraPhotoPrice: e.target.value }))}
+                                className="w-full px-3 py-2.5 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {isPerPhoto && (
+                          <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 space-y-2">
+                            <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Preço por foto avulsa (R$)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="Ex: 30.00"
+                              value={adminBookForm.pricePerPhoto}
+                              onChange={(e) => setAdminBookForm(prev => ({ ...prev, pricePerPhoto: e.target.value }))}
+                              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </form>
               )}
 
@@ -2098,6 +2307,22 @@ export default function Book() {
                   />
                 </div>
 
+                {adminModalMode === 'edit' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                      Modelo Kie AI
+                    </label>
+                    <select
+                      value={adminGenerationModel}
+                      onChange={(e) => setAdminGenerationModel(e.target.value)}
+                      className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
+                    >
+                      <option value="gpt-image-2-image-to-image">GPT Image 2</option>
+                      <option value="nano-banana-2">Nano Banana 2</option>
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
                     Imagens de entrada
@@ -2164,12 +2389,16 @@ export default function Book() {
       {lightboxIndex >= 0 && (
         <div 
           className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Visualização ampliada da foto"
+          onClick={() => setLightboxIndex(-1)}
           onContextMenu={(e) => book.photos[lightboxIndex]?.paymentStatus !== 'paid' && e.preventDefault()}
         >
           {/* Close button */}
           <button 
             onClick={() => setLightboxIndex(-1)}
-            className="absolute top-6 right-6 text-white/70 hover:text-white h-10 w-10 rounded-full bg-white/10 flex items-center justify-center transition"
+            className="absolute top-4 right-4 z-[70] text-white/80 hover:text-white h-12 w-12 rounded-full bg-white/10 flex items-center justify-center transition backdrop-blur-sm shadow-lg"
           >
             <X className="w-6 h-6" weight="light" />
           </button>
@@ -2178,15 +2407,15 @@ export default function Book() {
           <button 
             onClick={prevImage}
             disabled={lightboxIndex === 0}
-            className="absolute left-6 h-12 w-12 rounded-full bg-white/10 text-white flex items-center justify-center disabled:opacity-20 hover:bg-white/20 transition z-10"
+            className="absolute left-4 z-[60] h-12 w-12 rounded-full bg-white/10 text-white flex items-center justify-center disabled:opacity-20 hover:bg-white/20 transition backdrop-blur-sm shadow-lg"
           >
             <ChevronLeft className="w-6 h-6" weight="light" />
           </button>
 
           {/* Image display */}
-          <div className="max-w-4xl max-h-[85vh] w-full flex flex-col items-center">
+          <div className="max-w-4xl max-h-[85vh] w-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
             <img 
-              className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl select-none" 
+              className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl select-none pointer-events-none" 
               src={book.photos[lightboxIndex].url} 
               alt={book.photos[lightboxIndex].variationType} 
               onContextMenu={(e) => book.photos[lightboxIndex]?.paymentStatus !== 'paid' && e.preventDefault()}
@@ -2205,14 +2434,21 @@ export default function Book() {
                 Variação: {book.photos[lightboxIndex].variationType} | {lightboxIndex + 1} de {book.photos.length}
               </span>
               {book.photos[lightboxIndex]?.paymentStatus === 'paid' && (
-                <button
-                  onClick={() => downloadPhoto(book.photos[lightboxIndex].url, `foto-${lightboxIndex + 1}.jpg`)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold font-geist shadow transition-colors"
-                >
-                  <DownloadSimple className="w-3.5 h-3.5" weight="light" />
-                  <span>Baixar Foto</span>
-                </button>
-              )}
+              <button
+                onClick={() => downloadPhoto(book.photos[lightboxIndex].url, `foto-${lightboxIndex + 1}.jpg`)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold font-geist shadow transition-colors"
+              >
+                <DownloadSimple className="w-3.5 h-3.5" weight="light" />
+                <span>Baixar Foto</span>
+              </button>
+            )}
+              <button
+                onClick={() => setLightboxIndex(-1)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold font-geist shadow transition-colors backdrop-blur-sm"
+              >
+                <X className="w-3.5 h-3.5" weight="light" />
+                <span>Fechar</span>
+              </button>
             </div>
           </div>
 
@@ -2220,7 +2456,7 @@ export default function Book() {
           <button 
             onClick={nextImage}
             disabled={lightboxIndex === book.photos.length - 1}
-            className="absolute right-6 h-12 w-12 rounded-full bg-white/10 text-white flex items-center justify-center disabled:opacity-20 hover:bg-white/20 transition z-10"
+            className="absolute right-4 z-[60] h-12 w-12 rounded-full bg-white/10 text-white flex items-center justify-center disabled:opacity-20 hover:bg-white/20 transition backdrop-blur-sm shadow-lg"
           >
             <ChevronRight className="w-6 h-6" weight="light" />
           </button>
@@ -2228,154 +2464,193 @@ export default function Book() {
       )}
 
       {/* CHECKOUT / PAYMENT MODAL */}
-      {showCheckout && (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col md:bg-neutral-950/60 md:backdrop-blur-sm md:items-center md:justify-center md:p-4">
-          <div className="relative flex h-full w-full flex-col bg-white shadow-2xl md:h-auto md:max-h-[90vh] md:max-w-md md:rounded-[2.5rem] md:border md:border-neutral-200 animate-scaleUp">
-            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Confirmar Seleção</h3>
-                  <p className="text-sm text-neutral-500 mt-1 font-geist">Confirme sua seleção de fotos e realize o pagamento via PIX para concluir.</p>
-                </div>
-                <button 
-                  onClick={() => setShowCheckout(false)}
-                  className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
-                >
-                  <X className="w-4 h-4" weight="light" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
-            <div className="bg-neutral-50 rounded-2xl p-5 mb-6 ring-1 ring-neutral-200/50 space-y-3 font-geist">
-              {book.packagePrice !== null && book.packagePrice !== undefined ? (
-                <>
-                  <div className="flex justify-between text-sm text-neutral-600">
-                    <span>Fotos selecionadas:</span>
-                    <span className="font-semibold text-neutral-800">{selectedCount}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-neutral-600">
-                    <span>Pacote ({book.packagePhotos} fotos inclusas):</span>
-                    <span className="font-semibold text-neutral-800">
-                      {isPackagePartiallyPaid ? 'Pago' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.packagePrice)}
-                    </span>
-                  </div>
-                  {(isPackagePartiallyPaid ? pendingSelectedCount > 0 : selectedCount > book.packagePhotos) && (
-                    <div className="text-xs space-y-1.5 border-t border-dashed border-neutral-200 pt-2 text-neutral-500">
-                      <div className="flex justify-between font-medium">
-                        <span>{isPackagePartiallyPaid ? pendingSelectedCount : selectedCount - book.packagePhotos} foto(s) extra(s) (x {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.extraPhotoPrice)}):</span>
-                        <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((isPackagePartiallyPaid ? pendingSelectedCount : selectedCount - book.packagePhotos) * book.extraPhotoPrice)}</span>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between text-sm text-neutral-600">
-                    <span>Fotos selecionadas:</span>
-                    <span className="font-semibold text-neutral-800">{selectedCount}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-neutral-600">
-                    <span>Preço base por foto:</span>
-                    <span className="font-semibold text-neutral-800">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.pricePerPhoto)}
-                    </span>
-                  </div>
-
-                  {/* Detailed package breakdowns */}
-                  {selectedCount >= 5 && (
-                    <div className="text-xs space-y-1.5 border-t border-dashed border-neutral-200 pt-2 text-neutral-500">
-                      {selectedCount >= 5 && selectedCount < 10 && (
-                        <>
-                          <div className="flex justify-between font-medium">
-                            <span>Pacote 5 Fotos (20% OFF):</span>
-                            <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.pricePerPhoto * 5 * 0.8)}</span>
-                          </div>
-                          {selectedCount > 5 && (
-                            <div className="flex justify-between">
-                              <span>{selectedCount - 5} foto(s) adicional(is):</span>
-                              <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((selectedCount - 5) * book.pricePerPhoto)}</span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                      {selectedCount >= 10 && (
-                        <>
-                          <div className="flex justify-between font-medium text-emerald-755 text-emerald-700">
-                            <span>Pacote 10 Fotos (30% OFF):</span>
-                            <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.pricePerPhoto * 10 * 0.7)}</span>
-                          </div>
-                          {selectedCount > 10 && (
-                            <div className="flex justify-between">
-                              <span>{selectedCount - 10} foto(s) adicional(is):</span>
-                              <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((selectedCount - 10) * book.pricePerPhoto)}</span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              <hr className="border-neutral-200" />
-              <div className="flex justify-between text-base font-bold text-neutral-900">
-                <span>{isPackagePartiallyPaid ? 'Valor a Pagar:' : 'Valor Final:'}</span>
-                <span className="text-indigo-600">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
-                </span>
-              </div>
-            </div>
-
-            <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-5">
-              {/* PIX Details */}
-              {paymentMethod === 'pix' && (
-                <div className="space-y-4">
-                  <div className="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100 flex flex-col items-center">
-                    <p className="text-xs text-indigo-800 font-bold uppercase tracking-wider mb-3 font-geist">
-                      {settings?.pixKey ? 'Chave PIX do Fotógrafo' : 'Chave PIX (Copia e Cola)'}
+      {showCheckout && (() => {
+        const isPrepaid = isPrepaidPackage(book);
+        const hasExtraToPay = isPrepaid && selectedCount > (book.packagePhotos || 0);
+        return (
+          <div className="fixed inset-0 z-50 bg-white flex flex-col md:bg-neutral-950/60 md:backdrop-blur-sm md:items-center md:justify-center md:p-4">
+            <div className="relative flex h-full w-full flex-col bg-white shadow-2xl md:h-auto md:max-h-[90vh] md:max-w-md md:rounded-[2.5rem] md:border md:border-neutral-200 animate-scaleUp">
+              <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-neutral-900 font-geist">{isPrepaid ? (hasExtraToPay ? 'Confirmar Fotos Extras' : 'Liberar Fotos do Pacote') : 'Confirmar Seleção'}</h3>
+                    <p className="text-sm text-neutral-500 mt-1 font-geist">
+                      {isPrepaid 
+                        ? (hasExtraToPay ? `Confirme o pagamento de ${selectedCount - book.packagePhotos} foto(s) extra(s) via PIX para concluir.` : `Confirme a escolha das suas ${selectedCount} fotos do pacote para liberar o download.`)
+                        : 'Confirme sua seleção de fotos e realize o pagamento via PIX para concluir.'}
                     </p>
-                    <div className="bg-white p-2.5 rounded-xl border border-indigo-200 w-full select-all text-xs font-mono text-center text-neutral-750 break-all pointer-events-auto font-bold">
-                      {settings?.pixKey || 'pix@studioretrato.com'}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(settings?.pixKey || 'pix@studioretrato.com')}
-                      className="mt-3 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
-                    >
-                      {copied ? <Check className="w-3 h-3" weight="light" /> : <Copy className="w-3 h-3" weight="light" />}
-                      <span>{copied ? 'Copiado!' : 'Copiar Chave'}</span>
-                    </button>
                   </div>
-                  <p className="text-[10px] text-neutral-400 font-geist text-center">Efetue o PIX no aplicativo do seu banco e clique no botão abaixo para confirmar a seleção de fotos.</p>
+                  <button 
+                    onClick={() => setShowCheckout(false)}
+                    className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
+                  >
+                    <X className="w-4 h-4" weight="light" />
+                  </button>
                 </div>
-              )}
-            </form>
-            </div>
+              </div>
 
-            <div className="shrink-0 border-t border-neutral-200 bg-white/95 px-4 py-4 backdrop-blur md:px-8">
-              <button
-                type="submit"
-                form="checkout-form"
-                disabled={paymentLoading}
-                className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20"
-              >
-                {paymentLoading ? (
+              <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+              <div className="bg-neutral-50 rounded-2xl p-5 mb-6 ring-1 ring-neutral-200/50 space-y-3 font-geist">
+                {isPrepaid ? (
                   <>
-                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
-                    <span>Salvando Seleção...</span>
+                    <div className="flex justify-between text-sm text-neutral-600">
+                      <span>Fotos selecionadas:</span>
+                      <span className="font-semibold text-neutral-800">{selectedCount} fotos</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-neutral-600">
+                      <span>Pacote ({book.packagePhotos} inclusas):</span>
+                      <span className="font-semibold text-emerald-600">Grátis (Já Pago)</span>
+                    </div>
+                    {hasExtraToPay && (
+                      <div className="text-xs space-y-1.5 border-t border-dashed border-neutral-200 pt-2 text-neutral-500">
+                        <div className="flex justify-between font-medium">
+                          <span>{selectedCount - book.packagePhotos} foto(s) extra(s) (x {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.extraPhotoPrice)}):</span>
+                          <span className="text-indigo-600 font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : book.packagePrice !== null && book.packagePrice !== undefined ? (
+                  <>
+                    <div className="flex justify-between text-sm text-neutral-600">
+                      <span>Fotos selecionadas:</span>
+                      <span className="font-semibold text-neutral-800">{selectedCount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-neutral-600">
+                      <span>Pacote ({book.packagePhotos} fotos inclusas):</span>
+                      <span className="font-semibold text-neutral-800">
+                        {isPackagePartiallyPaid ? 'Pago' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.packagePrice)}
+                      </span>
+                    </div>
+                    {(isPackagePartiallyPaid ? pendingSelectedCount > 0 : selectedCount > book.packagePhotos) && (
+                      <div className="text-xs space-y-1.5 border-t border-dashed border-neutral-200 pt-2 text-neutral-500">
+                        <div className="flex justify-between font-medium">
+                          <span>{isPackagePartiallyPaid ? pendingSelectedCount : selectedCount - book.packagePhotos} foto(s) extra(s) (x {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.extraPhotoPrice)}):</span>
+                          <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((isPackagePartiallyPaid ? pendingSelectedCount : selectedCount - book.packagePhotos) * book.extraPhotoPrice)}</span>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4" weight="light" />
-                    <span>Confirmar Seleção de Fotos</span>
+                    <div className="flex justify-between text-sm text-neutral-600">
+                      <span>Fotos selecionadas:</span>
+                      <span className="font-semibold text-neutral-800">{selectedCount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-neutral-600">
+                      <span>Preço base por foto:</span>
+                      <span className="font-semibold text-neutral-800">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.pricePerPhoto)}
+                      </span>
+                    </div>
+
+                    {/* Detailed package breakdowns */}
+                    {selectedCount >= 5 && (
+                      <div className="text-xs space-y-1.5 border-t border-dashed border-neutral-200 pt-2 text-neutral-500">
+                        {selectedCount >= 5 && selectedCount < 10 && (
+                          <>
+                            <div className="flex justify-between font-medium">
+                              <span>Pacote 5 Fotos (20% OFF):</span>
+                              <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.pricePerPhoto * 5 * 0.8)}</span>
+                            </div>
+                            {selectedCount > 5 && (
+                              <div className="flex justify-between">
+                                <span>{selectedCount - 5} foto(s) adicional(is):</span>
+                                <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((selectedCount - 5) * book.pricePerPhoto)}</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {selectedCount >= 10 && (
+                          <>
+                            <div className="flex justify-between font-medium text-emerald-700">
+                              <span>Pacote 10 Fotos (30% OFF):</span>
+                              <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.pricePerPhoto * 10 * 0.7)}</span>
+                            </div>
+                            {selectedCount > 10 && (
+                              <div className="flex justify-between">
+                                <span>{selectedCount - 10} foto(s) adicional(is):</span>
+                                <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((selectedCount - 10) * book.pricePerPhoto)}</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
-              </button>
+
+                <hr className="border-neutral-200" />
+                <div className="flex justify-between text-base font-bold text-neutral-900">
+                  <span>{hasExtraToPay ? 'Valor a Pagar (Fotos Extras):' : isPackagePartiallyPaid ? 'Valor a Pagar:' : 'Valor Final:'}</span>
+                  <span className={isPrepaid && !hasExtraToPay ? "text-emerald-600" : "text-indigo-600"}>
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
+                  </span>
+                </div>
+              </div>
+
+              <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-5">
+                {isPrepaid && !hasExtraToPay ? (
+                  <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-5 text-center font-geist">
+                    <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2">🎁 Fotos Inclusas no seu Pacote</p>
+                    <p className="text-xs text-emerald-700 leading-relaxed">
+                      Clique no botão abaixo para confirmar a escolha das suas <strong>{selectedCount}</strong> foto(s). Elas serão liberadas imediatamente em alta resolução para você baixar!
+                    </p>
+                  </div>
+                ) : (
+                  paymentMethod === 'pix' && (
+                    <div className="space-y-4">
+                      <div className="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100 flex flex-col items-center">
+                        <p className="text-xs text-indigo-800 font-bold uppercase tracking-wider mb-3 font-geist">
+                          {settings?.pixKey ? 'Chave PIX do Fotógrafo' : 'Chave PIX (Copia e Cola)'}
+                        </p>
+                        <div className="bg-white p-2.5 rounded-xl border border-indigo-200 w-full select-all text-xs font-mono text-center text-neutral-750 break-all pointer-events-auto font-bold">
+                          {settings?.pixKey || 'pix@studioretrato.com'}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(settings?.pixKey || 'pix@studioretrato.com')}
+                          className="mt-3 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
+                        >
+                          {copied ? <Check className="w-3 h-3" weight="light" /> : <Copy className="w-3 h-3" weight="light" />}
+                          <span>{copied ? 'Copiado!' : 'Copiar Chave'}</span>
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-neutral-400 font-geist text-center">
+                        {hasExtraToPay 
+                          ? `Efetue o PIX de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)} para pagar as fotos extras e clique abaixo.` 
+                          : 'Efetue o PIX no aplicativo do seu banco e clique no botão abaixo para confirmar a seleção de fotos.'}
+                      </p>
+                    </div>
+                  )
+                )}
+              </form>
+              </div>
+
+              <div className="shrink-0 border-t border-neutral-200 bg-white/95 px-4 py-4 backdrop-blur md:px-8">
+                <button
+                  type="submit"
+                  form="checkout-form"
+                  disabled={paymentLoading}
+                  className={`w-full inline-flex items-center justify-center gap-2 ${isPrepaid && !hasExtraToPay ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20'} disabled:opacity-50 text-white font-medium py-3.5 rounded-2xl text-sm transition shadow-lg`}
+                >
+                  {paymentLoading ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+                      <span>{hasExtraToPay ? 'Enviando Seleção...' : 'Liberando Fotos...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" weight="light" />
+                      <span>{isPrepaid && !hasExtraToPay ? 'Liberar Fotos Gratuitamente' : hasExtraToPay ? `Confirmar Seleção (+ ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)})` : 'Confirmar Seleção de Fotos'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

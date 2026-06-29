@@ -47,15 +47,43 @@ const slugify = (text) => {
 const parsePhotos = (photoUrlField) => {
   if (!photoUrlField) return [];
   try {
-    const trimmed = photoUrlField.trim();
+    const trimmed = typeof photoUrlField === 'string' ? photoUrlField.trim() : '';
     if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      return JSON.parse(trimmed);
+      const parsed = JSON.parse(trimmed);
+      return parsed.map((item) => typeof item === 'string' ? item : item?.url).filter(Boolean);
     }
   } catch (e) {
     console.error('Failed to parse photo_url field as array:', e);
   }
   return [photoUrlField];
 };
+
+const parseClientPhotoRefs = (photoUrlField) => {
+  if (!photoUrlField) return [];
+  try {
+    const trimmed = typeof photoUrlField === 'string' ? photoUrlField.trim() : '';
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      return JSON.parse(trimmed)
+        .map((item) => typeof item === 'string'
+          ? { url: item, role: 'face' }
+          : { url: item?.url, role: item?.role === 'body' ? 'body' : 'face' })
+        .filter((item) => item.url);
+    }
+  } catch (e) {
+    console.error('Failed to parse photo_url field as references:', e);
+  }
+  return typeof photoUrlField === 'string' ? [{ url: photoUrlField, role: 'face' }] : [];
+};
+
+const serializeClientPhotoRefs = (refs = []) => {
+  const normalized = refs
+    .map((item) => ({ url: item?.url, role: item?.role === 'body' ? 'body' : 'face' }))
+    .filter((item) => item.url);
+  return normalized.length > 0 ? JSON.stringify(normalized) : null;
+};
+
+const getClientPhotoUrlsByRole = (refs = [], role) =>
+  refs.filter((item) => item.role === role).map((item) => item.url);
 
 const calculateTotalPrice = (selectedCount, pricePerPhoto, packagePrice, packagePhotos, extraPhotoPrice) => {
   if (packagePrice !== undefined && packagePrice !== null && 
@@ -146,7 +174,7 @@ Do not make the client look like a model. Do not add generic beauty traits.
 Return one short plain-text sentence. No label, no bullets, no markdown.`;
 
 // ── Reference Card ─────────────────────────────────────────────────────────
-function RefCard({ refData: r, onDelete, onEdit }) {
+function RefCard({ refData: r, onDelete, onEdit, onCopyPrompt }) {
   return (
     <div className="group bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm flex flex-col hover:shadow-md hover:border-neutral-300 transition-all duration-200">
 
@@ -177,6 +205,14 @@ function RefCard({ refData: r, onDelete, onEdit }) {
           title="Editar referência"
         >
           <Pencil className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => onCopyPrompt(r)}
+          className="absolute top-2.5 right-20 h-7 w-7 rounded-xl bg-white/90 hover:bg-emerald-50 text-emerald-500 hover:text-emerald-600 flex items-center justify-center shadow transition opacity-0 group-hover:opacity-100"
+          title="Copiar prompt da referência"
+        >
+          <Copy className="w-3.5 h-3.5" />
         </button>
 
         {/* Título + Ordem dentro da imagem — fundo do card */}
@@ -252,7 +288,8 @@ const getVariationPrompt = (basePrompt, varType) => {
 };
 
 const HIDDEN_LIBRARY_CATEGORY = 'Landpage';
-const isLandpageAsset = (ref) => typeof ref?.url === 'string' && ref.url.startsWith('assets/');
+const STORAGE_URL_MARKER = '/studioretrato-assets/';
+const isStorageReference = (ref) => typeof ref?.url === 'string' && ref.url.includes(STORAGE_URL_MARKER);
 
 const fetchWithTimeout = async (url, options = {}, timeoutMs = 20000) => {
   const controller = new AbortController();
@@ -309,8 +346,10 @@ export default function Admin() {
   const [clientForm, setClientForm] = useState({ name: '', phone: '', email: '' });
   const [newClientFiles, setNewClientFiles] = useState([]);
   const [newClientPreviews, setNewClientPreviews] = useState([]);
+  const [newClientPhotoRoles, setNewClientPhotoRoles] = useState([]);
   const [bookClientFiles, setBookClientFiles] = useState([]);
   const [bookClientPreviews, setBookClientPreviews] = useState([]);
+  const [bookClientPhotoRoles, setBookClientPhotoRoles] = useState([]);
   const [bookForm, setBookForm] = useState({
     title: '',
     clientId: '',
@@ -551,6 +590,10 @@ export default function Admin() {
           uploadedUrls.push(url);
         }
       }
+      const photoRefs = uploadedUrls.map((url, index) => ({
+        url,
+        role: newClientPhotoRoles[index] === 'body' ? 'body' : 'face'
+      }));
 
       const { error } = await supabase
         .from('clients')
@@ -559,7 +602,7 @@ export default function Admin() {
           name: clientForm.name,
           phone: clientForm.phone,
           email: clientForm.email,
-          photo_url: uploadedUrls.length > 0 ? JSON.stringify(uploadedUrls) : null
+          photo_url: serializeClientPhotoRefs(photoRefs)
         }]);
 
       if (error) throw error;
@@ -567,6 +610,7 @@ export default function Admin() {
       setClientForm({ name: '', phone: '', email: '' });
       setNewClientFiles([]);
       setNewClientPreviews([]);
+      setNewClientPhotoRoles([]);
       setShowClientModal(false);
       setClientModalStep(1);
       
@@ -579,6 +623,7 @@ export default function Admin() {
         }));
         setBookClientFiles([]);
         setBookClientPreviews([]);
+        setBookClientPhotoRoles([]);
         setSelectedRefs([]);
         setShowBookModal(true);
         setOpenBookAfterClientCreate(false);
@@ -611,7 +656,10 @@ export default function Admin() {
 
       // Filter out files previews that were removed and keep remaining URLs
       const remainingExistingUrls = editClientPreviews.filter(p => p.startsWith('http'));
-      const finalUrls = [...remainingExistingUrls, ...uploadedUrls];
+      const existingRefs = parseClientPhotoRefs(editingClient.photo_url)
+        .filter((photo) => remainingExistingUrls.includes(photo.url));
+      const uploadedRefs = uploadedUrls.map((url) => ({ url, role: 'face' }));
+      const finalRefs = [...existingRefs, ...uploadedRefs];
 
       const { error } = await supabase
         .from('clients')
@@ -619,7 +667,7 @@ export default function Admin() {
           name: editClientForm.name,
           phone: editClientForm.phone,
           email: editClientForm.email,
-          photo_url: finalUrls.length > 0 ? JSON.stringify(finalUrls) : null
+          photo_url: serializeClientPhotoRefs(finalRefs)
         })
         .eq('id', editingClient.id);
 
@@ -1315,14 +1363,25 @@ export default function Admin() {
   };
 
   const validatePricing = () => {
+    const isPrepaid = bookForm.packagePrice === 0 || bookForm.packagePrice === '0';
     const hasPackagePrice = bookForm.packagePrice !== '' && bookForm.packagePrice !== null;
     const hasPackagePhotos = bookForm.packagePhotos !== '' && bookForm.packagePhotos !== null;
     const hasExtraPhotoPrice = bookForm.extraPhotoPrice !== '' && bookForm.extraPhotoPrice !== null;
     const hasPricePerPhoto = bookForm.pricePerPhoto !== '' && bookForm.pricePerPhoto !== null;
 
+    if (isPrepaid) {
+      if (!hasPackagePhotos || Number(bookForm.packagePhotos) <= 0) {
+        return { valid: false, message: 'Informe a quantidade de fotos inclusas no pacote pré-pago.' };
+      }
+      if (!hasExtraPhotoPrice) {
+        return { valid: false, message: 'Informe o preço por foto extra do pacote pré-pago.' };
+      }
+      return { valid: true };
+    }
+
     if (hasPackagePrice || hasPackagePhotos || hasExtraPhotoPrice) {
       if (!hasPackagePrice || !hasPackagePhotos || !hasExtraPhotoPrice) {
-        return { valid: false, message: 'Por favor, preencha todos os campos do pacote (Valor, Fotos Inclusas e Preço Extra) ou deixe todos vazios para usar o preço por foto avulsa.' };
+        return { valid: false, message: 'Por favor, preencha todos os campos do pacote (Valor, Fotos Inclusas e Preço Extra) ou escolha outra opção.' };
       }
       return { valid: true };
     } else if (!hasPricePerPhoto) {
@@ -1343,14 +1402,24 @@ export default function Admin() {
       return;
     }
 
+    const isPrepaid = bookForm.packagePrice === 0 || bookForm.packagePrice === '0';
     const hasPackagePrice = bookForm.packagePrice !== '' && bookForm.packagePrice !== null;
     const hasPackagePhotos = bookForm.packagePhotos !== '' && bookForm.packagePhotos !== null;
     const hasExtraPhotoPrice = bookForm.extraPhotoPrice !== '' && bookForm.extraPhotoPrice !== null;
     const hasPricePerPhoto = bookForm.pricePerPhoto !== '' && bookForm.pricePerPhoto !== null;
 
-    if (hasPackagePrice || hasPackagePhotos || hasExtraPhotoPrice) {
+    if (isPrepaid) {
+      if (!hasPackagePhotos || Number(bookForm.packagePhotos) <= 0) {
+        toast.error('Informe a quantidade de fotos inclusas no pacote pré-pago.');
+        return;
+      }
+      if (!hasExtraPhotoPrice) {
+        toast.error('Informe o preço por foto extra do pacote pré-pago.');
+        return;
+      }
+    } else if (hasPackagePrice || hasPackagePhotos || hasExtraPhotoPrice) {
       if (!hasPackagePrice || !hasPackagePhotos || !hasExtraPhotoPrice) {
-        toast.error('Preencha todos os campos do pacote ou deixe todos vazios para usar o preço por foto avulsa.');
+        toast.error('Preencha todos os campos do pacote ou escolha outra opção de pagamento.');
         return;
       }
     } else if (!hasPricePerPhoto) {
@@ -1370,7 +1439,8 @@ export default function Admin() {
 
     try {
       // Step 0: Upload client reference image if provided
-      let clientPhotos = parsePhotos(clients.find(c => c.id === bookForm.clientId)?.photo_url);
+      const selectedClient = clients.find(c => c.id === bookForm.clientId);
+      let clientPhotoRefs = parseClientPhotoRefs(selectedClient?.photo_url);
       if (bookClientFiles && bookClientFiles.length > 0) {
         setPipelineLogs(prev => [...prev, `📸 Enviando ${bookClientFiles.length} foto(s) de referência da cliente para o storage...`]);
         const newlyUploaded = [];
@@ -1380,16 +1450,24 @@ export default function Admin() {
           const url = await uploadToStorage(file, clientPhotoPath);
           newlyUploaded.push(url);
         }
-        clientPhotos = [...clientPhotos, ...newlyUploaded];
+        const uploadedRefs = newlyUploaded.map((url, index) => ({
+          url,
+          role: bookClientPhotoRoles[index] === 'body' ? 'body' : 'face'
+        }));
+        clientPhotoRefs = [...clientPhotoRefs, ...uploadedRefs];
         
         // Update client record in DB
         await supabase
           .from('clients')
-          .update({ photo_url: JSON.stringify(clientPhotos) })
+          .update({ photo_url: serializeClientPhotoRefs(clientPhotoRefs) })
           .eq('id', bookForm.clientId);
         
         setPipelineLogs(prev => [...prev, '✅ Fotos de referência da cliente salvas com sucesso!']);
       }
+
+      const faceClientPhotos = getClientPhotoUrlsByRole(clientPhotoRefs, 'face');
+      const bodyClientPhotos = getClientPhotoUrlsByRole(clientPhotoRefs, 'body');
+      const clientPhotos = [...faceClientPhotos, ...bodyClientPhotos];
 
       if (clientPhotos.length === 0) {
         throw new Error('Cadastre ou envie pelo menos uma foto de referência da cliente para gerar o book.');
@@ -1399,7 +1477,10 @@ export default function Admin() {
 
       // Step 0.5: Generate client description from face photo using Gemini
       let clientDescription = "";
-      const mainRefSource = bookClientFiles?.[0] || clientPhotos[0];
+      const firstFaceUploadIndex = bookClientPhotoRoles.findIndex((role) => role !== 'body');
+      const mainRefSource = firstFaceUploadIndex >= 0
+        ? bookClientFiles[firstFaceUploadIndex]
+        : (faceClientPhotos[0] || clientPhotos[0]);
       if (mainRefSource && settings.geminiApiKey) {
         setPipelineLogs(prev => [...prev, '🧠 Analisando características faciais da cliente com IA para consistência...']);
         clientDescription = await describeClientFace(mainRefSource);
@@ -1432,10 +1513,10 @@ export default function Admin() {
           promptDetails: bookForm.promptDetails,
           clientDescription
         });
-        const inputUrls = [...clientPhotos, r.url].filter(Boolean);
+        const inputUrls = [...faceClientPhotos, ...bodyClientPhotos, r.url].filter(Boolean);
         
         try {
-          const taskId = await kieAi.createGenerationTask(refPrompt, inputUrls);
+          const taskId = await kieAi.createGenerationTask(refPrompt, inputUrls, { aspectRatio: '3:4' });
           setPipelineLogs(prev => [...prev, `✅ Tarefa criada para "${r.name}" (ID: ${taskId})`]);
           return {
             id: `img_gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -1486,8 +1567,8 @@ export default function Admin() {
           id: bookId,
           client_id: bookForm.clientId,
           title: bookForm.title,
-          price_per_photo: bookForm.pricePerPhoto !== '' && bookForm.pricePerPhoto !== null ? Number(bookForm.pricePerPhoto) : null,
-          package_price: bookForm.packagePrice !== '' && bookForm.packagePrice !== null ? Number(bookForm.packagePrice) : null,
+          price_per_photo: !isPrepaid && bookForm.pricePerPhoto !== '' && bookForm.pricePerPhoto !== null ? Number(bookForm.pricePerPhoto) : null,
+          package_price: isPrepaid ? 0 : (bookForm.packagePrice !== '' && bookForm.packagePrice !== null ? Number(bookForm.packagePrice) : null),
           package_photos: bookForm.packagePhotos !== '' && bookForm.packagePhotos !== null ? Number(bookForm.packagePhotos) : null,
           extra_photo_price: bookForm.extraPhotoPrice !== '' && bookForm.extraPhotoPrice !== null ? Number(bookForm.extraPhotoPrice) : null,
           references_used: selectedRefs,
@@ -1525,6 +1606,7 @@ export default function Admin() {
       setBookForm(prev => ({ ...prev, title: '', promptDetails: '' }));
       setBookClientFiles([]);
       setBookClientPreviews([]);
+      setBookClientPhotoRoles([]);
       setSelectedRefs([]);
       setShowBookModal(false);
       fetchDashboardData();
@@ -1794,11 +1876,11 @@ export default function Admin() {
   const groupRefsByCategory = () => {
     const groups = {};
     categories.filter((cat) => cat.name !== HIDDEN_LIBRARY_CATEGORY).forEach(cat => {
-      groups[cat.name] = references.filter(r => r.category === cat.name && !isLandpageAsset(r));
+      groups[cat.name] = references.filter(r => r.category === cat.name && isStorageReference(r));
     });
     // Group references without valid category under 'Outros'
     const otherRefs = references.filter(r =>
-      !isLandpageAsset(r) && r.category !== HIDDEN_LIBRARY_CATEGORY && (!r.category || !categories.some(c => c.name === r.category))
+      isStorageReference(r) && r.category !== HIDDEN_LIBRARY_CATEGORY && (!r.category || !categories.some(c => c.name === r.category))
     );
     if (otherRefs.length > 0) {
       groups['Sem Categoria'] = otherRefs;
@@ -1810,13 +1892,13 @@ export default function Admin() {
 
   // Filtered references in the dashboard library tab
   const filteredLibraryRefs = references.filter(ref => {
-    return !isLandpageAsset(ref) && ref.category !== HIDDEN_LIBRARY_CATEGORY && (refFilter === 'Todos' || ref.category === refFilter);
+    return isStorageReference(ref) && ref.category !== HIDDEN_LIBRARY_CATEGORY && (refFilter === 'Todos' || ref.category === refFilter);
   });
 
   const filteredWizardRefs = references.filter(ref => {
     const matchesSearch = ref.name.toLowerCase().includes(refSearch.toLowerCase());
     const matchesFilter = wizardCategoryFilter === 'Todos' || ref.category === wizardCategoryFilter;
-    return matchesSearch && matchesFilter && ref.category !== HIDDEN_LIBRARY_CATEGORY && !isLandpageAsset(ref);
+    return matchesSearch && matchesFilter && ref.category !== HIDDEN_LIBRARY_CATEGORY && isStorageReference(ref);
   });
 
   return (
@@ -1983,6 +2065,7 @@ export default function Admin() {
                   });
                   setBookClientFiles([]);
                   setBookClientPreviews([]);
+                  setBookClientPhotoRoles([]);
                   setSelectedRefs([]);
                   setShowBookModal(true);
                 }}
@@ -2442,6 +2525,7 @@ export default function Admin() {
                           refData={ref}
                           onDelete={handleDeleteReference}
                           onEdit={openEditReferenceModal}
+                          onCopyPrompt={(reference) => handleCopyText(`ref_card_prompt_${reference.id}`, reference.prompt || '')}
                         />
                       ))}
                     </div>
@@ -2565,6 +2649,9 @@ export default function Admin() {
                   onClick={() => {
                     setShowClientModal(false);
                     setClientModalStep(1);
+                    setNewClientFiles([]);
+                    setNewClientPreviews([]);
+                    setNewClientPhotoRoles([]);
                     if (openBookAfterClientCreate) {
                       setShowBookModal(true);
                       setOpenBookAfterClientCreate(false);
@@ -2645,11 +2732,32 @@ export default function Admin() {
                                 onClick={() => {
                                   setNewClientFiles(prev => prev.filter((_, idx) => idx !== index));
                                   setNewClientPreviews(prev => prev.filter((_, idx) => idx !== index));
+                                  setNewClientPhotoRoles(prev => prev.filter((_, idx) => idx !== index));
                                 }}
                                 className="text-xs font-semibold text-rose-600 hover:text-rose-500 mt-0.5 block font-geist"
                               >
                                 Remover
                               </button>
+                              <div className="mt-2 flex gap-1">
+                                {['face', 'body'].map((role) => (
+                                  <button
+                                    key={role}
+                                    type="button"
+                                    onClick={() => setNewClientPhotoRoles(prev => {
+                                      const next = [...prev];
+                                      next[index] = role;
+                                      return next;
+                                    })}
+                                    className={`rounded-lg px-2 py-1 text-[10px] font-semibold transition ${
+                                      (newClientPhotoRoles[index] || 'face') === role
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-white text-neutral-500 border border-neutral-200'
+                                    }`}
+                                  >
+                                    {role === 'face' ? 'Rosto' : 'Corpo'}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -2681,6 +2789,7 @@ export default function Admin() {
                         if (files.length > 0) {
                           setNewClientFiles(prev => [...prev, ...files]);
                           setNewClientPreviews(prev => [...prev, ...files.map(file => URL.createObjectURL(file))]);
+                          setNewClientPhotoRoles(prev => [...prev, ...files.map(() => 'face')]);
                         }
                       }}
                       className="hidden"
@@ -2698,6 +2807,9 @@ export default function Admin() {
                       onClick={() => {
                         setShowClientModal(false);
                         setClientModalStep(1);
+                        setNewClientFiles([]);
+                        setNewClientPreviews([]);
+                        setNewClientPhotoRoles([]);
                         if (openBookAfterClientCreate) {
                           setShowBookModal(true);
                           setOpenBookAfterClientCreate(false);
@@ -3297,6 +3409,9 @@ export default function Admin() {
                   onClick={() => {
                     setBookForm(prev => ({ ...prev, title: '', promptDetails: '' }));
                     setSelectedRefs([]);
+                    setBookClientFiles([]);
+                    setBookClientPreviews([]);
+                    setBookClientPhotoRoles([]);
                     setShowBookModal(false);
                   }}
                   className="text-neutral-400 hover:text-neutral-600 h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center transition shrink-0"
@@ -3384,9 +3499,14 @@ export default function Admin() {
                           <div className="space-y-3">
                             <p className="text-xs text-neutral-500 font-medium font-geist">Fotos de referência já cadastradas para esta cliente:</p>
                             <div className="grid grid-cols-4 gap-2">
-                              {parsePhotos(clients.find(c => c.id === bookForm.clientId).photo_url).map((url, index) => (
-                                <div key={index} className="h-14 w-14 rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100 flex-shrink-0 relative animate-fadeIn">
-                                  <img src={url} alt={`Ref ${index + 1}`} className="h-full w-full object-cover" />
+                              {parseClientPhotoRefs(clients.find(c => c.id === bookForm.clientId).photo_url).map((photo, index) => (
+                                <div key={photo.url} className="h-14 w-14 rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100 flex-shrink-0 relative animate-fadeIn">
+                                  <img src={photo.url} alt={`Ref ${index + 1}`} className="h-full w-full object-cover" />
+                                  <span className={`absolute inset-x-1 bottom-1 rounded-md px-1 py-0.5 text-center text-[8px] font-bold text-white ${
+                                    photo.role === 'body' ? 'bg-emerald-600/90' : 'bg-indigo-600/90'
+                                  }`}>
+                                    {photo.role === 'body' ? 'Corpo' : 'Rosto'}
+                                  </span>
                                 </div>
                               ))}
                             </div>
@@ -3414,11 +3534,35 @@ export default function Admin() {
                                         onClick={() => {
                                           setBookClientFiles(prev => prev.filter((_, idx) => idx !== index));
                                           setBookClientPreviews(prev => prev.filter((_, idx) => idx !== index));
+                                          setBookClientPhotoRoles(prev => prev.filter((_, idx) => idx !== index));
                                         }}
                                         className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] transition-opacity font-bold rounded-xl font-geist"
                                       >
                                         Remover
                                       </button>
+                                      <div className="absolute inset-x-1 bottom-1 grid grid-cols-2 gap-1">
+                                        {['face', 'body'].map((role) => (
+                                          <button
+                                            key={role}
+                                            type="button"
+                                            onClick={(event) => {
+                                              event.stopPropagation();
+                                              setBookClientPhotoRoles(prev => {
+                                                const next = [...prev];
+                                                next[index] = role;
+                                                return next;
+                                              });
+                                            }}
+                                            className={`rounded-md px-1 py-0.5 text-[8px] font-bold transition ${
+                                              (bookClientPhotoRoles[index] || 'face') === role
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-white/90 text-neutral-600'
+                                            }`}
+                                          >
+                                            {role === 'face' ? 'R' : 'C'}
+                                          </button>
+                                        ))}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -3435,6 +3579,7 @@ export default function Admin() {
                                     onClick={() => {
                                       setBookClientFiles([]);
                                       setBookClientPreviews([]);
+                                      setBookClientPhotoRoles([]);
                                     }}
                                     className="text-xs font-semibold text-rose-600 hover:text-rose-500 font-geist"
                                   >
@@ -3465,6 +3610,7 @@ export default function Admin() {
                             if (files.length > 0) {
                               setBookClientFiles(prev => [...prev, ...files]);
                               setBookClientPreviews(prev => [...prev, ...files.map(file => URL.createObjectURL(file))]);
+                              setBookClientPhotoRoles(prev => [...prev, ...files.map(() => 'face')]);
                             }
                           }}
                           className="hidden"
@@ -3504,62 +3650,137 @@ export default function Admin() {
               )}
 
               {/* STEP 2: PRICING */}
-              {bookWizardStep === 2 && (
-                <div className="mx-auto max-w-3xl space-y-4 animate-fadeIn pb-8">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Valor do pacote completo (R$)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Ex: 50.00"
-                        value={bookForm.packagePrice}
-                        onChange={(e) => setBookForm(prev => ({ ...prev, packagePrice: e.target.value === '' ? '' : Number(e.target.value) }))}
-                        className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Fotos incluídas no pacote</label>
-                      <input
-                        type="number"
-                        placeholder="Ex: 2"
-                        value={bookForm.packagePhotos}
-                        onChange={(e) => setBookForm(prev => ({ ...prev, packagePhotos: e.target.value === '' ? '' : Number(e.target.value) }))}
-                        className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
-                      />
-                      <p className="text-[10px] text-neutral-400 mt-1 font-geist">Quantidade de fotos incluídas no valor do pacote</p>
-                    </div>
-                  </div>
+              {bookWizardStep === 2 && (() => {
+                const isPrepaid = bookForm.packagePrice === 0 || bookForm.packagePrice === '0';
+                const isPackage = !isPrepaid && bookForm.packagePrice !== '' && bookForm.packagePrice !== null;
+                const isPerPhoto = !isPrepaid && !isPackage;
 
-                  <div className="grid grid-cols-2 gap-4">
+                return (
+                  <div className="mx-auto max-w-3xl space-y-6 animate-fadeIn pb-8 font-geist">
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Preço por foto extra (R$)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Ex: 10.00"
-                        value={bookForm.extraPhotoPrice}
-                        onChange={(e) => setBookForm(prev => ({ ...prev, extraPhotoPrice: e.target.value === '' ? '' : Number(e.target.value) }))}
-                        className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
-                      />
-                      <p className="text-[10px] text-neutral-400 mt-1 font-geist">Valor cobrado por cada foto extra</p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Preço por foto avulsa (R$)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Deixe vazio se usar pacote acima"
-                        value={bookForm.pricePerPhoto}
-                        onChange={(e) => setBookForm(prev => ({ ...prev, pricePerPhoto: e.target.value === '' ? '' : Number(e.target.value) }))}
-                        className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
-                      />
-                      <p className="text-[10px] text-neutral-400 mt-1 font-geist">Preço fixo por foto. Use se não for usar o pacote</p>
-                    </div>
-                  </div>
+                      <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">Escolha a Opção de Pagamento</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBookForm(prev => ({ ...prev, packagePrice: 0, extraPhotoPrice: prev.extraPhotoPrice || 10, pricePerPhoto: '', packagePhotos: prev.packagePhotos || 5 }))}
+                          className={`p-4 rounded-2xl border text-left transition ${
+                            isPrepaid ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/10' : 'bg-white border-neutral-200 hover:border-neutral-300'
+                          }`}
+                        >
+                          <span className="text-xs font-bold text-indigo-900 block">🎁 Pacote Já Pago</span>
+                          <span className="text-[11px] text-neutral-500 block mt-1">Fotos inclusas gratuitamente até o limite do pacote e adicionais disponíveis para compra.</span>
+                        </button>
 
-                </div>
-              )}
+                        <button
+                          type="button"
+                          onClick={() => setBookForm(prev => ({ ...prev, packagePrice: prev.packagePrice === 0 || !prev.packagePrice ? 50 : prev.packagePrice, extraPhotoPrice: prev.extraPhotoPrice || 10, packagePhotos: prev.packagePhotos || 2, pricePerPhoto: '' }))}
+                          className={`p-4 rounded-2xl border text-left transition ${
+                            isPackage ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/10' : 'bg-white border-neutral-200 hover:border-neutral-300'
+                          }`}
+                        >
+                          <span className="text-xs font-bold text-neutral-900 block">📦 Pacote com Extras</span>
+                          <span className="text-[11px] text-neutral-500 block mt-1">Valor fixo cobrado pelo pacote e valor adicional por foto excedente.</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setBookForm(prev => ({ ...prev, pricePerPhoto: prev.pricePerPhoto || 30, packagePrice: '', packagePhotos: '', extraPhotoPrice: '' }))}
+                          className={`p-4 rounded-2xl border text-left transition ${
+                            isPerPhoto ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/10' : 'bg-white border-neutral-200 hover:border-neutral-300'
+                          }`}
+                        >
+                          <span className="text-xs font-bold text-neutral-900 block">🖼️ Foto Avulsa</span>
+                          <span className="text-[11px] text-neutral-500 block mt-1">Preço fixo por foto selecionada com descontos progressivos.</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {isPrepaid && (
+                      <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">Fotos incluídas no pacote</label>
+                            <input
+                              type="number"
+                              placeholder="Ex: 5"
+                              value={bookForm.packagePhotos}
+                              onChange={(e) => setBookForm(prev => ({ ...prev, packagePhotos: e.target.value === '' ? '' : Number(e.target.value) }))}
+                              className="w-full bg-white border border-neutral-200 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">Preço por foto extra (R$)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="Ex: 10.00"
+                              value={bookForm.extraPhotoPrice}
+                              onChange={(e) => setBookForm(prev => ({ ...prev, extraPhotoPrice: e.target.value === '' ? '' : Number(e.target.value) }))}
+                              className="w-full bg-white border border-neutral-200 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-neutral-500">
+                          O cliente poderá escolher até este número de fotos sem custo adicional. Quaisquer fotos selecionadas além desse limite serão cobradas pelo valor de foto extra.
+                        </p>
+                      </div>
+                    )}
+
+                    {isPackage && (
+                      <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">Valor do pacote (R$)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="Ex: 50.00"
+                              value={bookForm.packagePrice}
+                              onChange={(e) => setBookForm(prev => ({ ...prev, packagePrice: e.target.value === '' ? '' : Number(e.target.value) }))}
+                              className="w-full bg-white border border-neutral-200 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">Fotos incluídas</label>
+                            <input
+                              type="number"
+                              placeholder="Ex: 2"
+                              value={bookForm.packagePhotos}
+                              onChange={(e) => setBookForm(prev => ({ ...prev, packagePhotos: e.target.value === '' ? '' : Number(e.target.value) }))}
+                              className="w-full bg-white border border-neutral-200 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">Preço por foto extra (R$)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="Ex: 10.00"
+                            value={bookForm.extraPhotoPrice}
+                            onChange={(e) => setBookForm(prev => ({ ...prev, extraPhotoPrice: e.target.value === '' ? '' : Number(e.target.value) }))}
+                            className="w-full bg-white border border-neutral-200 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {isPerPhoto && (
+                      <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-3">
+                        <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Preço por foto avulsa (R$)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="Ex: 30.00"
+                          value={bookForm.pricePerPhoto}
+                          onChange={(e) => setBookForm(prev => ({ ...prev, pricePerPhoto: e.target.value === '' ? '' : Number(e.target.value) }))}
+                          className="w-full bg-white border border-neutral-200 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* STEP 3: CATEGORIES & POSES */}
               {bookWizardStep === 3 && (
@@ -3730,6 +3951,9 @@ export default function Admin() {
                     onClick={() => {
                       setBookForm(prev => ({ ...prev, title: '', promptDetails: '' }));
                       setSelectedRefs([]);
+                      setBookClientFiles([]);
+                      setBookClientPreviews([]);
+                      setBookClientPhotoRoles([]);
                       setShowBookModal(false);
                     }}
                     className="bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-semibold text-xs px-6 py-3 rounded-xl transition"
