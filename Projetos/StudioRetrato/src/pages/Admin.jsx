@@ -1,14 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
+import { seedDatabaseIfNeeded } from '../services/seedDb';
 import { encodeBookData } from '../services/urlSerializer';
 import * as kieAi from '../services/kieAi';
 import {
+  BOOK_BATCH_ASPECT_RATIO,
+  BOOK_BATCH_RESOLUTION,
+  CLIENT_STYLE_SHEET_ASPECT_RATIO,
+  CLIENT_STYLE_SHEET_RESOLUTION,
   DEFAULT_BOOK_PROMPT_DETAILS_PLACEHOLDER,
-  buildBookGenerationPrompt,
-  buildBookMasterPrompt,
+  MAX_BOOK_BATCH_PHOTOS,
+  buildBookBatchMasterPrompt,
+  buildBookBatchPrompt,
+  chunkBookReferences,
+  getBookBatchReferences,
   sanitizeBookReferencePrompt
 } from '../services/bookPrompt';
+import {
+  applyPrepaidPackageSections,
+  getBookTotalPhotoCount,
+  getPhotoUnitCount,
+  getSelectedPhotoUnitCount,
+  splitSelectedPhotoIdsByPackage
+} from '../services/bookPayment';
+import {
+  CLIENT_PHOTO_ROLE_STYLE_SHEET,
+  getClientGenerationInputUrls,
+  getClientPhotoUrlsByRole,
+  hasPendingClientStyleSheet,
+  hasUsableClientStyleSheet,
+  parseClientPhotoRefs,
+  parsePhotos,
+  serializeClientPhotoRefs
+} from '../services/clientPhotoRefs';
+import { queueClientStyleSheetTask } from '../services/clientStyleSheet';
 import { useUI } from '../components/UIProvider';
 import { 
   Users, 
@@ -43,47 +69,6 @@ const slugify = (text) => {
     .replace(/\s+/g, '_')            // replace spaces with underscores
     .replace(/[^a-z0-9_-]/g, '');    // remove everything else
 };
-
-const parsePhotos = (photoUrlField) => {
-  if (!photoUrlField) return [];
-  try {
-    const trimmed = typeof photoUrlField === 'string' ? photoUrlField.trim() : '';
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      const parsed = JSON.parse(trimmed);
-      return parsed.map((item) => typeof item === 'string' ? item : item?.url).filter(Boolean);
-    }
-  } catch (e) {
-    console.error('Failed to parse photo_url field as array:', e);
-  }
-  return [photoUrlField];
-};
-
-const parseClientPhotoRefs = (photoUrlField) => {
-  if (!photoUrlField) return [];
-  try {
-    const trimmed = typeof photoUrlField === 'string' ? photoUrlField.trim() : '';
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      return JSON.parse(trimmed)
-        .map((item) => typeof item === 'string'
-          ? { url: item, role: 'face' }
-          : { url: item?.url, role: item?.role === 'body' ? 'body' : 'face' })
-        .filter((item) => item.url);
-    }
-  } catch (e) {
-    console.error('Failed to parse photo_url field as references:', e);
-  }
-  return typeof photoUrlField === 'string' ? [{ url: photoUrlField, role: 'face' }] : [];
-};
-
-const serializeClientPhotoRefs = (refs = []) => {
-  const normalized = refs
-    .map((item) => ({ url: item?.url, role: item?.role === 'body' ? 'body' : 'face' }))
-    .filter((item) => item.url);
-  return normalized.length > 0 ? JSON.stringify(normalized) : null;
-};
-
-const getClientPhotoUrlsByRole = (refs = [], role) =>
-  refs.filter((item) => item.role === role).map((item) => item.url);
 
 const calculateTotalPrice = (selectedCount, pricePerPhoto, packagePrice, packagePhotos, extraPhotoPrice) => {
   if (packagePrice !== undefined && packagePrice !== null && 
@@ -137,7 +122,7 @@ Do NOT act as an artistic descriptor. Stop asking "What exists in the image?" an
 
 Extract only transferable operational elements:
 - General scene concept (e.g., romantic birthday studio portrait, professional corporate portrait)
-- Pose and camera framing (e.g., seated gracefully looking toward camera, medium portrait shot)
+- Pose and camera framing, simplified to frontal or 45-degree three-quarter angles only (e.g., seated gracefully looking toward camera, medium portrait shot)
 - Outfit mood and garments (e.g., elegant dusty rose dress with delicate feminine styling)
 - Main props (e.g., a few pastel flowers, rose petals, warm decorative candles)
 - Simple background (e.g., clean neutral studio wall with soft romantic decor)
@@ -148,10 +133,12 @@ Extract only transferable operational elements:
 
 STRICT BLACKLIST - DO NOT EXTRACT OR INCLUDE:
 - The reference model's identity, facial features, age, ethnicity, body type or specific hair color/type as identity. Always refer to the person generically as "the client" or "the subject".
+- Side profile, back view, over-the-shoulder, extreme head tilt, hidden face, face covered by hands, or any angle harder than frontal/45-degree replication.
 - Artistic jargon or buzzwords: cinematic depth of field, wide aperture, high-end portrait lens, ethereal natural light, volumetric light, glowing highlights, dramatic bokeh, lens compression.
 - Intricate micro-textures or excessive details: skin pores, hyperrealistic micro-details, complex shadows, intricate floral details, abundant decorations, elaborate set design, complex fabric textures, layered background depth.
 
 USE SIMPLE CONTROLLED REPLACEMENTS:
+- If the reference uses profile/back/complex angle, convert it to a simple 45-degree three-quarter pose with both eyes visible and the face clear.
 - Instead of "ethereal natural light", use "soft even studio lighting".
 - Instead of "cinematic depth of field" or "wide aperture", use "moderate depth of field, subject clearly in focus, background softly separated".
 - Instead of "intricate floral details" or "abundant arrangements", use "simple pastel floral decor" or "a few floral arrangements".
@@ -312,7 +299,7 @@ export default function Admin() {
   const modalPanelClass = 'admin-mobile-modal__panel relative flex h-full w-full flex-col bg-white shadow-2xl md:h-auto md:max-h-[90vh]';
   const modalBodyClass = 'admin-mobile-modal__body flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8';
   const modalFooterClass = 'admin-mobile-modal__footer shrink-0 border-t border-neutral-200 bg-white/95 px-4 py-4 backdrop-blur md:px-8';
-  const [activeTab, setActiveTab] = useState('books'); // books, clients, references, settings
+  const [activeTab, setActiveTab] = useState('books'); // books, orders, clients, references, settings
   const [settings, setSettings] = useState({
     pricePerPhoto: 30.00,
     mercadoPagoSandbox: true,
@@ -353,6 +340,7 @@ export default function Admin() {
   const [bookForm, setBookForm] = useState({
     title: '',
     clientId: '',
+    category: '',
     pricePerPhoto: '',
     packagePrice: 50.00,
     packagePhotos: 2,
@@ -420,7 +408,7 @@ export default function Admin() {
   useEffect(() => {
     if (showBookModal) {
       setBookWizardStep(1);
-      setWizardCategoryFilter('Todos');
+      setWizardCategoryFilter(bookForm.category || 'Todos');
       setShowQuickCreateCat(false);
       setQuickCatName('');
     }
@@ -525,6 +513,8 @@ export default function Admin() {
   }, [books, activeViewBook]);
 
   const fetchDashboardData = async () => {
+    await seedDatabaseIfNeeded();
+
     // 1. Fetch settings
     const { data: setts } = await supabase.from('settings').select('*').eq('key', 'general').single();
     if (setts?.value) {
@@ -574,6 +564,92 @@ export default function Admin() {
     return publicUrl;
   };
 
+  useEffect(() => {
+    const clientsWithGeneratingStyleSheets = clients.filter((client) =>
+      parseClientPhotoRefs(client.photo_url).some((ref) =>
+        ref.role === CLIENT_PHOTO_ROLE_STYLE_SHEET && ref.taskId && ref.status === 'generating'
+      )
+    );
+    if (clientsWithGeneratingStyleSheets.length === 0) return;
+
+    const interval = setInterval(async () => {
+      let clientsUpdated = false;
+      const updatedClientsList = [...clients];
+
+      for (let c = 0; c < updatedClientsList.length; c++) {
+        const client = updatedClientsList[c];
+        const refs = parseClientPhotoRefs(client.photo_url);
+        if (!hasPendingClientStyleSheet(refs)) continue;
+
+        const updatedRefs = [...refs];
+        let clientRefsUpdated = false;
+
+        for (let i = 0; i < updatedRefs.length; i++) {
+          const ref = updatedRefs[i];
+          if (ref.role !== CLIENT_PHOTO_ROLE_STYLE_SHEET || !ref.taskId || ref.status !== 'generating') continue;
+
+          try {
+            const result = await kieAi.getTaskStatus(ref.taskId);
+
+            if (result.status === 'success' && result.url) {
+              let finalUrl = result.url;
+              try {
+                const res = await fetch(result.url);
+                const blob = await res.blob();
+                const storagePath = `clients/${client.id}_style_sheet_${Date.now()}.jpg`;
+                finalUrl = await uploadToStorage(blob, storagePath);
+              } catch (storageErr) {
+                console.warn('[Kie AI Style Sheet] Falha ao enviar para storage, usando link direto da Kie AI:', storageErr);
+              }
+
+              updatedRefs[i] = {
+                ...ref,
+                url: finalUrl,
+                status: 'success',
+                completedAt: new Date().toISOString()
+              };
+              clientRefsUpdated = true;
+            } else if (result.status === 'fail' || result.status === 'error') {
+              updatedRefs[i] = {
+                ...ref,
+                status: 'failed',
+                error: result.error || 'A tarefa do style sheet falhou'
+              };
+              clientRefsUpdated = true;
+            }
+          } catch (err) {
+            console.error(`[Kie AI Style Sheet] Erro ao consultar ${ref.taskId}:`, err);
+          }
+        }
+
+        if (!clientRefsUpdated) continue;
+
+        const serializedRefs = serializeClientPhotoRefs(updatedRefs);
+        const { error } = await supabase
+          .from('clients')
+          .update({ photo_url: serializedRefs })
+          .eq('id', client.id);
+
+        if (error) {
+          console.error('[Kie AI Style Sheet] Erro ao atualizar cliente:', error);
+          continue;
+        }
+
+        updatedClientsList[c] = {
+          ...client,
+          photo_url: serializedRefs
+        };
+        clientsUpdated = true;
+      }
+
+      if (clientsUpdated) {
+        setClients(updatedClientsList);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [clients]);
+
   // ----------------------------------------------------
   // CLIENT ACTIONS
   // ----------------------------------------------------
@@ -590,10 +666,19 @@ export default function Admin() {
           uploadedUrls.push(url);
         }
       }
-      const photoRefs = uploadedUrls.map((url, index) => ({
+      let photoRefs = uploadedUrls.map((url, index) => ({
         url,
         role: newClientPhotoRoles[index] === 'body' ? 'body' : 'face'
       }));
+
+      if (photoRefs.length > 0) {
+        try {
+          const styleSheetResult = await queueClientStyleSheetTask(photoRefs, { force: true });
+          photoRefs = styleSheetResult.refs;
+        } catch (styleSheetErr) {
+          console.warn('Falha ao criar style sheet da cliente:', styleSheetErr);
+        }
+      }
 
       const { error } = await supabase
         .from('clients')
@@ -619,7 +704,9 @@ export default function Admin() {
       if (openBookAfterClientCreate) {
         setBookForm(prev => ({
           ...prev,
-          clientId: id
+          clientId: id,
+          title: '',
+          category: ''
         }));
         setBookClientFiles([]);
         setBookClientPreviews([]);
@@ -659,7 +746,16 @@ export default function Admin() {
       const existingRefs = parseClientPhotoRefs(editingClient.photo_url)
         .filter((photo) => remainingExistingUrls.includes(photo.url));
       const uploadedRefs = uploadedUrls.map((url) => ({ url, role: 'face' }));
-      const finalRefs = [...existingRefs, ...uploadedRefs];
+      let finalRefs = [...existingRefs, ...uploadedRefs];
+
+      if (uploadedRefs.length > 0) {
+        try {
+          const styleSheetResult = await queueClientStyleSheetTask(finalRefs, { force: true });
+          finalRefs = styleSheetResult.refs;
+        } catch (styleSheetErr) {
+          console.warn('Falha ao atualizar style sheet da cliente:', styleSheetErr);
+        }
+      }
 
       const { error } = await supabase
         .from('clients')
@@ -777,6 +873,12 @@ export default function Admin() {
 
   const handleDeleteCategory = async (category) => {
     if (!category) return;
+    const booksInCategory = books.filter((book) => (book.category || book.title) === category.name);
+    if (booksInCategory.length > 0) {
+      toast.error(`A categoria "${category.name}" possui ${booksInCategory.length} book(s). Renomeie ou mova os books antes de excluir.`);
+      return;
+    }
+
     const refsInCategory = references.filter((ref) => ref.category === category.name);
     const referencesLabel = refsInCategory.length === 1 ? 'referência' : 'referências';
 
@@ -964,7 +1066,12 @@ export default function Admin() {
       }
 
       await fetchDashboardData();
-      setSelectedRefs(prev => [...prev, ...newlyImportedIds]);
+      const remainingSlots = Math.max(0, MAX_BOOK_BATCH_PHOTOS - selectedRefs.length);
+      const selectedImportedIds = newlyImportedIds.slice(0, remainingSlots);
+      setSelectedRefs(prev => Array.from(new Set([...prev, ...selectedImportedIds])).slice(0, MAX_BOOK_BATCH_PHOTOS));
+      if (newlyImportedIds.length > selectedImportedIds.length) {
+        toast.error(`Book limitado a ${MAX_BOOK_BATCH_PHOTOS} poses.`);
+      }
       setImportProgressLogs(prev => [...prev, '🎉 Importação em lote concluída com sucesso!']);
       
       setTimeout(() => {
@@ -1357,9 +1464,14 @@ export default function Admin() {
   // BOOK / IMAGE PIPELINE ACTIONS
   // ----------------------------------------------------
   const toggleRefSelectorItem = (refId) => {
-    setSelectedRefs(prev => 
-      prev.includes(refId) ? prev.filter(id => id !== refId) : [...prev, refId]
-    );
+    if (!selectedRefs.includes(refId) && selectedRefs.length >= MAX_BOOK_BATCH_PHOTOS) {
+      toast.error(`Selecione no máximo ${MAX_BOOK_BATCH_PHOTOS} poses por book.`);
+      return;
+    }
+    setSelectedRefs(prev => {
+      if (prev.includes(refId)) return prev.filter(id => id !== refId);
+      return [...prev, refId];
+    });
   };
 
   const validatePricing = () => {
@@ -1397,6 +1509,10 @@ export default function Admin() {
       toast.error('Selecione um cliente.');
       return;
     }
+    if (!bookForm.category) {
+      toast.error('Selecione a categoria do book.');
+      return;
+    }
     if (selectedRefs.length === 0) {
       toast.error('Selecione pelo menos uma imagem de referência de pose/estilo.');
       return;
@@ -1427,20 +1543,30 @@ export default function Admin() {
       return;
     }
 
-    const bookId = 'book_' + Date.now();
+    const selectedCategory = bookForm.category;
+    const selectedClient = clients.find(c => c.id === bookForm.clientId);
+    const existingCategoryBook = books.find((bk) => (
+      bk.client_id === bookForm.clientId &&
+      (bk.category || bk.title) === selectedCategory
+    ));
+    const orderId = `order_${Date.now()}`;
+    const bookId = existingCategoryBook?.id || 'book_' + Date.now();
     
     // Start Pipeline Visual Modal for facial analysis
     setShowPipelineModal(true);
     setPipelineProgress(10);
     setPipelineLogs([
       '🌊 Iniciando pipeline de processamento do Studio Retrato...',
-      `📂 Criando book ID: ${bookId} com base em ${selectedRefs.length} referências selecionadas...`
+      existingCategoryBook
+        ? `📂 Criando pedido ${orderId} para o book ${selectedCategory} de ${selectedClient?.name || 'cliente'}...`
+        : `📂 Criando book ${selectedCategory} e pedido ${orderId} com base em ${selectedRefs.length} referências selecionadas...`
     ]);
 
     try {
       // Step 0: Upload client reference image if provided
-      const selectedClient = clients.find(c => c.id === bookForm.clientId);
       let clientPhotoRefs = parseClientPhotoRefs(selectedClient?.photo_url);
+      let shouldPersistClientPhotoRefs = false;
+      let uploadedClientRefsCount = 0;
       if (bookClientFiles && bookClientFiles.length > 0) {
         setPipelineLogs(prev => [...prev, `📸 Enviando ${bookClientFiles.length} foto(s) de referência da cliente para o storage...`]);
         const newlyUploaded = [];
@@ -1455,21 +1581,42 @@ export default function Admin() {
           role: bookClientPhotoRoles[index] === 'body' ? 'body' : 'face'
         }));
         clientPhotoRefs = [...clientPhotoRefs, ...uploadedRefs];
-        
-        // Update client record in DB
+        uploadedClientRefsCount = uploadedRefs.length;
+        shouldPersistClientPhotoRefs = true;
+        setPipelineLogs(prev => [...prev, '✅ Fotos de referência da cliente salvas com sucesso!']);
+      }
+
+      const shouldQueueClientStyleSheet = clientPhotoRefs.length > 0 && (
+        uploadedClientRefsCount > 0 ||
+        (!hasPendingClientStyleSheet(clientPhotoRefs) && !hasUsableClientStyleSheet(clientPhotoRefs))
+      );
+      if (shouldQueueClientStyleSheet) {
+        try {
+          setPipelineLogs(prev => [...prev, `🧬 Criando style sheet da cliente no GPT Image 2 (${CLIENT_STYLE_SHEET_ASPECT_RATIO}, ${CLIENT_STYLE_SHEET_RESOLUTION})...`]);
+          const styleSheetResult = await queueClientStyleSheetTask(clientPhotoRefs, { force: uploadedClientRefsCount > 0 });
+          if (styleSheetResult.queued) {
+            clientPhotoRefs = styleSheetResult.refs;
+            shouldPersistClientPhotoRefs = true;
+            setPipelineLogs(prev => [...prev, `✅ Style sheet da cliente enfileirado na Kie AI (ID: ${styleSheetResult.taskId})`]);
+          }
+        } catch (styleSheetErr) {
+          setPipelineLogs(prev => [...prev, `⚠️ Style sheet indisponível agora: ${styleSheetErr.message}. Continuando com as fotos originais.`]);
+        }
+      }
+
+      if (shouldPersistClientPhotoRefs) {
         await supabase
           .from('clients')
           .update({ photo_url: serializeClientPhotoRefs(clientPhotoRefs) })
           .eq('id', bookForm.clientId);
-        
-        setPipelineLogs(prev => [...prev, '✅ Fotos de referência da cliente salvas com sucesso!']);
       }
 
       const faceClientPhotos = getClientPhotoUrlsByRole(clientPhotoRefs, 'face');
       const bodyClientPhotos = getClientPhotoUrlsByRole(clientPhotoRefs, 'body');
       const clientPhotos = [...faceClientPhotos, ...bodyClientPhotos];
+      const clientGenerationPhotos = getClientGenerationInputUrls(clientPhotoRefs);
 
-      if (clientPhotos.length === 0) {
+      if (clientGenerationPhotos.length === 0) {
         throw new Error('Cadastre ou envie pelo menos uma foto de referência da cliente para gerar o book.');
       }
 
@@ -1493,96 +1640,143 @@ export default function Admin() {
 
       setPipelineProgress(60);
 
-      const selectedRefsObjs = references.filter(r => selectedRefs.includes(r.id));
-      setPipelineLogs(prev => [...prev, '📝 Estruturando prompts de cada referência selecionada...']);
+      const selectedRefsObjs = getBookBatchReferences(references.filter(r => selectedRefs.includes(r.id)));
+      const selectedRefIds = selectedRefsObjs.map((r) => r.id);
+      const referencesData = selectedRefsObjs.map(r => ({
+        id: r.id,
+        name: r.name,
+        category: r.category,
+        url: r.url,
+        prompt: sanitizeBookReferencePrompt(r.prompt, 'Portrait pose')
+      }));
 
-      const masterPrompt = buildBookMasterPrompt({
-        references: selectedRefsObjs,
+      if (selectedRefsObjs.length === 0) {
+        throw new Error('Selecione pelo menos uma referência válida de pose/estilo.');
+      }
+
+      if (selectedRefs.length > selectedRefsObjs.length) {
+        setPipelineLogs(prev => [...prev, `⚠️ Usando somente as primeiras ${MAX_BOOK_BATCH_PHOTOS} poses para este book.`]);
+      }
+
+      const packagePhotoCount = bookForm.packagePhotos !== '' && bookForm.packagePhotos !== null
+        ? Number(bookForm.packagePhotos)
+        : null;
+      const referenceBatches = chunkBookReferences(referencesData, undefined, packagePhotoCount);
+
+      setPipelineLogs(prev => [...prev, `📝 Estruturando ${referenceBatches.length} foto(s) individuais com ${selectedRefsObjs.length} pose(s) selecionada(s)...`]);
+
+      const masterPrompt = buildBookBatchMasterPrompt({
+        references: referencesData,
         promptDetails: bookForm.promptDetails,
-        clientDescription
+        clientDescription,
+        packagePhotoCount
       });
 
       setPipelineProgress(70);
-      setPipelineLogs(prev => [...prev, `🤖 Solicitando geração de ${selectedRefsObjs.length} retrato(s) ao Kie AI em background...`]);
+      setPipelineLogs(prev => [...prev, `🤖 Solicitando ${referenceBatches.length} foto(s) ${BOOK_BATCH_ASPECT_RATIO} em ${BOOK_BATCH_RESOLUTION} ao Kie AI em background...`]);
 
-      const generationPromises = selectedRefsObjs.map(async (r) => {
-        const referencePrompt = sanitizeBookReferencePrompt(r.prompt, 'Portrait pose');
-        const refPrompt = buildBookGenerationPrompt({
-          referenceName: r.name,
-          referencePrompt,
+      const generationPromises = referenceBatches.map(async (batch, batchIndex) => {
+        const batchPrompt = buildBookBatchPrompt({
+          references: batch,
           promptDetails: bookForm.promptDetails,
-          clientDescription
+          clientDescription,
+          batchIndex,
+          batchTotal: referenceBatches.length
         });
-        const inputUrls = [...faceClientPhotos, ...bodyClientPhotos, r.url].filter(Boolean);
-        
+        const batchPhotoId = `img_gen_${Date.now()}_${batchIndex}_${Math.random().toString(36).substr(2, 9)}`;
+        const batchInputUrls = [...clientGenerationPhotos, ...batch.map((r) => r.url)].filter(Boolean);
+        const referencePrompt = batch.map((r, index) => `${index + 1}. ${r.name}: ${r.prompt}`).join('\n');
+        const basePhoto = {
+          id: batchPhotoId,
+          url: '',
+          variationType: batch[0]?.name || batch[0]?.category || `Foto ${batchIndex + 1}`,
+          refId: batch[0]?.id || null,
+          refUrl: batch[0]?.url || null,
+          referencePrompt,
+          promptDetails: bookForm.promptDetails || '',
+          prompt: batchPrompt,
+          batch: false,
+          batchIndex,
+          batchTotal: referenceBatches.length,
+          photoCount: 1,
+          batchReferences: batch,
+          orderId,
+          orderStatus: 'ready',
+          section: 'additional',
+          bookCategory: selectedCategory
+        };
+
         try {
-          const taskId = await kieAi.createGenerationTask(refPrompt, inputUrls, { aspectRatio: '3:4' });
-          setPipelineLogs(prev => [...prev, `✅ Tarefa criada para "${r.name}" (ID: ${taskId})`]);
+          const taskId = await kieAi.createGenerationTask(batchPrompt, batchInputUrls, {
+            aspectRatio: BOOK_BATCH_ASPECT_RATIO,
+            resolution: BOOK_BATCH_RESOLUTION
+          });
+          setPipelineLogs(prev => [...prev, `✅ Foto ${batchIndex + 1}/${referenceBatches.length} criada (ID: ${taskId})`]);
           return {
-            id: `img_gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            url: '',
-            variationType: r.category || 'normal',
+            ...basePhoto,
             status: 'generating',
-            taskId,
-            refId: r.id,
-            refUrl: r.url,
-            referencePrompt,
-            promptDetails: bookForm.promptDetails || '',
-            prompt: refPrompt
+            taskId
           };
         } catch (err) {
-          setPipelineLogs(prev => [...prev, `❌ Falha ao criar tarefa para "${r.name}": ${err.message}`]);
+          setPipelineLogs(prev => [...prev, `❌ Falha ao criar foto ${batchIndex + 1}/${referenceBatches.length}: ${err.message}`]);
           return {
-            id: `img_gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            url: '',
-            variationType: r.category || 'normal',
+            ...basePhoto,
             status: 'failed',
-            refId: r.id,
-            refUrl: r.url,
-            referencePrompt,
-            promptDetails: bookForm.promptDetails || '',
-            prompt: refPrompt,
             error: err.message
           };
         }
       });
 
-      const initialPhotos = await Promise.all(generationPromises);
+      const generatedPhotos = await Promise.all(generationPromises);
+      const initialPhotos = applyPrepaidPackageSections(generatedPhotos, packagePhotoCount, isPrepaid);
 
       setPipelineProgress(85);
       setPipelineLogs(prev => [...prev, '💾 Salvando informações do book na tabela PostgreSQL...']);
 
-      // Format references data to save inside jsonb
-      const referencesData = selectedRefsObjs.map(r => ({
-        id: r.id,
-        name: r.name,
-        url: r.url,
-        prompt: sanitizeBookReferencePrompt(r.prompt, 'Portrait pose')
-      }));
+      const pricingPayload = {
+        price_per_photo: !isPrepaid && bookForm.pricePerPhoto !== '' && bookForm.pricePerPhoto !== null ? Number(bookForm.pricePerPhoto) : null,
+        package_price: isPrepaid ? 0 : (bookForm.packagePrice !== '' && bookForm.packagePrice !== null ? Number(bookForm.packagePrice) : null),
+        package_photos: bookForm.packagePhotos !== '' && bookForm.packagePhotos !== null ? Number(bookForm.packagePhotos) : null,
+        extra_photo_price: bookForm.extraPhotoPrice !== '' && bookForm.extraPhotoPrice !== null ? Number(bookForm.extraPhotoPrice) : null
+      };
+      const previousPhotos = Array.isArray(existingCategoryBook?.photos) ? existingCategoryBook.photos : [];
+      const nextPhotos = existingCategoryBook ? [...previousPhotos, ...initialPhotos] : initialPhotos;
+      const savedInitialPhotoIds = initialPhotos
+        .filter((photo) => photo.paymentStatus === 'paid' || photo.section === 'saved')
+        .map((photo) => photo.id);
+      const nextSelectedPhotoIds = Array.from(new Set([
+        ...(Array.isArray(existingCategoryBook?.selected_photo_ids) ? existingCategoryBook.selected_photo_ids : []),
+        ...savedInitialPhotoIds
+      ]));
+      const previousReferences = Array.isArray(existingCategoryBook?.references_data) ? existingCategoryBook.references_data : [];
+      const referenceById = new Map([...previousReferences, ...referencesData].map((ref) => [ref.id || ref.url, ref]));
+      const nextReferencesData = Array.from(referenceById.values());
+      const nextReferenceIds = Array.from(new Set([
+        ...(Array.isArray(existingCategoryBook?.references_used) ? existingCategoryBook.references_used : []),
+        ...selectedRefIds
+      ]));
 
-      // Insert book record in Supabase DB with initial photos array
-      const { error: dbError } = await supabase
-        .from('books')
-        .insert([{
-          id: bookId,
-          client_id: bookForm.clientId,
-          title: bookForm.title,
-          price_per_photo: !isPrepaid && bookForm.pricePerPhoto !== '' && bookForm.pricePerPhoto !== null ? Number(bookForm.pricePerPhoto) : null,
-          package_price: isPrepaid ? 0 : (bookForm.packagePrice !== '' && bookForm.packagePrice !== null ? Number(bookForm.packagePrice) : null),
-          package_photos: bookForm.packagePhotos !== '' && bookForm.packagePhotos !== null ? Number(bookForm.packagePhotos) : null,
-          extra_photo_price: bookForm.extraPhotoPrice !== '' && bookForm.extraPhotoPrice !== null ? Number(bookForm.extraPhotoPrice) : null,
-          references_used: selectedRefs,
-          references_data: referencesData,
-          photos: initialPhotos, // populated with Kie AI tasks
-          payment_status: 'pending',
-          selected_photo_ids: [],
-          prompt_details: bookForm.promptDetails || null
-        }]);
+      const bookPayload = {
+        client_id: bookForm.clientId,
+        title: selectedCategory,
+        category: selectedCategory,
+        ...pricingPayload,
+        references_used: nextReferenceIds,
+        references_data: nextReferencesData,
+        photos: nextPhotos,
+        payment_status: nextPhotos.length > 0 && nextPhotos.every((photo) => photo.paymentStatus === 'paid' || photo.section === 'saved') ? 'paid' : nextPhotos.some((photo) => photo.paymentStatus === 'paid' || photo.section === 'saved') ? 'partial_paid' : 'pending',
+        selected_photo_ids: nextSelectedPhotoIds,
+        prompt_details: bookForm.promptDetails || existingCategoryBook?.prompt_details || null
+      };
+
+      const { error: dbError } = existingCategoryBook
+        ? await supabase.from('books').update(bookPayload).eq('id', bookId)
+        : await supabase.from('books').insert([{ id: bookId, ...bookPayload }]);
 
       if (dbError) throw dbError;
 
       setPipelineProgress(100);
-      setPipelineLogs(prev => [...prev, '🎉 Sucesso! Book estruturado com sucesso!']);
+      setPipelineLogs(prev => [...prev, existingCategoryBook ? '🎉 Sucesso! Pedido enviado para o book existente.' : '🎉 Sucesso! Book estruturado com sucesso!']);
       
       // Save copy center data
       setCopyCenterData({
@@ -1590,6 +1784,8 @@ export default function Admin() {
         masterPrompt,
         clientPhotoUrl: clientPhotos[0],
         clientPhotoUrls: clientPhotos,
+        orderId,
+        category: selectedCategory,
         references: selectedRefsObjs.map(r => ({
           id: r.id,
           name: r.name,
@@ -1603,7 +1799,7 @@ export default function Admin() {
       fetchDashboardData();
 
       // Reset book creation form & states
-      setBookForm(prev => ({ ...prev, title: '', promptDetails: '' }));
+      setBookForm(prev => ({ ...prev, title: '', category: '', promptDetails: '' }));
       setBookClientFiles([]);
       setBookClientPreviews([]);
       setBookClientPhotoRoles([]);
@@ -1767,16 +1963,18 @@ export default function Admin() {
       const hasPackage = targetBook.package_price !== null && targetBook.package_price !== undefined;
       const packagePhotos = Number(targetBook.package_photos || 0);
       const isAlreadyPartial = targetBook.payment_status === 'partial_paid';
+      const selectedPhotoCount = getSelectedPhotoUnitCount(selectedIds, targetBook.photos || []);
 
-      const paidIds = hasPackage && !isAlreadyPartial && selectedIds.length > packagePhotos
-        ? selectedIds.slice(0, packagePhotos)
+      const paidIds = hasPackage && !isAlreadyPartial && selectedPhotoCount > packagePhotos
+        ? splitSelectedPhotoIdsByPackage(selectedIds, targetBook.photos || [], packagePhotos).packageIds
         : selectedIds;
 
       const updatedPhotos = Array.isArray(targetBook.photos)
         ? targetBook.photos.map((photo) => selectedIds.includes(photo.id)
           ? {
               ...photo,
-              paymentStatus: paidIds.includes(photo.id) ? 'paid' : 'pending'
+              paymentStatus: paidIds.includes(photo.id) ? 'paid' : 'pending',
+              section: paidIds.includes(photo.id) ? 'saved' : 'additional'
             }
           : photo)
         : [];
@@ -1865,11 +2063,23 @@ export default function Admin() {
     return `${origin}/#/book/${bk.id}`;
   };
 
+  const getReferenceCatalogLink = (categoryName) => {
+    const origin = window.location.origin;
+    return `${origin}/#/catalogo-referencias/${encodeURIComponent(categoryName)}`;
+  };
+
   const copyLinkToClipboard = (bk) => {
     const link = getClientLink(bk);
     navigator.clipboard.writeText(link);
     window.open(link, '_blank', 'noopener,noreferrer');
     toast.success('Link copiado para a área de transferência!');
+  };
+
+  const copyReferenceCatalogLink = (categoryName) => {
+    const link = getReferenceCatalogLink(categoryName);
+    navigator.clipboard.writeText(link);
+    window.open(link, '_blank', 'noopener,noreferrer');
+    toast.success('Link do catálogo copiado!');
   };
 
   // Group references by category for layout grouping
@@ -1922,7 +2132,7 @@ export default function Admin() {
 
           {/* Nav list */}
           <nav className="space-y-1">
-            <button 
+            <button
               onClick={() => setActiveTab('books')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left text-sm font-semibold transition ${
                 activeTab === 'books'
@@ -1934,6 +2144,17 @@ export default function Admin() {
               <span>Books Criados</span>
             </button>
             <button 
+              onClick={() => setActiveTab('orders')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left text-sm font-semibold transition ${
+                activeTab === 'orders'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/15'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <ClipboardCheck className="w-5 h-5" />
+              <span>Pedidos</span>
+            </button>
+            <button
               onClick={() => setActiveTab('clients')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left text-sm font-semibold transition ${
                 activeTab === 'clients'
@@ -2001,9 +2222,10 @@ export default function Admin() {
 
       {/* ── Mobile Bottom Navigation Bar ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200/80 z-40 safe-bottom">
-        <div className="grid grid-cols-4 gap-0">
+        <div className="grid grid-cols-5 gap-0">
           {[
             { key: 'books', icon: BookOpen, label: 'Books' },
+            { key: 'orders', icon: ClipboardCheck, label: 'Pedidos' },
             { key: 'clients', icon: Users, label: 'Clientes' },
             { key: 'references', icon: Library, label: 'Poses' },
             { key: 'settings', icon: SettingsIcon, label: 'Config' },
@@ -2037,12 +2259,14 @@ export default function Admin() {
           <div className="flex-1 min-w-0">
             <h2 className="text-lg md:text-2xl font-bold tracking-tight text-neutral-900 font-geist truncate">
               {activeTab === 'books' && 'Books de Clientes'}
+              {activeTab === 'orders' && 'Pedidos de Geração'}
               {activeTab === 'clients' && 'Gestão de Clientes'}
               {activeTab === 'references' && 'Biblioteca de Referências (IA)'}
               {activeTab === 'settings' && 'Configurações do Sistema'}
             </h2>
             <p className="hidden md:block text-sm text-neutral-500 font-geist mt-0.5">
               {activeTab === 'books' && 'Crie books, gerencie seleções e envie links de pagamento'}
+              {activeTab === 'orders' && 'Crie pedidos para alimentar o book permanente de cada categoria'}
               {activeTab === 'clients' && 'Cadastre clientes e envie seus links de book'}
               {activeTab === 'references' && 'Gerencie fotos de poses, crie agrupadores e extraia prompts com IA'}
               {activeTab === 'settings' && 'Gerencie chaves de API e precificação geral'}
@@ -2051,17 +2275,19 @@ export default function Admin() {
 
           {/* Quick Action buttons */}
           <div className="flex gap-2 md:gap-3 flex-shrink-0">
-            {activeTab === 'books' && (
+            {(activeTab === 'books' || activeTab === 'orders') && (
               <button 
                 onClick={() => {
                   setBookForm({
                     title: '',
                     clientId: '',
+                    category: '',
                     pricePerPhoto: '',
                     packagePrice: 50.00,
                     packagePhotos: 2,
                     extraPhotoPrice: 10.00,
-                    qty: 5
+                    qty: 5,
+                    promptDetails: ''
                   });
                   setBookClientFiles([]);
                   setBookClientPreviews([]);
@@ -2072,8 +2298,8 @@ export default function Admin() {
                 className="inline-flex items-center gap-1.5 md:gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs md:text-sm px-3 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl shadow-md transition min-h-[44px]"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Gerar Book com IA</span>
-                <span className="sm:hidden">Book IA</span>
+                <span className="hidden sm:inline">Novo Pedido</span>
+                <span className="sm:hidden">Pedido</span>
               </button>
             )}
             {activeTab === 'clients' && (
@@ -2113,11 +2339,11 @@ export default function Admin() {
         {/* ====================================================
             TAB CONTENT: BOOKS
             ==================================================== */}
-        {activeTab === 'books' && (
+        {(activeTab === 'books' || activeTab === 'orders') && (
           <div className="bg-white border border-neutral-200/80 rounded-2xl md:rounded-[2.5rem] p-4 md:p-6 shadow-sm">
             {books.length === 0 ? (
               <div className="text-center py-12 md:py-16 text-neutral-400 font-geist text-sm">
-                Nenhum book gerado ainda. Clique em "Gerar Book com IA" para começar!
+                Nenhum book gerado ainda. Clique em "Novo Pedido" para começar!
               </div>
             ) : (
               <>
@@ -2130,6 +2356,9 @@ export default function Admin() {
                           <p className="text-xs text-neutral-400 uppercase tracking-[0.18em] font-semibold font-geist">Book</p>
                           <h4 className="font-semibold text-neutral-900 text-base font-geist mt-1 break-words">{bk.title}</h4>
                           <p className="text-sm text-neutral-500 font-geist mt-1 break-words">{bk.client?.name || 'Deletado'}</p>
+                          <p className="mt-2 inline-flex rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500 ring-1 ring-neutral-200">
+                            {bk.category || bk.title || 'Sem categoria'}
+                          </p>
                         </div>
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold flex-shrink-0 ${
                           bk.payment_status === 'paid'
@@ -2144,7 +2373,7 @@ export default function Admin() {
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-[11px] text-neutral-400 uppercase tracking-[0.18em] font-semibold font-geist">Retratos</p>
-                            <p className="text-sm text-neutral-700 font-geist mt-1">{bk.photos?.length || 0} fotos</p>
+                            <p className="text-sm text-neutral-700 font-geist mt-1">{getBookTotalPhotoCount(bk.photos || [])} fotos</p>
                           </div>
                           {bk.photos?.some(p => p.status === 'generating') && (
                             <span className="text-[10px] text-indigo-600 font-semibold animate-pulse bg-indigo-50 px-2 py-1 rounded-full flex-shrink-0">
@@ -2197,6 +2426,7 @@ export default function Admin() {
                       <tr className="border-b border-neutral-100 text-xs font-semibold text-neutral-400 uppercase tracking-wider font-geist">
                         <th className="py-4 px-4">Título</th>
                         <th className="py-4 px-4">Cliente</th>
+                        <th className="py-4 px-4">Categoria</th>
                         <th className="py-4 px-4">Retratos</th>
                         <th className="py-4 px-4">Status de Pagamento</th>
                         <th className="py-4 px-4 text-right">Ações</th>
@@ -2207,8 +2437,9 @@ export default function Admin() {
                         <tr key={bk.id} className="hover:bg-neutral-50/50">
                           <td className="py-4 px-4 font-semibold text-neutral-900">{bk.title}</td>
                           <td className="py-4 px-4 text-neutral-600">{bk.client?.name || 'Deletado'}</td>
+                          <td className="py-4 px-4 text-neutral-500">{bk.category || bk.title || 'Sem categoria'}</td>
                           <td className="py-4 px-4 text-neutral-500">
-                            {bk.photos?.length || 0} fotos
+                            {getBookTotalPhotoCount(bk.photos || [])} fotos
                             {bk.photos?.some(p => p.status === 'generating') && (
                               <span className="text-[10px] text-indigo-600 font-semibold ml-1.5 animate-pulse bg-indigo-50 px-1.5 py-0.5 rounded-full">
                                 gerando...
@@ -2316,11 +2547,13 @@ export default function Admin() {
                             setBookForm({
                               title: '',
                               clientId: cli.id,
+                              category: '',
                               pricePerPhoto: '',
                               packagePrice: 50.00,
                               packagePhotos: 2,
                               extraPhotoPrice: 10.00,
-                              qty: 5
+                              qty: 5,
+                              promptDetails: ''
                             });
                             setBookClientFiles([]);
                             setBookClientPreviews([]);
@@ -2330,7 +2563,7 @@ export default function Admin() {
                           className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs px-3 py-3 rounded-2xl transition font-geist"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Gerar Book</span>
+                          <span>Novo Pedido</span>
                         </button>
                         <button
                           onClick={() => openEditClient(cli)}
@@ -2385,11 +2618,13 @@ export default function Admin() {
                                   setBookForm({
                                     title: '',
                                     clientId: cli.id,
+                                    category: '',
                                     pricePerPhoto: '',
                                     packagePrice: 50.00,
                                     packagePhotos: 2,
                                     extraPhotoPrice: 10.00,
-                                    qty: 5
+                                    qty: 5,
+                                    promptDetails: ''
                                   });
                                   setBookClientFiles([]);
                                   setBookClientPreviews([]);
@@ -2399,7 +2634,7 @@ export default function Admin() {
                                 className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs px-3 py-2 rounded-xl transition font-geist"
                               >
                                 <Sparkles className="w-3.5 h-3.5" />
-                                <span>Gerar Book</span>
+                                <span>Novo Pedido</span>
                               </button>
                               <button
                                 onClick={() => openEditClient(cli)}
@@ -2490,6 +2725,14 @@ export default function Admin() {
                                 {refsCount}
                               </span>
                             </div>
+                            <button
+                              type="button"
+                              onClick={() => copyReferenceCatalogLink(category.name)}
+                              className="h-6 w-6 rounded-full bg-white text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-700 flex items-center justify-center ring-1 ring-neutral-200"
+                              title={`Copiar catálogo ${category.name}`}
+                            >
+                              <LinkIcon className="w-3.5 h-3.5" />
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteCategory(category)}
@@ -3402,8 +3645,8 @@ export default function Admin() {
             <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Gerar Novo Book com IA</h3>
-                  <p className="text-xs text-neutral-400 mt-1 font-geist">Configure o ensaio do cliente e selecione as poses do catálogo que o NanoBanana Pro usará como guia.</p>
+                  <h3 className="text-xl font-bold text-neutral-900 font-geist">Novo Pedido de Geração</h3>
+                  <p className="text-xs text-neutral-400 mt-1 font-geist">Selecione cliente e categoria para enviar novas fotos ao book permanente correspondente.</p>
                 </div>
                 <button
                   onClick={() => {
@@ -3446,18 +3689,6 @@ export default function Admin() {
               {bookWizardStep === 1 && (
                 <div className="mx-auto max-w-3xl space-y-4 animate-fadeIn pb-8">
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Título do Book *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ex: Ensaio Corporativo Executivo"
-                      value={bookForm.title}
-                      onChange={(e) => setBookForm(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
-                    />
-                  </div>
-
-                  <div>
                     <div className="flex justify-between items-center mb-2">
                       <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider">Cliente Destinatário *</label>
                       <button
@@ -3486,6 +3717,33 @@ export default function Admin() {
                     </select>
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Categoria do Book *</label>
+                    <select
+                      required
+                      value={bookForm.category}
+                      onChange={(e) => {
+                        const category = e.target.value;
+                        setBookForm(prev => ({ ...prev, category, title: category }));
+                        setWizardCategoryFilter(category || 'Todos');
+                        setSelectedRefs([]);
+                      }}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-600 text-sm text-neutral-900"
+                    >
+                      <option value="">Selecione...</option>
+                      {categories.filter((category) => category.name !== HIDDEN_LIBRARY_CATEGORY).map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                    {bookForm.clientId && bookForm.category && (
+                      <p className="mt-2 text-[11px] text-neutral-500 font-geist">
+                        {books.some((bk) => bk.client_id === bookForm.clientId && (bk.category || bk.title) === bookForm.category)
+                          ? 'Este pedido será anexado ao book existente desta cliente/categoria.'
+                          : 'Será criado um book permanente para esta cliente/categoria.'}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="bg-neutral-50 border border-neutral-200/60 rounded-3xl p-5 space-y-3">
                     <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider">Foto de Referência da Cliente</label>
                     
@@ -3499,13 +3757,13 @@ export default function Admin() {
                           <div className="space-y-3">
                             <p className="text-xs text-neutral-500 font-medium font-geist">Fotos de referência já cadastradas para esta cliente:</p>
                             <div className="grid grid-cols-4 gap-2">
-                              {parseClientPhotoRefs(clients.find(c => c.id === bookForm.clientId).photo_url).map((photo, index) => (
+                              {parseClientPhotoRefs(clients.find(c => c.id === bookForm.clientId).photo_url).filter((photo) => photo.url).map((photo, index) => (
                                 <div key={photo.url} className="h-14 w-14 rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100 flex-shrink-0 relative animate-fadeIn">
                                   <img src={photo.url} alt={`Ref ${index + 1}`} className="h-full w-full object-cover" />
                                   <span className={`absolute inset-x-1 bottom-1 rounded-md px-1 py-0.5 text-center text-[8px] font-bold text-white ${
-                                    photo.role === 'body' ? 'bg-emerald-600/90' : 'bg-indigo-600/90'
+                                    photo.role === CLIENT_PHOTO_ROLE_STYLE_SHEET ? 'bg-fuchsia-600/90' : photo.role === 'body' ? 'bg-emerald-600/90' : 'bg-indigo-600/90'
                                   }`}>
-                                    {photo.role === 'body' ? 'Corpo' : 'Rosto'}
+                                    {photo.role === CLIENT_PHOTO_ROLE_STYLE_SHEET ? 'Style' : photo.role === 'body' ? 'Corpo' : 'Rosto'}
                                   </span>
                                 </div>
                               ))}
@@ -3668,7 +3926,7 @@ export default function Admin() {
                           }`}
                         >
                           <span className="text-xs font-bold text-indigo-900 block">🎁 Pacote Já Pago</span>
-                          <span className="text-[11px] text-neutral-500 block mt-1">Fotos inclusas gratuitamente até o limite do pacote e adicionais disponíveis para compra.</span>
+                          <span className="text-[11px] text-neutral-500 block mt-1">Fotos inclusas entram como salvas; o excedente entra como fotos adicionais.</span>
                         </button>
 
                         <button
@@ -3721,7 +3979,7 @@ export default function Admin() {
                           </div>
                         </div>
                         <p className="text-[11px] text-neutral-500">
-                          O cliente poderá escolher até este número de fotos sem custo adicional. Quaisquer fotos selecionadas além desse limite serão cobradas pelo valor de foto extra.
+                          As primeiras fotos até este limite serão salvas automaticamente no book. O restante do pedido ficará em fotos adicionais pelo valor extra.
                         </p>
                       </div>
                     )}
@@ -3876,7 +4134,7 @@ export default function Admin() {
                       />
                     </div>
                     <div className="text-xs text-neutral-500 font-semibold font-geist">
-                      {selectedRefs.length} poses selecionadas
+                      {selectedRefs.length} de {MAX_BOOK_BATCH_PHOTOS} poses selecionadas
                     </div>
                   </div>
 
@@ -3964,7 +4222,7 @@ export default function Admin() {
                   {bookWizardStep === 1 && (
                     <button
                       type="button"
-                      disabled={!bookForm.title.trim() || !bookForm.clientId}
+                      disabled={!bookForm.clientId || !bookForm.category}
                       onClick={() => setBookWizardStep(2)}
                       className="bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs px-6 py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -3996,7 +4254,7 @@ export default function Admin() {
                       className="group inline-flex items-center justify-center gap-3 shadow-indigo-600/20 transition duration-150 ease-out hover:-translate-y-0.5 text-xs font-semibold text-white font-geist bg-gradient-to-tr from-gray-900 to-black rounded-xl px-8 py-3.5 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Sparkles className="w-4 h-4 text-amber-400 fill-amber-400" />
-                      <span>Gerar Retratos no NanoBanana Pro</span>
+                      <span>Gerar fotos no NanoBanana Pro</span>
                     </button>
                   )}
                 </div>
@@ -4690,20 +4948,26 @@ export default function Admin() {
                   const isGenerating = ph.status === 'generating';
                   const isFailed = ph.status === 'failed';
                   const isPhotoPaid = ph.paymentStatus === 'paid';
+                  const photoUnitCount = getPhotoUnitCount(ph);
+                  const isBatchPhoto = photoUnitCount > 1 || ph.batch || ph.panorama;
+                  const cardAspectClass = isBatchPhoto ? 'aspect-[9/16] sm:col-span-2' : 'aspect-[3/4]';
 
                   if (isGenerating) {
                     return (
-                      <div key={ph.id} className="relative aspect-[3/4] bg-neutral-50 rounded-2xl overflow-hidden ring-1 ring-neutral-200 flex flex-col items-center justify-center p-4 text-center animate-pulse select-none">
+                      <div key={ph.id} className={`relative ${cardAspectClass} bg-neutral-50 rounded-2xl overflow-hidden ring-1 ring-neutral-200 flex flex-col items-center justify-center p-4 text-center animate-pulse select-none`}>
                         <Sparkles className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
                         <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider font-geist animate-bounce">Gerando...</span>
                         <span className="text-[8px] text-neutral-400 font-geist mt-1 max-w-[120px] truncate">{ph.variationType}</span>
+                        {photoUnitCount > 1 && (
+                          <span className="mt-2 rounded-full bg-indigo-100 px-2 py-0.5 text-[9px] font-bold text-indigo-700">{photoUnitCount} fotos</span>
+                        )}
                       </div>
                     );
                   }
 
                   if (isFailed) {
                     return (
-                      <div key={ph.id} className="relative aspect-[3/4] bg-rose-50/50 rounded-2xl overflow-hidden ring-1 ring-rose-200 flex flex-col justify-between p-3 select-none">
+                      <div key={ph.id} className={`relative ${cardAspectClass} bg-rose-50/50 rounded-2xl overflow-hidden ring-1 ring-rose-200 flex flex-col justify-between p-3 select-none`}>
                         <div className="flex justify-between items-start">
                           <span className="text-[9px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider font-geist">Falhou</span>
                           <button
@@ -4722,17 +4986,22 @@ export default function Admin() {
                           </p>
                         </div>
                         <div className="bg-black/5 rounded-lg p-1 text-[8px] text-neutral-600 font-geist text-center uppercase tracking-wide font-semibold">
-                          {ph.variationType}
+                          {photoUnitCount > 1 ? `${photoUnitCount} fotos · ${ph.variationType}` : ph.variationType}
                         </div>
                       </div>
                     );
                   }
 
                   return (
-                    <div key={ph.id} className={`relative aspect-[3/4] bg-neutral-100 rounded-2xl overflow-hidden ring-2 flex flex-col justify-between group ${
+                    <div key={ph.id} className={`relative ${cardAspectClass} bg-neutral-100 rounded-2xl overflow-hidden ring-2 flex flex-col justify-between group ${
                       isPhotoPaid ? 'ring-emerald-500 shadow-emerald-500/10' : isSelected ? 'ring-amber-500 shadow-amber-500/10' : 'ring-transparent'
                     }`}>
                       <img src={ph.url} alt={ph.variationType} className="absolute inset-0 w-full h-full object-cover" />
+                      {photoUnitCount > 1 && (
+                        <div className="absolute top-2 left-2 z-10 rounded-lg bg-black/70 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow">
+                          {photoUnitCount} fotos
+                        </div>
+                      )}
                       
                       {/* Top Action Overlay (Delete Button & Selection Status) */}
                       <div className="absolute top-2 left-2 right-2 flex justify-between items-center z-10 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
@@ -4784,7 +5053,7 @@ export default function Admin() {
               <div>
                 <p className="text-xs text-neutral-400">Total Selecionado</p>
                 <h4 className="text-base font-bold text-neutral-900 mt-0.5">
-                  {activeViewBook.selected_photo_ids?.length || 0} de {activeViewBook.photos?.length || 0} fotos
+                  {getSelectedPhotoUnitCount(activeViewBook.selected_photo_ids || [], activeViewBook.photos || [])} de {getBookTotalPhotoCount(activeViewBook.photos || [])} fotos
                 </h4>
               </div>
               <div className="text-right">
@@ -4792,7 +5061,7 @@ export default function Admin() {
                 <h4 className="text-lg font-bold text-indigo-600 mt-0.5">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
                     calculateTotalPrice(
-                      activeViewBook.selected_photo_ids?.length || 0,
+                      getSelectedPhotoUnitCount(activeViewBook.selected_photo_ids || [], activeViewBook.photos || []),
                       activeViewBook.price_per_photo,
                       activeViewBook.package_price,
                       activeViewBook.package_photos,

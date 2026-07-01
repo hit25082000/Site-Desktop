@@ -42,6 +42,28 @@ test('marks only package photos as paid and leaves extras pending', () => {
   );
 });
 
+test('marks package batch photos by contained photo quantity', () => {
+  const result = applyBookPaymentAction({
+    paymentStatus: 'pending',
+    packagePrice: 100,
+    packagePhotos: 5,
+    extraPhotoPrice: 20,
+    selectedPhotoIds: ['batch_1', 'batch_2', 'batch_3'],
+    photos: [
+      { id: 'batch_1', url: 'batch-1.jpg', photoCount: 4 },
+      { id: 'batch_2', url: 'batch-2.jpg', photoCount: 1 },
+      { id: 'batch_3', url: 'batch-3.jpg', photoCount: 4 }
+    ]
+  }, 'mark_package_paid');
+
+  assert.equal(result.error, undefined);
+  assert.equal(result.book.paymentStatus, 'partial_paid');
+  assert.deepEqual(
+    result.book.photos.map((photo) => photo.paymentStatus),
+    ['paid', 'paid', 'pending']
+  );
+});
+
 test('clears paid state without clearing selected photos', () => {
   const paidBook = {
     ...baseBook,
@@ -102,6 +124,42 @@ test('rejects incomplete package pricing', () => {
   });
 
   assert.equal(result.valid, false);
+});
+
+test('normalizes prepaid package pricing (packagePrice = 0)', () => {
+  const result = normalizeBookPricing({
+    packagePrice: 0,
+    packagePhotos: '5',
+    extraPhotoPrice: '10',
+    pricePerPhoto: ''
+  });
+
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.dbPayload, {
+    price_per_photo: null,
+    package_price: 0,
+    package_photos: 5,
+    extra_photo_price: 10
+  });
+});
+
+test('rejects prepaid package pricing when extra photo price is zero or blank', () => {
+  const zeroResult = normalizeBookPricing({
+    packagePrice: 0,
+    packagePhotos: '5',
+    extraPhotoPrice: '0',
+    pricePerPhoto: ''
+  });
+
+  const blankResult = normalizeBookPricing({
+    packagePrice: 0,
+    packagePhotos: '5',
+    extraPhotoPrice: '',
+    pricePerPhoto: ''
+  });
+
+  assert.equal(zeroResult.valid, false);
+  assert.equal(blankResult.valid, false);
 });
 
 test('reconciles selected ids after replacing photos', () => {

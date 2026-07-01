@@ -8,6 +8,7 @@ test('round trips package pricing and prompt details', () => {
     clientId: 'client_1',
     clientName: 'Cliente',
     title: 'Book Teste',
+    category: 'Executivo',
     pricePerPhoto: null,
     packagePrice: 90,
     packagePhotos: 3,
@@ -25,6 +26,7 @@ test('round trips package pricing and prompt details', () => {
   assert.equal(decoded.packagePrice, 90);
   assert.equal(decoded.packagePhotos, 3);
   assert.equal(decoded.extraPhotoPrice, 20);
+  assert.equal(decoded.category, 'Executivo');
   assert.equal(decoded.promptDetails, 'Aniversario de 33 anos');
   assert.deepEqual(decoded.referencesData, book.referencesData);
 });

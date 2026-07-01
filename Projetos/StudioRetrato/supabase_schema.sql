@@ -39,6 +39,7 @@ create table public.books (
     id text primary key,
     client_id text references public.clients(id) on delete cascade not null,
     title text not null,
+    category text,
     price_per_photo numeric(10, 2) default 30.00,
     package_price numeric(10, 2) default 50.00,
     package_photos integer default 2,
@@ -52,12 +53,34 @@ create table public.books (
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+create unique index if not exists books_client_category_unique
+on public.books (client_id, category)
+where category is not null;
+
+-- Tabela: book_payments
+create table public.book_payments (
+    id uuid primary key default uuid_generate_v4(),
+    book_id text not null references public.books(id) on delete cascade,
+    selected_photo_ids jsonb not null default '[]'::jsonb,
+    payable_photo_ids jsonb not null default '[]'::jsonb,
+    amount numeric(10, 2) not null,
+    status text not null default 'created',
+    external_reference text unique,
+    mercado_pago_preference_id text,
+    mercado_pago_payment_id text,
+    mercado_pago_status text,
+    raw_response jsonb,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- Habilitar RLS em tabelas críticas
 alter table public.settings enable row level security;
 alter table public.categories enable row level security;
 alter table public.references enable row level security;
 alter table public.clients enable row level security;
 alter table public.books enable row level security;
+alter table public.book_payments enable row level security;
 
 -- Políticas de Acesso
 create policy "Leitura pública de configurações" on public.settings for select using (true);
@@ -72,8 +95,9 @@ create policy "Modificação apenas por administradores autenticados" on public.
 create policy "Operações apenas por administradores autenticados" on public.clients for all using (auth.role() = 'authenticated');
 
 create policy "Leitura pública de books" on public.books for select using (true);
-create policy "Atualização pública de books (seleção de fotos)" on public.books for update using (true);
+create policy "Atualização pública apenas da seleção de fotos" on public.books for update to anon using (true) with check (true);
 create policy "Modificação total apenas por administradores autenticados" on public.books for all using (auth.role() = 'authenticated');
+create policy "Book payments apenas para administradores autenticados" on public.book_payments for all to authenticated using (true) with check (true);
 
 -- ====================================================
 -- CONFIGURAÇÃO DE STORAGE BUCKET & POLÍCIES

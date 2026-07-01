@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
 import Book from './pages/Book';
+import ReferenceCatalog from './pages/ReferenceCatalog';
 import RealState from './pages/RealState';
 import ProtectedRoute from './components/ProtectedRoute';
 import { UIProvider } from './components/UIProvider';
@@ -22,10 +23,11 @@ export default function App() {
           '/login',
           '/admin',
           '/book',
+          '/catalogo-referencias',
           '/corretores-imobiliarias'
         ];
 
-        if (supportedDirectPaths.includes(pathname) || pathname.startsWith('/book/')) {
+        if (supportedDirectPaths.includes(pathname) || pathname.startsWith('/book/') || pathname.startsWith('/catalogo-referencias/')) {
           const search = window.location.search || '';
           window.location.replace(`/#${pathname}${search}`);
           return;
@@ -71,6 +73,8 @@ export default function App() {
             />
             <Route path="/book/:id" element={<Book />} />
             <Route path="/book" element={<Book />} />
+            <Route path="/catalogo-referencias/:category" element={<ReferenceCatalog />} />
+            <Route path="/catalogo-referencias" element={<ReferenceCatalog />} />
             {/* Fallback to Home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -1,3 +1,5 @@
+import { splitSelectedPhotoIdsByPackage } from './bookPayment.js';
+
 const isFilled = (value) => value !== '' && value !== null && value !== undefined;
 
 const toNumberOrNull = (value) => {
@@ -19,11 +21,47 @@ const hasPackageValues = (pricing) =>
 
 const hasPhotoValue = (pricing) => isFilled(pricing.pricePerPhoto);
 
+export const isPrepaidPackage = (book = {}) => {
+  const price = book.packagePrice ?? book.package_price;
+  const photos = book.packagePhotos ?? book.package_photos;
+  return price === 0 && Number(photos) > 0;
+};
+
+export const hasPackagePricing = (book = {}) =>
+  (book.packagePrice ?? book.package_price) !== null &&
+  (book.packagePrice ?? book.package_price) !== undefined;
+
 export const normalizeBookPricing = (pricing = {}) => {
   if (hasPackageValues(pricing)) {
     const packagePrice = toNumberOrNull(pricing.packagePrice);
     const packagePhotos = toPositiveIntegerOrNull(pricing.packagePhotos);
-    const extraPhotoPrice = toNumberOrNull(pricing.extraPhotoPrice);
+    const rawExtra = pricing.extraPhotoPrice;
+    const hasExplicitExtraPrice = rawExtra !== undefined && rawExtra !== null && rawExtra !== '';
+    const extraPhotoPrice = hasExplicitExtraPrice ? toNumberOrNull(rawExtra) : null;
+
+    if (packagePrice === 0 && packagePhotos !== null) {
+      if (extraPhotoPrice === null || extraPhotoPrice <= 0) {
+        return {
+          valid: false,
+          error: 'Informe um preço maior que zero por foto extra do pacote pré-pago.'
+        };
+      }
+      return {
+        valid: true,
+        pricing: {
+          pricePerPhoto: null,
+          packagePrice: 0,
+          packagePhotos,
+          extraPhotoPrice
+        },
+        dbPayload: {
+          price_per_photo: null,
+          package_price: 0,
+          package_photos: packagePhotos,
+          extra_photo_price: extraPhotoPrice
+        }
+      };
+    }
 
     if (packagePrice === null || packagePhotos === null || extraPhotoPrice === null) {
       return {
@@ -107,14 +145,11 @@ const getPackagePhotos = (book = {}) => {
   return Number.isFinite(numberValue) ? numberValue : 0;
 };
 
-const hasPackagePricing = (book = {}) =>
-  (book.packagePrice ?? book.package_price) !== null &&
-  (book.packagePrice ?? book.package_price) !== undefined;
-
 const cleanPhotoPayment = (photo) => {
   const nextPhoto = { ...photo };
   if (nextPhoto.paymentStatus === 'paid') {
     nextPhoto.paymentStatus = 'pending';
+    nextPhoto.section = 'additional';
   }
   return nextPhoto;
 };
@@ -132,7 +167,7 @@ export const applyBookPaymentAction = (book = {}, action) => {
     nextSelectedPhotoIds = paidIds;
   } else if (action === 'mark_package_paid') {
     const packageCount = getPackagePhotos(book);
-    paidIds = selectedPhotoIds.slice(0, packageCount);
+    paidIds = splitSelectedPhotoIdsByPackage(selectedPhotoIds, photos, packageCount).packageIds;
   } else if (action === 'mark_selected_paid') {
     paidIds = selectedPhotoIds;
   } else if (action === 'clear_paid') {
@@ -172,7 +207,8 @@ export const applyBookPaymentAction = (book = {}, action) => {
     if (!selectedSet.has(photo.id) && action !== 'mark_all_paid') return photo;
     return {
       ...photo,
-      paymentStatus: paidSet.has(photo.id) ? 'paid' : 'pending'
+      paymentStatus: paidSet.has(photo.id) ? 'paid' : 'pending',
+      section: paidSet.has(photo.id) ? 'saved' : 'additional'
     };
   });
 

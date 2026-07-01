@@ -1,14 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { decodeBookData } from '../services/urlSerializer';
 import * as kieAi from '../services/kieAi';
-import { buildBookGenerationPrompt, sanitizeBookReferencePrompt } from '../services/bookPrompt';
+import {
+  BOOK_BATCH_ASPECT_RATIO,
+  BOOK_BATCH_RESOLUTION,
+  MAX_BOOK_BATCH_PHOTOS,
+  buildBookGenerationPrompt,
+  buildBookBatchPrompt,
+  chunkBookReferences,
+  getBookBatchReferences,
+  sanitizeBookReferencePrompt
+} from '../services/bookPrompt';
 import {
   applyBookPaymentAction,
   applyPhotoReplacement,
   normalizeBookPricing
 } from '../services/bookAdminActions';
+import {
+  calculateBookPaymentQuote,
+  getBookTotalPhotoCount,
+  getPaidPhotoIds,
+  getPhotoUnitCount,
+  hasPackagePricing,
+  isPrepaidPackage
+} from '../services/bookPayment';
+import {
+  getClientGenerationInputUrls,
+  hasPendingClientStyleSheet,
+  hasUsableClientStyleSheet,
+  parseClientPhotoRefs,
+  parsePhotos,
+  serializeClientPhotoRefs
+} from '../services/clientPhotoRefs';
+import { queueClientStyleSheetTask } from '../services/clientStyleSheet';
 import { 
   Camera, 
   Check, 
@@ -19,10 +45,8 @@ import {
   ArrowRight,
   Eye,
   Info,
-  Calendar,
   WarningCircle,
   DownloadSimple,
-  Copy,
   ShoppingCart,
   Sparkle as Sparkles,
   Plus,
@@ -34,81 +58,18 @@ const HIDDEN_LIBRARY_CATEGORY = 'Landpage';
 const STORAGE_URL_MARKER = '/studioretrato-assets/';
 const isStorageReference = (ref) => typeof ref?.url === 'string' && ref.url.includes(STORAGE_URL_MARKER);
 
-const parsePhotos = (photoUrlField) => {
-  if (!photoUrlField) return [];
-  try {
-    const trimmed = typeof photoUrlField === 'string' ? photoUrlField.trim() : '';
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      return JSON.parse(trimmed).map((item) => typeof item === 'string' ? item : item?.url).filter(Boolean);
-    }
-  } catch (e) {
-    console.error('Failed to parse photo_url field as array:', e);
-  }
-  return [photoUrlField];
-};
-
-const parseClientPhotoRefs = (photoUrlField) => {
-  if (!photoUrlField) return [];
-  try {
-    const trimmed = typeof photoUrlField === 'string' ? photoUrlField.trim() : '';
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      return JSON.parse(trimmed)
-        .map((item) => typeof item === 'string'
-          ? { url: item, role: 'face' }
-          : { url: item?.url, role: item?.role === 'body' ? 'body' : 'face' })
-        .filter((item) => item.url);
-    }
-  } catch (e) {
-    console.error('Failed to parse photo_url field as references:', e);
-  }
-  return typeof photoUrlField === 'string' ? [{ url: photoUrlField, role: 'face' }] : [];
-};
-
-const serializeClientPhotoRefs = (refs = []) => {
-  const normalized = refs
-    .map((item) => ({ url: item?.url, role: item?.role === 'body' ? 'body' : 'face' }))
-    .filter((item) => item.url);
-  return normalized.length > 0 ? JSON.stringify(normalized) : null;
-};
-
-const getPaidPhotoIds = (photos = []) => photos
-  .filter((photo) => photo.paymentStatus === 'paid')
-  .map((photo) => photo.id);
-
-const hasPackagePricing = (book) => book?.packagePrice !== null && book?.packagePrice !== undefined;
-const isPrepaidPackage = (book) => book?.packagePrice === 0 && Number(book?.packagePhotos || 0) > 0;
-
-const calculateOutstandingPrice = (book, selectedPhotoIds) => {
-  if (!book) return 0;
-
-  const selectedCount = selectedPhotoIds.length;
-  const paidSelectedCount = getPaidPhotoIds(book.photos).filter((id) => selectedPhotoIds.includes(id)).length;
-
-  if (isPrepaidPackage(book)) {
-    if (paidSelectedCount > 0) {
-      return Math.max(selectedCount - paidSelectedCount, 0) * Number(book.extraPhotoPrice || 0);
-    }
-    const extraCount = Math.max(selectedCount - (book.packagePhotos || 0), 0);
-    return extraCount * Number(book.extraPhotoPrice || 0);
-  }
-
-  if (hasPackagePricing(book)) {
-    if (paidSelectedCount > 0) {
-      return Math.max(selectedCount - paidSelectedCount, 0) * Number(book.extraPhotoPrice || 0);
-    }
-
-    if (selectedCount <= book.packagePhotos) {
-      return Number(book.packagePrice);
-    }
-
-    return Number(book.packagePrice) + (selectedCount - book.packagePhotos) * Number(book.extraPhotoPrice || 0);
-  }
-
-  return Math.max(selectedCount - paidSelectedCount, 0) * Number(book.pricePerPhoto || 30.00);
-};
-
 const formatCurrency = (value) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
+
+const getBookClientPhotoRefs = (bookData) => {
+  if (bookData?.clientPhotoRefs?.length) return bookData.clientPhotoRefs;
+  return (bookData?.clientPhotos || []).map((url) => ({ url, role: 'face' }));
+};
+
+const getBookClientGenerationUrls = (bookData) =>
+  getClientGenerationInputUrls(getBookClientPhotoRefs(bookData));
+
+const getPaymentRequestStorageKey = (bookId) => `studioretrato:mercadopago:${bookId}`;
 
 export default function Book() {
   const { id } = useParams();
@@ -116,6 +77,7 @@ export default function Book() {
   
   const [book, setBook] = useState(null);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
+  const selectedPhotoIdsRef = useRef([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -125,16 +87,10 @@ export default function Book() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentSyncing, setPaymentSyncing] = useState(false);
+  const [paymentNotice, setPaymentNotice] = useState(null);
   const [selectionSubmitted, setSelectionSubmitted] = useState(false);
 
-  // Payment simulation and download states
-  const [paymentMethod, setPaymentMethod] = useState('pix');
-  const [copied, setCopied] = useState(false);
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardName, setCardName] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [settings, setSettings] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminModalMode, setAdminModalMode] = useState(null);
   const [adminTargetPhotoId, setAdminTargetPhotoId] = useState(null);
@@ -166,11 +122,9 @@ export default function Book() {
   const [modelFilePreviews, setModelFilePreviews] = useState([]);
   const [adminRegenerating, setAdminRegenerating] = useState(false);
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  useEffect(() => {
+    selectedPhotoIdsRef.current = selectedPhotoIds;
+  }, [selectedPhotoIds]);
 
   const downloadPhoto = async (url, filename) => {
     try {
@@ -283,8 +237,9 @@ export default function Book() {
     setReferenceSearch('');
     setEditingReferenceIds((book.referencesData || [])
       .map((ref) => ref.id || referenceLibrary.find((item) => item.url === ref.url)?.id)
-      .filter(Boolean));
-    setModelActiveUrls(book.clientPhotos || []);
+      .filter(Boolean)
+      .slice(0, MAX_BOOK_BATCH_PHOTOS));
+    setModelActiveUrls(getBookClientGenerationUrls(book));
   };
 
   const openAdminPaymentModal = () => {
@@ -399,6 +354,11 @@ export default function Book() {
   };
 
   const toggleEditingReference = (refId) => {
+    if (!editingReferenceIds.includes(refId) && editingReferenceIds.length >= MAX_BOOK_BATCH_PHOTOS) {
+      setAdminBookError(`Selecione no máximo ${MAX_BOOK_BATCH_PHOTOS} referências por book.`);
+      return;
+    }
+    setAdminBookError(null);
     setEditingReferenceIds(prev =>
       prev.includes(refId) ? prev.filter((id) => id !== refId) : [...prev, refId]
     );
@@ -414,7 +374,7 @@ export default function Book() {
     event.preventDefault();
     if (!book || !isAdmin) return;
 
-    const selectedRefs = referenceLibrary.filter((ref) => editingReferenceIds.includes(ref.id));
+    const selectedRefs = getBookBatchReferences(referenceLibrary.filter((ref) => editingReferenceIds.includes(ref.id)));
     if (selectedRefs.length === 0) {
       setAdminBookError('Selecione ao menos uma referência de pose/estilo.');
       return;
@@ -429,16 +389,31 @@ export default function Book() {
         ? book.clientPhotoRefs
         : (book.clientPhotos || []).map((url) => ({ url, role: 'face' }));
       const uploadedRefs = uploadedUrls.map((url) => ({ url, role: 'face' }));
-      const allClientPhotoRefs = [...existingRefs, ...uploadedRefs]
+      let allClientPhotoRefs = [...existingRefs, ...uploadedRefs]
         .filter((item, index, arr) => arr.findIndex((candidate) => candidate.url === item.url) === index);
-      const allClientPhotos = allClientPhotoRefs.map((item) => item.url);
-      const activeUrls = Array.from(new Set([...modelActiveUrls, ...uploadedUrls])).filter(Boolean);
+      let shouldPersistClientPhotoRefs = uploadedRefs.length > 0;
+      if (uploadedRefs.length > 0 || (!hasPendingClientStyleSheet(allClientPhotoRefs) && !hasUsableClientStyleSheet(allClientPhotoRefs))) {
+        try {
+          const styleSheetResult = await queueClientStyleSheetTask(allClientPhotoRefs, { force: uploadedRefs.length > 0 });
+          allClientPhotoRefs = styleSheetResult.refs;
+          shouldPersistClientPhotoRefs = shouldPersistClientPhotoRefs || styleSheetResult.queued;
+        } catch (styleSheetErr) {
+          console.warn('Falha ao criar style sheet da cliente:', styleSheetErr);
+        }
+      }
+      const allClientPhotos = parsePhotos(serializeClientPhotoRefs(allClientPhotoRefs));
+      const defaultActiveUrls = getClientGenerationInputUrls(allClientPhotoRefs);
+      const activeUrls = Array.from(new Set([
+        ...modelActiveUrls,
+        ...uploadedUrls,
+        ...defaultActiveUrls
+      ])).filter(Boolean);
 
       if (activeUrls.length === 0) {
         throw new Error('Selecione ou envie ao menos uma imagem modelo da cliente.');
       }
 
-      if (uploadedUrls.length > 0) {
+      if (shouldPersistClientPhotoRefs) {
         const { error: clientError } = await supabase
           .from('clients')
           .update({ photo_url: serializeClientPhotoRefs(allClientPhotoRefs) })
@@ -524,8 +499,9 @@ export default function Book() {
   const regenerateEntireBook = async () => {
     if (!book || !isAdmin || adminRegenerating) return;
 
-    const references = book.referencesData || [];
-    const clientInputUrls = modelActiveUrls.length > 0 ? modelActiveUrls : (book.clientPhotos || []);
+    const references = getBookBatchReferences(book.referencesData || []);
+    const defaultClientInputUrls = getBookClientGenerationUrls(book);
+    const clientInputUrls = modelActiveUrls.length > 0 ? modelActiveUrls : defaultClientInputUrls;
 
     if (references.length === 0) {
       alert('Selecione referências de pose/estilo antes de refazer o book.');
@@ -547,28 +523,41 @@ export default function Book() {
     setAdminRegenerating(true);
 
     try {
-      const nextPhotos = await Promise.all(references.map(async (ref) => {
-        const photoId = `img_gen_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-        const referencePrompt = sanitizeBookReferencePrompt(ref.prompt, 'Portrait pose');
-        const generationPrompt = buildBookGenerationPrompt({
-          referenceName: ref.name || ref.category,
-          referencePrompt,
-          promptDetails: book.promptDetails || ''
+      const packagePhotoCount = book.packagePhotos ?? book.package_photos ?? null;
+      const referenceBatches = chunkBookReferences(references, undefined, packagePhotoCount);
+      const nextPhotos = await Promise.all(referenceBatches.map(async (batch, batchIndex) => {
+        const generationPrompt = buildBookBatchPrompt({
+          references: batch,
+          promptDetails: book.promptDetails || '',
+          batchIndex,
+          batchTotal: referenceBatches.length
         });
-        const inputUrls = [...clientInputUrls, ref.url].filter(Boolean);
+        const referencePrompt = batch
+          .map((ref, index) => `${index + 1}. ${ref.name || ref.category || 'Referência'}: ${sanitizeBookReferencePrompt(ref.prompt, 'Portrait pose')}`)
+          .join('\n');
+        const inputUrls = [...clientInputUrls, ...batch.map((ref) => ref.url)].filter(Boolean);
+        const photoId = `img_gen_${Date.now()}_${batchIndex}_${Math.random().toString(36).slice(2, 9)}`;
         const basePhoto = {
           id: photoId,
           url: '',
-          variationType: ref.category || ref.name || 'Referência',
-          refId: ref.id,
-          refUrl: ref.url,
+          variationType: batch[0]?.name || batch[0]?.category || `Foto ${batchIndex + 1}`,
+          refId: batch[0]?.id || null,
+          refUrl: batch[0]?.url || null,
           referencePrompt,
           promptDetails: book.promptDetails || '',
-          prompt: generationPrompt
+          prompt: generationPrompt,
+          batch: false,
+          batchIndex,
+          batchTotal: referenceBatches.length,
+          photoCount: 1,
+          batchReferences: batch
         };
 
         try {
-          const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls, { aspectRatio: '3:4' });
+          const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls, {
+            aspectRatio: BOOK_BATCH_ASPECT_RATIO,
+            resolution: BOOK_BATCH_RESOLUTION
+          });
           return {
             ...basePhoto,
             status: 'generating',
@@ -647,7 +636,7 @@ export default function Book() {
         ? uploadedInputUrls
         : [
             ...(targetPhoto?.url ? [targetPhoto.url] : []),
-            ...(book.clientPhotos || [])
+            ...getBookClientGenerationUrls(book)
           ];
 
       if (inputUrls.length === 0) {
@@ -829,6 +818,7 @@ export default function Book() {
             id: data.id,
             clientId: data.client_id,
             clientName: data.client?.name || 'Cliente',
+            category: data.category || data.title || '',
             clientPhotos: parsePhotos(data.client?.photo_url),
             clientPhotoRefs: parseClientPhotoRefs(data.client?.photo_url),
             title: data.title,
@@ -846,12 +836,6 @@ export default function Book() {
           setBook(formattedBook);
           setSelectedPhotoIds(formattedBook.selectedPhotoIds);
         }
-
-        // Fetch general settings for Pix key
-        const { data: setts } = await supabase.from('settings').select('*').eq('key', 'general').single();
-        if (setts?.value) {
-          setSettings(setts.value);
-        }
       } catch (err) {
         console.error('Error loading book:', err);
         setError('Não foi possível carregar os dados do book. Verifique o link.');
@@ -862,6 +846,176 @@ export default function Book() {
 
     loadBook();
   }, [id, location]);
+
+  useEffect(() => {
+    if (!book?.id) return;
+
+    const params = new URLSearchParams(location.search || '');
+    const paymentId = params.get('payment_id') || params.get('collection_id');
+    const callbackStatus = params.get('status') || params.get('collection_status');
+    const storageKey = getPaymentRequestStorageKey(book.id);
+    const paymentRequestId = params.get('mp_payment_request') || localStorage.getItem(storageKey);
+
+    if (!paymentId && !paymentRequestId) return;
+
+    if (callbackStatus === 'rejected' || callbackStatus === 'failure') {
+      localStorage.removeItem(storageKey);
+      setPaymentNotice('Pagamento não aprovado pelo Mercado Pago. As fotos continuam bloqueadas.');
+      return;
+    }
+
+    let cancelled = false;
+    const syncPayment = async () => {
+      setPaymentSyncing(true);
+      setPaymentNotice('Verificando confirmação do pagamento no Mercado Pago...');
+
+      try {
+        const response = await fetch('/api/mercado-pago/sync-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentId,
+            paymentRequestId
+          })
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || 'Não foi possível verificar o pagamento.');
+        }
+        if (cancelled) return;
+
+        if (payload.approved && payload.book) {
+          const nextSelectedIds = payload.book.selectedPhotoIds || [];
+          const nextPaidIds = getPaidPhotoIds(payload.book.photos || []);
+          const isSelectionPaid = nextSelectedIds.length > 0 && nextSelectedIds.every((photoId) => nextPaidIds.includes(photoId));
+          setBook(prev => prev ? {
+            ...prev,
+            selectedPhotoIds: nextSelectedIds,
+            photos: payload.book.photos || prev.photos,
+            paymentStatus: payload.book.paymentStatus || prev.paymentStatus
+          } : prev);
+          setSelectedPhotoIds(nextSelectedIds);
+          setSelectionSubmitted(false);
+          setPaymentSuccess(isSelectionPaid);
+          setPaymentNotice('Pagamento confirmado pelo Mercado Pago. Fotos liberadas conforme o pacote pago.');
+          localStorage.removeItem(storageKey);
+        } else {
+          setPaymentNotice('Pagamento ainda não confirmado pelo Mercado Pago. As fotos continuam bloqueadas.');
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPaymentNotice(err.message || 'Não foi possível verificar o pagamento no Mercado Pago.');
+        }
+      } finally {
+        if (!cancelled) setPaymentSyncing(false);
+      }
+    };
+
+    syncPayment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [book?.id, location.search]);
+
+  useEffect(() => {
+    if (!isAdmin || !book?.clientId) return;
+
+    const clientId = book.clientId;
+    const currentRefs = book.clientPhotoRefs?.length
+      ? book.clientPhotoRefs
+      : (book.clientPhotos || []).map((url) => ({ url, role: 'face' }));
+    if (!hasPendingClientStyleSheet(currentRefs)) return;
+
+    const uploadToStorage = async (fileOrBlob, path) => {
+      const { error } = await supabase.storage
+        .from('studioretrato-assets')
+        .upload(path, fileOrBlob, {
+          contentType: 'image/jpeg',
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('studioretrato-assets')
+        .getPublicUrl(path);
+
+      return publicUrl;
+    };
+
+    const interval = setInterval(async () => {
+      const refs = currentRefs;
+      if (!hasPendingClientStyleSheet(refs)) return;
+
+      const updatedRefs = [...refs];
+      let refsUpdated = false;
+
+      for (let i = 0; i < updatedRefs.length; i++) {
+        const ref = updatedRefs[i];
+        if (ref.role !== 'styleSheet' || !ref.taskId || ref.status !== 'generating') continue;
+
+        try {
+          const result = await kieAi.getTaskStatus(ref.taskId);
+
+          if (result.status === 'success' && result.url) {
+            let finalUrl = result.url;
+            try {
+              const res = await fetch(result.url);
+              const blob = await res.blob();
+              finalUrl = await uploadToStorage(blob, `clients/${clientId}_style_sheet_${Date.now()}.jpg`);
+            } catch (storageErr) {
+              console.warn('[Kie AI Style Sheet] Falha ao enviar para storage, usando link direto da Kie AI:', storageErr);
+            }
+
+            updatedRefs[i] = {
+              ...ref,
+              url: finalUrl,
+              status: 'success',
+              completedAt: new Date().toISOString()
+            };
+            refsUpdated = true;
+          } else if (result.status === 'fail' || result.status === 'error') {
+            updatedRefs[i] = {
+              ...ref,
+              status: 'failed',
+              error: result.error || 'A tarefa do style sheet falhou'
+            };
+            refsUpdated = true;
+          }
+        } catch (err) {
+          console.error(`[Kie AI Style Sheet] Erro ao consultar ${ref.taskId}:`, err);
+        }
+      }
+
+      if (!refsUpdated) return;
+
+      const serializedRefs = serializeClientPhotoRefs(updatedRefs);
+      const { error } = await supabase
+        .from('clients')
+        .update({ photo_url: serializedRefs })
+        .eq('id', clientId);
+
+      if (error) {
+        console.warn('[Kie AI Style Sheet] Não foi possível atualizar cliente:', error);
+        return;
+      }
+
+      const clientPhotos = parsePhotos(serializedRefs);
+      const generationUrls = getClientGenerationInputUrls(updatedRefs);
+      setBook(prev => ({
+        ...prev,
+        clientPhotos,
+        clientPhotoRefs: updatedRefs
+      }));
+      setModelActiveUrls(prev => prev.length > 0
+        ? Array.from(new Set([...prev, ...generationUrls]))
+        : generationUrls);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isAdmin, book?.clientId, book?.clientPhotoRefs, book?.clientPhotos]);
 
   // Poll Kie AI for any photos currently generating
   useEffect(() => {
@@ -971,28 +1125,75 @@ export default function Book() {
     if (photoIndex === -1) return;
 
     const photo = book.photos[photoIndex];
-    const clientPhotos = book.clientPhotos || [];
+    const clientPhotos = getBookClientGenerationUrls(book);
     if (clientPhotos.length === 0) {
       alert('Nenhuma foto de referência da cliente encontrada para este book.');
       return;
     }
 
-    const matchedRef = book.referencesData?.find(ref => 
-      photo.refId === ref.id || (ref.prompt && photo.prompt?.includes(ref.prompt))
-    );
-    const referencePrompt = sanitizeBookReferencePrompt(
-      photo.referencePrompt || matchedRef?.prompt || photo.prompt,
-      'Portrait pose'
-    );
-    const generationPrompt = buildBookGenerationPrompt({
-      referenceName: matchedRef?.name || photo.variationType,
-      referencePrompt,
-      promptDetails: photo.promptDetails || book.promptDetails || ''
-    });
-    const styleReferenceUrl = matchedRef?.url || photo.refUrl;
-    const inputUrls = styleReferenceUrl
-      ? [...clientPhotos, styleReferenceUrl]
-      : clientPhotos;
+    const isBatchPhoto = Boolean(photo.batch || photo.batchReferences || photo.panorama || photo.panoramaCount || String(photo.variationType || '').toLowerCase().includes('batch') || String(photo.variationType || '').toLowerCase().includes('panorama'));
+    let referencePrompt;
+    let generationPrompt;
+    let inputUrls;
+    let aspectRatio = '3:4';
+    let resolution;
+    let nextPhotoMetadata = {};
+
+    if (isBatchPhoto) {
+      const batchReferences = getBookBatchReferences(
+        Array.isArray(photo.batchReferences) && photo.batchReferences.length > 0
+          ? photo.batchReferences
+          : Array.isArray(photo.panoramaReferences) && photo.panoramaReferences.length > 0
+            ? photo.panoramaReferences
+          : (book.referencesData || [])
+      ).slice(0, 1);
+
+      if (batchReferences.length === 0) {
+        alert('Selecione referências de pose/estilo antes de regenerar esta foto.');
+        return;
+      }
+
+      referencePrompt = batchReferences
+        .map((ref, index) => `${index + 1}. ${ref.name || ref.category || 'Referência'}: ${sanitizeBookReferencePrompt(ref.prompt, 'Portrait pose')}`)
+        .join('\n');
+      generationPrompt = buildBookBatchPrompt({
+        references: batchReferences,
+        promptDetails: photo.promptDetails || book.promptDetails || '',
+        batchIndex: photo.batchIndex || 0,
+        batchTotal: photo.batchTotal || 1
+      });
+      inputUrls = [...clientPhotos, ...batchReferences.map((ref) => ref.url)].filter(Boolean);
+      aspectRatio = BOOK_BATCH_ASPECT_RATIO;
+      resolution = BOOK_BATCH_RESOLUTION;
+      nextPhotoMetadata = {
+        variationType: batchReferences[0]?.name || batchReferences[0]?.category || photo.variationType || 'Foto',
+        refId: batchReferences[0]?.id || null,
+        refUrl: batchReferences[0]?.url || null,
+        batch: false,
+        photoCount: 1,
+        batchReferences,
+        panorama: false,
+        panoramaCount: undefined,
+        panoramaReferences: undefined
+      };
+    } else {
+      const matchedRef = book.referencesData?.find(ref =>
+        photo.refId === ref.id || (ref.prompt && photo.prompt?.includes(ref.prompt))
+      );
+      referencePrompt = sanitizeBookReferencePrompt(
+        photo.referencePrompt || matchedRef?.prompt || photo.prompt,
+        'Portrait pose'
+      );
+      generationPrompt = buildBookGenerationPrompt({
+        referenceName: matchedRef?.name || photo.variationType,
+        referencePrompt,
+        promptDetails: photo.promptDetails || book.promptDetails || ''
+      });
+      const styleReferenceUrl = matchedRef?.url || photo.refUrl;
+      inputUrls = styleReferenceUrl
+        ? [...clientPhotos, styleReferenceUrl]
+        : clientPhotos;
+    }
 
     const pendingPhotos = book.photos.map((item, index) => index === photoIndex ? {
       ...item,
@@ -1004,10 +1205,11 @@ export default function Book() {
     setBook(prev => ({ ...prev, photos: pendingPhotos }));
 
     try {
-      const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls, { aspectRatio: '3:4' });
+      const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls, { aspectRatio, resolution });
 
       const updatedPhotos = book.photos.map((item, index) => index === photoIndex ? {
         ...item,
+        ...nextPhotoMetadata,
         status: 'generating',
         taskId,
         error: null,
@@ -1053,10 +1255,12 @@ export default function Book() {
       return;
     }
 
-    const updated = selectedPhotoIds.includes(photoId)
-      ? selectedPhotoIds.filter(pid => pid !== photoId)
-      : [...selectedPhotoIds, photoId];
+    const currentSelectedIds = selectedPhotoIdsRef.current;
+    const updated = currentSelectedIds.includes(photoId)
+      ? currentSelectedIds.filter(pid => pid !== photoId)
+      : [...currentSelectedIds, photoId];
     
+    selectedPhotoIdsRef.current = updated;
     setSelectedPhotoIds(updated);
     setBook(prev => prev ? { ...prev, selectedPhotoIds: updated, selected_photo_ids: updated } : prev);
 
@@ -1075,53 +1279,57 @@ export default function Book() {
   const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
     setPaymentLoading(true);
+    setPaymentNotice(null);
     
     try {
-      const prepaid = isPrepaidPackage(book);
-      let nextPhotos = book?.photos || [];
-      let nextPaymentStatus = isPackagePartiallyPaid ? 'partial_paid' : 'pending';
-
-      if (prepaid) {
-        const packageCount = book.packagePhotos || 0;
-        const prepaidSelectedIds = new Set(selectedPhotoIds.slice(0, packageCount));
-        
-        nextPhotos = nextPhotos.map(photo => {
-          if (prepaidSelectedIds.has(photo.id)) {
-            return { ...photo, paymentStatus: 'paid' };
-          }
-          return photo;
-        });
-        
-        const hasPendingExtras = selectedPhotoIds.length > packageCount;
-        nextPaymentStatus = hasPendingExtras ? 'partial_paid' : 'paid';
+      const response = await fetch('/api/mercado-pago/create-preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookId: book.id,
+          selectedPhotoIds
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || 'Erro ao iniciar pagamento.');
       }
 
-      const { error: dbErr } = await supabase
-        .from('books')
-        .update({ 
-          selected_photo_ids: selectedPhotoIds,
-          photos: nextPhotos,
-          payment_status: nextPaymentStatus
-        })
-        .eq('id', book.id);
-      
-      if (dbErr) throw dbErr;
+      if (payload.book) {
+        setBook(prev => prev ? {
+          ...prev,
+          selectedPhotoIds: payload.book.selectedPhotoIds || selectedPhotoIds,
+          photos: payload.book.photos || prev.photos,
+          paymentStatus: payload.book.paymentStatus || prev.paymentStatus
+        } : prev);
+        setSelectedPhotoIds(payload.book.selectedPhotoIds || selectedPhotoIds);
+      }
 
-      setBook(prev => ({ 
-        ...prev, 
-        selectedPhotoIds, 
-        photos: nextPhotos,
-        paymentStatus: nextPaymentStatus 
-      }));
+      if (payload.requiresPayment && payload.initPoint) {
+        localStorage.setItem(getPaymentRequestStorageKey(book.id), payload.paymentRequestId);
+        window.location.href = payload.initPoint;
+        return;
+      }
 
-      if (prepaid && selectedPhotoIds.length <= (book.packagePhotos || 0)) {
-        setPaymentSuccess(true);
-      } else {
+      if (payload.selectionOnly) {
         setSelectionSubmitted(true);
+        setPaymentSuccess(false);
+        setPaymentNotice(
+          payload.paymentStage === 'awaiting_package_confirmation'
+            ? 'Seleção registrada. As fotos serão liberadas quando o pagamento do pacote for confirmado.'
+            : 'Seleção registrada. Nenhuma foto foi liberada sem confirmação de pagamento.'
+        );
+      } else {
+        const nextSelectedIds = payload.book?.selectedPhotoIds || selectedPhotoIds;
+        const nextPaidIds = getPaidPhotoIds(payload.book?.photos || book.photos || []);
+        const isSelectionPaid = nextSelectedIds.length > 0 && nextSelectedIds.every((photoId) => nextPaidIds.includes(photoId));
+        setSelectionSubmitted(false);
+        setPaymentSuccess(isSelectionPaid);
+        setPaymentNotice('Fotos liberadas com base em pagamento já confirmado anteriormente.');
       }
       setShowCheckout(false);
     } catch (err) {
-      alert('Erro ao salvar seleção: ' + err.message);
+      setPaymentNotice(err.message || 'Erro ao iniciar pagamento.');
     } finally {
       setPaymentLoading(false);
     }
@@ -1168,16 +1376,28 @@ export default function Book() {
     );
   }
 
-  const selectedCount = selectedPhotoIds.length;
+  const paymentQuote = calculateBookPaymentQuote(book, selectedPhotoIds);
+  const selectedCount = paymentQuote.selectedCount;
   const paidPhotoIds = getPaidPhotoIds(book.photos);
-  const paidSelectedCount = paidPhotoIds.filter((photoId) => selectedPhotoIds.includes(photoId)).length;
-  const pendingSelectedCount = Math.max(selectedCount - paidSelectedCount, 0);
-  const totalPrice = calculateOutstandingPrice(book, selectedPhotoIds);
+  const paidSelectedCount = paymentQuote.paidSelectedCount;
+  const pendingSelectedCount = paymentQuote.pendingSelectedCount;
+  const totalPrice = paymentQuote.amountDueNow;
+  const totalSelectionPrice = paymentQuote.totalSelectionPrice;
   const validPhotos = book.photos?.filter((photo) => photo.status !== 'generating' && photo.status !== 'failed') || [];
+  const totalBookPhotoCount = getBookTotalPhotoCount(validPhotos);
+  const savedPhotos = (book.photos || []).filter((photo) => photo.paymentStatus === 'paid' || photo.section === 'saved');
+  const savedPhotoIdSet = new Set(savedPhotos.map((photo) => photo.id));
+  const additionalPhotos = (book.photos || []).filter((photo) => !savedPhotoIdSet.has(photo.id));
+  const galleryItems = [
+    ...(savedPhotos.length > 0 ? [{ type: 'section', id: 'saved', title: 'Fotos salvas', count: getBookTotalPhotoCount(savedPhotos) }] : []),
+    ...savedPhotos.map((photo) => ({ type: 'photo', photo, photoIndex: (book.photos || []).findIndex((item) => item.id === photo.id) })),
+    ...(additionalPhotos.length > 0 ? [{ type: 'section', id: 'additional', title: 'Fotos adicionais', count: getBookTotalPhotoCount(additionalPhotos) }] : []),
+    ...additionalPhotos.map((photo) => ({ type: 'photo', photo, photoIndex: (book.photos || []).findIndex((item) => item.id === photo.id) }))
+  ];
   const isAllPhotosPaid = validPhotos.length > 0 && validPhotos.every((photo) => photo.paymentStatus === 'paid');
   const isPaid = isAllPhotosPaid;
-  const isPackagePartiallyPaid = (book.paymentStatus === 'partial_paid' || paidPhotoIds.length > 0) && !isAllPhotosPaid;
-  const canFinalizeSelection = selectedCount > 0 && (!isPackagePartiallyPaid || pendingSelectedCount > 0);
+  const isPackagePartiallyPaid = hasPackagePricing(book) && (book.paymentStatus === 'partial_paid' || paidPhotoIds.length > 0) && !isAllPhotosPaid;
+  const canFinalizeSelection = selectedCount > 0 && (paymentQuote.requiresPayment || paymentQuote.canFinalizeWithoutPayment || paymentQuote.selectionOnly);
   const adminTargetPhoto = adminTargetPhotoId
     ? book.photos.find((photo) => photo.id === adminTargetPhotoId)
     : null;
@@ -1226,6 +1446,19 @@ export default function Book() {
           </div>
         )}
 
+        {paymentNotice && (
+          <div className="bg-white border border-neutral-200 rounded-3xl p-5 mb-8 text-neutral-900 shadow-sm">
+            <div className="flex items-start gap-3">
+              {paymentSyncing ? (
+                <div className="mt-0.5 h-4 w-4 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin shrink-0"></div>
+              ) : (
+                <Info className="mt-0.5 h-4 w-4 text-indigo-600 shrink-0" weight="light" />
+              )}
+              <p className="text-sm text-neutral-650 font-geist leading-relaxed">{paymentNotice}</p>
+            </div>
+          </div>
+        )}
+
         {isPackagePartiallyPaid && (
           <div className="bg-emerald-50 border border-emerald-200/80 rounded-3xl p-6 mb-8 text-neutral-900">
             <h3 className="text-lg font-bold text-emerald-800 flex items-center gap-2">
@@ -1243,11 +1476,11 @@ export default function Book() {
               <span>🎉 Seleção Enviada com Sucesso!</span>
             </h3>
             <p className="text-sm text-indigo-700/90 mt-2 font-geist leading-relaxed">
-              Sua seleção de {selectedCount} fotos foi registrada. Para liberar o download e a remoção da marca d'água, realize o pagamento com a fotógrafa Gabriely via PIX ou solicite o link do Mercado Pago.
+              Sua seleção de {selectedCount} fotos foi registrada. Para liberar download e remoção da marca d'água, aguarde a confirmação real do pagamento pelo Mercado Pago ou pela fotógrafa.
             </p>
             <div className="mt-4">
               <a
-                href={`https://wa.me/5567931990118?text=Oi Gabriely, finalizei a seleção das minhas fotos do book "${encodeURIComponent(book.title)}". O total ficou em ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}. Me envia o link de pagamento por favor!`}
+                href={`https://wa.me/5567931990118?text=Oi Gabriely, finalizei a seleção das minhas fotos do book "${encodeURIComponent(book.title)}". O valor a confirmar ficou em ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice || totalSelectionPrice)}. Me envia o link de pagamento por favor!`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition"
@@ -1265,6 +1498,11 @@ export default function Book() {
               <p className="text-xs uppercase text-neutral-400 tracking-wider font-semibold font-geist">Book Cliente</p>
               <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mt-1 font-geist">{book.title}</h1>
               <p className="text-neutral-500 text-sm mt-1 font-geist">Cliente: <span className="font-semibold text-neutral-700">{book.clientName}</span></p>
+              {book.category && (
+                <p className="mt-3 inline-flex rounded-full bg-neutral-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-neutral-500 ring-1 ring-neutral-200">
+                  {book.category}
+                </p>
+              )}
             </div>
             
             {!isPaid && (isPrepaidPackage(book) ? (
@@ -1378,7 +1616,7 @@ export default function Book() {
                         <span className="text-[10px] bg-neutral-800 text-neutral-300 px-2 py-0.5 rounded-full font-bold">{selectedCount} selecionada(s)</span>
                       </div>
                       <p className="text-lg font-extrabold text-indigo-400">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSelectionPrice)}
                       </p>
                       <p className="text-[10px] text-neutral-400 mt-1">
                         {selectedCount <= book.packagePhotos 
@@ -1442,7 +1680,7 @@ export default function Book() {
                         <span className="text-[10px] bg-neutral-800 text-neutral-300 px-2 py-0.5 rounded-full font-bold">{selectedCount} selecionada(s)</span>
                       </div>
                       <p className="text-lg font-extrabold text-indigo-400">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSelectionPrice)}
                       </p>
                       <p className="text-[10px] text-neutral-400 mt-1">
                         {selectedCount <= book.packagePhotos 
@@ -1601,22 +1839,41 @@ export default function Book() {
         )}
 
         {/* Photos Gallery */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-          {book.photos.map((photo, index) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {galleryItems.map((item) => {
+            if (item.type === 'section') {
+              return (
+                <div key={item.id} className="md:col-span-2 flex items-center justify-between pt-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-neutral-400 font-bold font-geist">{item.title}</p>
+                    <h2 className="text-xl font-bold text-neutral-900 font-geist mt-1">{item.count} foto(s)</h2>
+                  </div>
+                  <div className="h-px flex-1 bg-neutral-200 ml-5" />
+                </div>
+              );
+            }
+            const photo = item.photo;
+            const index = item.photoIndex;
             const isSelected = selectedPhotoIds.includes(photo.id);
             const isGenerating = photo.status === 'generating';
             const isFailed = photo.status === 'failed';
             const isPhotoPaid = photo.paymentStatus === 'paid';
+            const photoUnitCount = getPhotoUnitCount(photo);
+            const isBatchPhoto = photoUnitCount > 1 || photo.batch || photo.panorama;
+            const cardAspectClass = isBatchPhoto ? 'aspect-[9/16]' : 'aspect-[3/4]';
 
             if (isGenerating) {
               return (
                 <div 
                   key={photo.id}
-                  className="group relative aspect-[3/4] bg-neutral-50 rounded-3xl overflow-hidden shadow-sm ring-1 ring-neutral-200 flex flex-col items-center justify-center p-4 text-center animate-pulse select-none"
+                  className={`group relative ${cardAspectClass} bg-neutral-50 rounded-3xl overflow-hidden shadow-sm ring-1 ring-neutral-200 flex flex-col items-center justify-center p-4 text-center animate-pulse select-none`}
                 >
                   <Sparkles className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
                   <span className="text-xs font-semibold text-indigo-600 font-geist animate-bounce">Gerando com IA...</span>
                   <span className="text-[10px] text-neutral-400 font-geist mt-1.5 uppercase tracking-wider">{photo.variationType}</span>
+                  {photoUnitCount > 1 && (
+                    <span className="mt-2 rounded-full bg-indigo-100 px-3 py-1 text-[10px] font-bold text-indigo-700">{photoUnitCount} fotos nesta imagem</span>
+                  )}
                 </div>
               );
             }
@@ -1625,7 +1882,7 @@ export default function Book() {
               return (
                 <div 
                   key={photo.id}
-                  className="group relative aspect-[3/4] bg-rose-50/50 rounded-3xl overflow-hidden shadow-sm ring-1 ring-rose-100 flex flex-col justify-between p-4 text-center select-none"
+                  className={`group relative ${cardAspectClass} bg-rose-50/50 rounded-3xl overflow-hidden shadow-sm ring-1 ring-rose-100 flex flex-col justify-between p-4 text-center select-none`}
                 >
                   <div className="flex justify-between items-center">
                     <span className="text-[9px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-lg uppercase tracking-wider font-geist">Falhou</span>
@@ -1650,7 +1907,7 @@ export default function Book() {
                     </button>
                   </div>
                   <div className="bg-black/5 rounded-lg p-1.5 text-[9px] text-neutral-500 font-geist text-center uppercase tracking-wide font-semibold">
-                    {photo.variationType}
+                    {photoUnitCount > 1 ? `${photoUnitCount} fotos · ${photo.variationType}` : photo.variationType}
                   </div>
                 </div>
               );
@@ -1661,7 +1918,7 @@ export default function Book() {
                 key={photo.id}
                 onClick={() => togglePhotoSelection(photo.id)}
                 onContextMenu={(e) => !isPhotoPaid && e.preventDefault()}
-                className={`group relative aspect-[3/4] bg-white rounded-3xl overflow-hidden shadow-sm ring-1 cursor-pointer transition select-none ${
+                className={`group relative ${cardAspectClass} bg-white rounded-3xl overflow-hidden shadow-sm ring-1 cursor-pointer transition select-none ${
                   isPhotoPaid
                     ? 'ring-emerald-500 shadow-emerald-500/10'
                     : isSelected 
@@ -1692,9 +1949,14 @@ export default function Book() {
                 <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] px-2.5 py-1 rounded-lg font-geist font-medium tracking-wide uppercase">
                   {photo.variationType}
                 </div>
+                {photoUnitCount > 1 && (
+                  <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md text-white text-[10px] px-2.5 py-1 rounded-lg font-geist font-bold uppercase">
+                    {photoUnitCount} fotos
+                  </div>
+                )}
 
                 {isPhotoPaid && (
-                  <div className="absolute top-4 left-4 bg-emerald-600 text-white text-[10px] px-2.5 py-1 rounded-lg font-geist font-bold uppercase">
+                  <div className={`absolute ${photoUnitCount > 1 ? 'top-12' : 'top-4'} left-4 bg-emerald-600 text-white text-[10px] px-2.5 py-1 rounded-lg font-geist font-bold uppercase`}>
                     Pago
                   </div>
                 )}
@@ -1773,7 +2035,7 @@ export default function Book() {
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-white/40 font-bold font-geist">Fotos selecionadas</p>
                 <h3 className="text-sm sm:text-base font-bold font-geist mt-0.5 whitespace-nowrap">
-                  {selectedCount} de {book?.photos?.length || 0} fotos
+                  {selectedCount} de {totalBookPhotoCount} fotos
                 </h3>
                 {isPackagePartiallyPaid && (
                   <p className="text-[10px] text-white/45 font-geist mt-0.5">
@@ -1819,9 +2081,9 @@ export default function Book() {
             {/* Right side: Total Price & Button */}
             <div className="flex items-center justify-between sm:justify-end gap-5 w-full sm:w-auto border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
               <div className="text-left sm:text-right">
-                <p className="text-[10px] uppercase tracking-wider text-white/40 font-bold font-geist">{isPackagePartiallyPaid ? 'Valor a Pagar' : 'Valor Total'}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/40 font-bold font-geist">{paymentQuote.selectionOnly ? 'Aguardando confirmação' : 'Valor a pagar agora'}</p>
                 <h3 className="text-lg sm:text-xl font-extrabold font-geist mt-0.5 text-indigo-400 whitespace-nowrap">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
+                  {paymentQuote.selectionOnly ? 'Pendente' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
                 </h3>
               </div>
 
@@ -2022,7 +2284,7 @@ export default function Book() {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Referências de pose/estilo</p>
-                        <p className="text-xs text-neutral-500 mt-1">{editingReferenceIds.length} selecionada(s)</p>
+                        <p className="text-xs text-neutral-500 mt-1">{editingReferenceIds.length} de {MAX_BOOK_BATCH_PHOTOS} selecionada(s)</p>
                       </div>
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <select
@@ -2466,18 +2728,24 @@ export default function Book() {
       {/* CHECKOUT / PAYMENT MODAL */}
       {showCheckout && (() => {
         const isPrepaid = isPrepaidPackage(book);
-        const hasExtraToPay = isPrepaid && selectedCount > (book.packagePhotos || 0);
+        const hasExtraToPay = paymentQuote.paymentStage === 'extras' || paymentQuote.paymentStage === 'additional_photos';
+        const isSelectionOnlyCheckout = paymentQuote.selectionOnly;
+        const canReleaseCoveredPackage = paymentQuote.canFinalizeWithoutPayment;
         return (
           <div className="fixed inset-0 z-50 bg-white flex flex-col md:bg-neutral-950/60 md:backdrop-blur-sm md:items-center md:justify-center md:p-4">
             <div className="relative flex h-full w-full flex-col bg-white shadow-2xl md:h-auto md:max-h-[90vh] md:max-w-md md:rounded-[2.5rem] md:border md:border-neutral-200 animate-scaleUp">
               <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-8 md:py-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-xl font-bold text-neutral-900 font-geist">{isPrepaid ? (hasExtraToPay ? 'Confirmar Fotos Extras' : 'Liberar Fotos do Pacote') : 'Confirmar Seleção'}</h3>
+                    <h3 className="text-xl font-bold text-neutral-900 font-geist">
+                      {isSelectionOnlyCheckout ? 'Registrar Seleção' : canReleaseCoveredPackage ? 'Liberar Fotos do Pacote' : hasExtraToPay ? 'Pagar Fotos Pendentes' : 'Pagar Pacote'}
+                    </h3>
                     <p className="text-sm text-neutral-500 mt-1 font-geist">
-                      {isPrepaid 
-                        ? (hasExtraToPay ? `Confirme o pagamento de ${selectedCount - book.packagePhotos} foto(s) extra(s) via PIX para concluir.` : `Confirme a escolha das suas ${selectedCount} fotos do pacote para liberar o download.`)
-                        : 'Confirme sua seleção de fotos e realize o pagamento via PIX para concluir.'}
+                      {isSelectionOnlyCheckout
+                        ? 'Sua seleção será salva, mas as fotos continuam bloqueadas até a confirmação real do pagamento.'
+                        : canReleaseCoveredPackage
+                          ? 'O pacote já tem pagamento confirmado. Confirme para liberar as fotos ainda cobertas por ele.'
+                          : 'Confirme sua seleção e continue para o pagamento seguro do Mercado Pago.'}
                     </p>
                   </div>
                   <button 
@@ -2504,7 +2772,7 @@ export default function Book() {
                     {hasExtraToPay && (
                       <div className="text-xs space-y-1.5 border-t border-dashed border-neutral-200 pt-2 text-neutral-500">
                         <div className="flex justify-between font-medium">
-                          <span>{selectedCount - book.packagePhotos} foto(s) extra(s) (x {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.extraPhotoPrice)}):</span>
+                          <span>{paymentQuote.pendingExtraCount || pendingSelectedCount} foto(s) pendente(s) (x {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(book.extraPhotoPrice)}):</span>
                           <span className="text-indigo-600 font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}</span>
                         </div>
                       </div>
@@ -2582,47 +2850,45 @@ export default function Book() {
 
                 <hr className="border-neutral-200" />
                 <div className="flex justify-between text-base font-bold text-neutral-900">
-                  <span>{hasExtraToPay ? 'Valor a Pagar (Fotos Extras):' : isPackagePartiallyPaid ? 'Valor a Pagar:' : 'Valor Final:'}</span>
+                  <span>{isSelectionOnlyCheckout ? 'Status:' : hasExtraToPay ? 'Valor a Pagar:' : canReleaseCoveredPackage ? 'Valor a Pagar:' : 'Valor do Pagamento:'}</span>
                   <span className={isPrepaid && !hasExtraToPay ? "text-emerald-600" : "text-indigo-600"}>
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
+                    {isSelectionOnlyCheckout ? 'Aguardando confirmação' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
                   </span>
                 </div>
               </div>
 
               <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-5">
-                {isPrepaid && !hasExtraToPay ? (
+                {isSelectionOnlyCheckout ? (
+                  <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-5 text-center font-geist">
+                    <p className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2">Pagamento pendente</p>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      O clique abaixo salva sua seleção. Nenhuma foto será liberada até o Mercado Pago ou a fotógrafa confirmar o pagamento.
+                    </p>
+                  </div>
+                ) : canReleaseCoveredPackage ? (
                   <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-5 text-center font-geist">
                     <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2">🎁 Fotos Inclusas no seu Pacote</p>
                     <p className="text-xs text-emerald-700 leading-relaxed">
-                      Clique no botão abaixo para confirmar a escolha das suas <strong>{selectedCount}</strong> foto(s). Elas serão liberadas imediatamente em alta resolução para você baixar!
+                      O pagamento do pacote já foi confirmado. Clique no botão abaixo para liberar as fotos cobertas que ainda estavam pendentes.
                     </p>
                   </div>
                 ) : (
-                  paymentMethod === 'pix' && (
-                    <div className="space-y-4">
-                      <div className="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100 flex flex-col items-center">
-                        <p className="text-xs text-indigo-800 font-bold uppercase tracking-wider mb-3 font-geist">
-                          {settings?.pixKey ? 'Chave PIX do Fotógrafo' : 'Chave PIX (Copia e Cola)'}
-                        </p>
-                        <div className="bg-white p-2.5 rounded-xl border border-indigo-200 w-full select-all text-xs font-mono text-center text-neutral-750 break-all pointer-events-auto font-bold">
-                          {settings?.pixKey || 'pix@studioretrato.com'}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(settings?.pixKey || 'pix@studioretrato.com')}
-                          className="mt-3 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
-                        >
-                          {copied ? <Check className="w-3 h-3" weight="light" /> : <Copy className="w-3 h-3" weight="light" />}
-                          <span>{copied ? 'Copiado!' : 'Copiar Chave'}</span>
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-neutral-400 font-geist text-center">
-                        {hasExtraToPay 
-                          ? `Efetue o PIX de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)} para pagar as fotos extras e clique abaixo.` 
-                          : 'Efetue o PIX no aplicativo do seu banco e clique no botão abaixo para confirmar a seleção de fotos.'}
+                  <div className="space-y-4">
+                    <div className="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100 flex flex-col items-center text-center">
+                      <CreditCard className="h-7 w-7 text-indigo-600 mb-3" weight="light" />
+                      <p className="text-xs text-indigo-800 font-bold uppercase tracking-wider mb-2 font-geist">
+                        Pagamento seguro Mercado Pago
+                      </p>
+                      <p className="text-xs text-indigo-700/80 leading-relaxed font-geist">
+                        A próxima etapa abre o checkout Mercado Pago. As fotos só serão liberadas quando o pagamento voltar como aprovado pela API.
                       </p>
                     </div>
-                  )
+                    <p className="text-[10px] text-neutral-400 font-geist text-center">
+                      {hasExtraToPay
+                        ? `Continue para pagar ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)} das fotos pendentes pelo Mercado Pago.`
+                        : 'Continue para o Mercado Pago. As fotos só serão liberadas depois da confirmação aprovada.'}
+                    </p>
+                  </div>
                 )}
               </form>
               </div>
@@ -2637,12 +2903,19 @@ export default function Book() {
                   {paymentLoading ? (
                     <>
                       <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
-                      <span>{hasExtraToPay ? 'Enviando Seleção...' : 'Liberando Fotos...'}</span>
+                      <span>{paymentQuote.requiresPayment ? 'Iniciando pagamento...' : 'Salvando seleção...'}</span>
                     </>
                   ) : (
                     <>
                       <Check className="w-4 h-4" weight="light" />
-                      <span>{isPrepaid && !hasExtraToPay ? 'Liberar Fotos Gratuitamente' : hasExtraToPay ? `Confirmar Seleção (+ ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)})` : 'Confirmar Seleção de Fotos'}</span>
+                      <span>
+                        {isSelectionOnlyCheckout
+                          ? 'Registrar Seleção'
+                          : canReleaseCoveredPackage
+                            ? 'Liberar Fotos do Pacote'
+                            : `Pagar ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}`
+                        }
+                      </span>
                     </>
                   )}
                 </button>
