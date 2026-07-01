@@ -1544,13 +1544,14 @@ export default function Admin() {
     }
 
     const selectedCategory = bookForm.category;
+    const normalizedCategory = String(selectedCategory || '').trim().toLowerCase();
     const selectedClient = clients.find(c => c.id === bookForm.clientId);
-    const existingCategoryBook = books.find((bk) => (
-      bk.client_id === bookForm.clientId &&
-      (bk.category || bk.title) === selectedCategory
-    ));
+    const existingCategoryBook = books.find((bk) => {
+      const bookCategory = String(bk.category || bk.title || '').trim().toLowerCase();
+      return bk.client_id === bookForm.clientId && bookCategory === normalizedCategory;
+    });
     const orderId = `order_${Date.now()}`;
-    const bookId = existingCategoryBook?.id || 'book_' + Date.now();
+    let bookId = existingCategoryBook?.id || 'book_' + Date.now();
     
     // Start Pipeline Visual Modal for facial analysis
     setShowPipelineModal(true);
@@ -1769,9 +1770,30 @@ export default function Admin() {
         prompt_details: bookForm.promptDetails || existingCategoryBook?.prompt_details || null
       };
 
-      const { error: dbError } = existingCategoryBook
-        ? await supabase.from('books').update(bookPayload).eq('id', bookId)
-        : await supabase.from('books').insert([{ id: bookId, ...bookPayload }]);
+      const saveBook = async () => (
+        existingCategoryBook
+          ? supabase.from('books').update(bookPayload).eq('id', bookId)
+          : supabase.from('books').insert([{ id: bookId, ...bookPayload }])
+      );
+
+      let { error: dbError } = await saveBook();
+      if (dbError && String(dbError.message || '').includes('books_client_category_unique')) {
+        const { data: duplicateBook, error: lookupError } = await supabase
+          .from('books')
+          .select('id')
+          .eq('client_id', bookForm.clientId)
+          .eq('category', selectedCategory)
+          .maybeSingle();
+
+        if (!lookupError && duplicateBook?.id) {
+          bookId = duplicateBook.id;
+          const { error: updateError } = await supabase
+            .from('books')
+            .update(bookPayload)
+            .eq('id', duplicateBook.id);
+          dbError = updateError;
+        }
+      }
 
       if (dbError) throw dbError;
 
