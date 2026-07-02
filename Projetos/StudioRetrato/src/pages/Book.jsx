@@ -550,18 +550,26 @@ export default function Book() {
           batchIndex,
           batchTotal: referenceBatches.length,
           photoCount: 1,
-          batchReferences: batch
+          batchReferences: batch,
+          generationInputUrls: inputUrls,
+          generationAspectRatio: BOOK_BATCH_ASPECT_RATIO,
+          generationResolution: BOOK_BATCH_RESOLUTION
         };
 
         try {
+          let generationModel = kieAi.KIE_PRIMARY_IMAGE_MODEL;
           const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls, {
             aspectRatio: BOOK_BATCH_ASPECT_RATIO,
-            resolution: BOOK_BATCH_RESOLUTION
+            resolution: BOOK_BATCH_RESOLUTION,
+            onModelUsed: (model) => {
+              generationModel = model;
+            }
           });
           return {
             ...basePhoto,
             status: 'generating',
-            taskId
+            taskId,
+            generationModel
           };
         } catch (err) {
           return {
@@ -653,7 +661,10 @@ export default function Book() {
             referencePrompt: prompt,
             promptDetails: book.promptDetails || '',
             variationType,
-            adminInputUrls: inputUrls
+            adminInputUrls: inputUrls,
+            generationInputUrls: inputUrls,
+            generationModel: adminGenerationModel,
+            generationAspectRatio: '3:4'
           }
         : {
             id: photoId,
@@ -664,7 +675,10 @@ export default function Book() {
             prompt,
             referencePrompt: prompt,
             promptDetails: book.promptDetails || '',
-            adminInputUrls: inputUrls
+            adminInputUrls: inputUrls,
+            generationInputUrls: inputUrls,
+            generationModel: adminGenerationModel,
+            generationAspectRatio: '3:4'
           };
 
       const pendingPhotos = isEdit
@@ -673,9 +687,16 @@ export default function Book() {
 
       setBook(prev => ({ ...prev, photos: pendingPhotos }));
 
-      const taskId = await kieAi.createGenerationTask(prompt, inputUrls, { model: adminGenerationModel, aspectRatio: '3:4' });
+      let generationModel = adminGenerationModel;
+      const taskId = await kieAi.createGenerationTask(prompt, inputUrls, {
+        model: adminGenerationModel,
+        aspectRatio: '3:4',
+        onModelUsed: (model) => {
+          generationModel = model;
+        }
+      });
       const nextPhotos = pendingPhotos.map((photo) =>
-        photo.id === photoId ? { ...photo, taskId, status: 'generating', error: null } : photo
+        photo.id === photoId ? { ...photo, taskId, status: 'generating', error: null, generationModel } : photo
       );
 
       const { error: dbError } = await supabase
@@ -1071,17 +1092,47 @@ export default function Book() {
                 ...photo,
                 url: finalUrl,
                 status: 'success'
-              };
-              photosUpdated = true;
-            } else if (result.status === 'fail' || result.status === 'error') {
-              console.error(`[Kie AI Polling Customer] Falha na tarefa ${photo.taskId}: ${result.error}`);
+            };
+            photosUpdated = true;
+          } else if (result.status === 'fail' || result.status === 'error') {
+            console.error(`[Kie AI Polling Customer] Falha na tarefa ${photo.taskId}: ${result.error}`);
+            const canFallbackToPro = photo.generationModel === kieAi.KIE_PRIMARY_IMAGE_MODEL
+              && Array.isArray(photo.generationInputUrls)
+              && photo.generationInputUrls.length > 0
+              && photo.prompt;
+
+            if (canFallbackToPro) {
+              try {
+                const fallbackTaskId = await kieAi.createGenerationTask(photo.prompt, photo.generationInputUrls, {
+                  model: kieAi.KIE_NANO_BANANA_PRO_MODEL,
+                  aspectRatio: photo.generationAspectRatio || '3:4',
+                  resolution: photo.generationResolution
+                });
+                updatedPhotos[i] = {
+                  ...photo,
+                  status: 'generating',
+                  taskId: fallbackTaskId,
+                  error: null,
+                  generationModel: kieAi.KIE_NANO_BANANA_PRO_MODEL,
+                  generationFallbackFrom: kieAi.KIE_PRIMARY_IMAGE_MODEL,
+                  generationFallbackReason: result.error || 'A tarefa GPT Image 2 falhou'
+                };
+              } catch (fallbackErr) {
+                updatedPhotos[i] = {
+                  ...photo,
+                  status: 'failed',
+                  error: fallbackErr.message || result.error || 'A tarefa falhou'
+                };
+              }
+            } else {
               updatedPhotos[i] = {
                 ...photo,
                 status: 'failed',
                 error: result.error || 'A tarefa falhou'
               };
-              photosUpdated = true;
             }
+            photosUpdated = true;
+          }
           } catch (err) {
             console.error(`[Kie AI Polling Customer] Erro na foto ${photo.id}:`, err);
           }
@@ -1205,7 +1256,14 @@ export default function Book() {
     setBook(prev => ({ ...prev, photos: pendingPhotos }));
 
     try {
-      const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls, { aspectRatio, resolution });
+      let generationModel = kieAi.KIE_PRIMARY_IMAGE_MODEL;
+      const taskId = await kieAi.createGenerationTask(generationPrompt, inputUrls, {
+        aspectRatio,
+        resolution,
+        onModelUsed: (model) => {
+          generationModel = model;
+        }
+      });
 
       const updatedPhotos = book.photos.map((item, index) => index === photoIndex ? {
         ...item,
@@ -1214,7 +1272,11 @@ export default function Book() {
         taskId,
         error: null,
         referencePrompt,
-        prompt: generationPrompt
+        prompt: generationPrompt,
+        generationInputUrls: inputUrls,
+        generationModel,
+        generationAspectRatio: aspectRatio,
+        generationResolution: resolution
       } : item);
 
       const { error: dbError } = await supabase
@@ -2580,6 +2642,7 @@ export default function Book() {
                       className="w-full px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition text-sm text-neutral-900"
                     >
                       <option value="gpt-image-2-image-to-image">GPT Image 2</option>
+                      <option value="nano-banana-pro">Nano Banana Pro</option>
                       <option value="nano-banana-2">Nano Banana 2</option>
                     </select>
                   </div>

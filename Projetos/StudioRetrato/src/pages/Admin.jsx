@@ -462,11 +462,41 @@ export default function Admin() {
                 bookPhotosUpdated = true;
               } else if (result.status === 'fail' || result.status === 'error') {
                 console.error(`[Kie AI Global Polling] Falha em ${photo.taskId}: ${result.error}`);
-                updatedPhotos[i] = {
-                  ...photo,
-                  status: 'failed',
-                  error: result.error || 'A tarefa falhou'
-                };
+                const canFallbackToPro = photo.generationModel === kieAi.KIE_PRIMARY_IMAGE_MODEL
+                  && Array.isArray(photo.generationInputUrls)
+                  && photo.generationInputUrls.length > 0
+                  && photo.prompt;
+
+                if (canFallbackToPro) {
+                  try {
+                    const fallbackTaskId = await kieAi.createGenerationTask(photo.prompt, photo.generationInputUrls, {
+                      model: kieAi.KIE_NANO_BANANA_PRO_MODEL,
+                      aspectRatio: photo.generationAspectRatio || '3:4',
+                      resolution: photo.generationResolution
+                    });
+                    updatedPhotos[i] = {
+                      ...photo,
+                      status: 'generating',
+                      taskId: fallbackTaskId,
+                      error: null,
+                      generationModel: kieAi.KIE_NANO_BANANA_PRO_MODEL,
+                      generationFallbackFrom: kieAi.KIE_PRIMARY_IMAGE_MODEL,
+                      generationFallbackReason: result.error || 'A tarefa GPT Image 2 falhou'
+                    };
+                  } catch (fallbackErr) {
+                    updatedPhotos[i] = {
+                      ...photo,
+                      status: 'failed',
+                      error: fallbackErr.message || result.error || 'A tarefa falhou'
+                    };
+                  }
+                } else {
+                  updatedPhotos[i] = {
+                    ...photo,
+                    status: 'failed',
+                    error: result.error || 'A tarefa falhou'
+                  };
+                }
                 bookPhotosUpdated = true;
               }
             } catch (err) {
@@ -1704,19 +1734,27 @@ export default function Admin() {
           orderId,
           orderStatus: 'ready',
           section: 'additional',
-          bookCategory: selectedCategory
+          bookCategory: selectedCategory,
+          generationInputUrls: batchInputUrls,
+          generationAspectRatio: BOOK_BATCH_ASPECT_RATIO,
+          generationResolution: BOOK_BATCH_RESOLUTION
         };
 
         try {
+          let generationModel = kieAi.KIE_PRIMARY_IMAGE_MODEL;
           const taskId = await kieAi.createGenerationTask(batchPrompt, batchInputUrls, {
             aspectRatio: BOOK_BATCH_ASPECT_RATIO,
-            resolution: BOOK_BATCH_RESOLUTION
+            resolution: BOOK_BATCH_RESOLUTION,
+            onModelUsed: (model) => {
+              generationModel = model;
+            }
           });
           setPipelineLogs(prev => [...prev, `✅ Foto ${batchIndex + 1}/${referenceBatches.length} criada (ID: ${taskId})`]);
           return {
             ...basePhoto,
             status: 'generating',
-            taskId
+            taskId,
+            generationModel
           };
         } catch (err) {
           setPipelineLogs(prev => [...prev, `❌ Falha ao criar foto ${batchIndex + 1}/${referenceBatches.length}: ${err.message}`]);
@@ -2446,10 +2484,8 @@ export default function Admin() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-neutral-100 text-xs font-semibold text-neutral-400 uppercase tracking-wider font-geist">
-                        <th className="py-4 px-4">Título</th>
                         <th className="py-4 px-4">Cliente</th>
                         <th className="py-4 px-4">Categoria</th>
-                        <th className="py-4 px-4">Retratos</th>
                         <th className="py-4 px-4">Status de Pagamento</th>
                         <th className="py-4 px-4 text-right">Ações</th>
                       </tr>
@@ -2457,47 +2493,28 @@ export default function Admin() {
                     <tbody className="divide-y divide-neutral-100 text-sm font-geist">
                       {books.map((bk) => (
                         <tr key={bk.id} className="hover:bg-neutral-50/50">
-                          <td className="py-4 px-4 font-semibold text-neutral-900">{bk.title}</td>
                           <td className="py-4 px-4 text-neutral-600">{bk.client?.name || 'Deletado'}</td>
                           <td className="py-4 px-4 text-neutral-500">{bk.category || bk.title || 'Sem categoria'}</td>
-                          <td className="py-4 px-4 text-neutral-500">
-                            {getBookTotalPhotoCount(bk.photos || [])} fotos
-                            {bk.photos?.some(p => p.status === 'generating') && (
-                              <span className="text-[10px] text-indigo-600 font-semibold ml-1.5 animate-pulse bg-indigo-50 px-1.5 py-0.5 rounded-full">
-                                gerando...
-                              </span>
-                            )}
-                          </td>
                           <td className="py-4 px-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ring-1 ${
                               bk.payment_status === 'paid'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-amber-50 text-amber-800'
+                                ? 'bg-emerald-50 text-emerald-700 ring-emerald-100'
+                                : bk.payment_status === 'partial_paid'
+                                  ? 'bg-amber-50 text-amber-800 ring-amber-100'
+                                  : 'bg-neutral-100 text-neutral-600 ring-neutral-200'
                             }`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${
+                                bk.payment_status === 'paid'
+                                  ? 'bg-emerald-500'
+                                  : bk.payment_status === 'partial_paid'
+                                    ? 'bg-amber-500'
+                                    : 'bg-neutral-400'
+                              }`} />
                               {bk.payment_status === 'paid' ? 'Pago' : bk.payment_status === 'partial_paid' ? 'Pacote pago' : 'Pendente'}
                             </span>
                           </td>
                           <td className="py-4 px-4 text-right">
                             <div className="flex gap-2 justify-end">
-                              {bk.payment_status !== 'paid' && (
-                                <button
-                                  onClick={() => handleMarkAsPaid(bk.id)}
-                                  title="Marcar como Pago"
-                                  className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-xl"
-                                >
-                                  <Check className="w-4 h-4" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => {
-                                  setActiveViewBook(bk);
-                                  setShowViewBookModal(true);
-                                }}
-                                title="Visualizar Fotos Selecionadas"
-                                className="p-2 hover:bg-neutral-100 text-neutral-600 rounded-xl"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
                               <button
                                 onClick={() => copyLinkToClipboard(bk)}
                                 title="Copiar Link do Cliente"
@@ -2612,7 +2629,6 @@ export default function Admin() {
                       <tr className="border-b border-neutral-100 text-xs font-semibold text-neutral-400 uppercase tracking-wider font-geist">
                         <th className="py-4 px-4">Nome</th>
                         <th className="py-4 px-4">Telefone</th>
-                        <th className="py-4 px-4">E-mail</th>
                         <th className="py-4 px-4 text-right">Ações</th>
                       </tr>
                     </thead>
@@ -2632,7 +2648,6 @@ export default function Admin() {
                             </div>
                           </td>
                           <td className="py-4 px-4 text-neutral-600">{cli.phone || 'Sem número'}</td>
-                          <td className="py-4 px-4 text-neutral-600">{cli.email || 'Sem e-mail'}</td>
                           <td className="py-4 px-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button
